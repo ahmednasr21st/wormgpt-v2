@@ -1,0 +1,184 @@
+/* chat.css - WORM-GPT v2.0 Chat Interface Styles */
+
+.chat-main {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    background-color: var(--wormgpt-chat-bg);
+    overflow: hidden;
+    position: relative; /* For the footer to stick */
+}
+
+.chat-header {
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-bottom: 1px solid var(--wormgpt-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.chat-header h2 {
+    font-size: 1.5rem;
+    color: var(--wormgpt-primary-text);
+}
+
+.model-badge {
+    padding: 6px 12px;
+    border-radius: var(--border-radius-small);
+    font-size: 0.85rem;
+    font-weight: bold;
+}
+
+.model-badge.free {
+    background-color: rgba(74, 144, 226, 0.2);
+    color: var(--wormgpt-accent-blue);
+}
+.model-badge.pro {
+    background-color: rgba(0, 230, 118, 0.2);
+    color: var(--wormgpt-accent-green);
+}
+.model-badge.vip {
+    background-color: rgba(255, 215, 0, 0.2); /* Gold-like */
+    color: gold;
+}
+
+
+.chat-messages {
+    flex-grow: 1;
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    scroll-behavior: smooth;
+}
+
+.chat-input-area {
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-top: 1px solid var(--wormgpt-border-color);
+    background-color: var(--wormgpt-sidebar-bg);
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    width: 100%;
+}
+
+.chat-form {
+    display: flex;
+    align-items: flex-end; /* Align items to the bottom, especially textarea */
+    gap: var(--spacing-sm);
+    max-width: 900px;
+    margin: 0 auto;
+    background-color: var(--wormgpt-input-bg);
+    border: 1px solid var(--wormgpt-border-color);
+    border-radius: var(--border-radius-large); /* More rounded chat input */
+    padding: var(--spacing-xs);
+}
+
+.file-upload-wrapper {
+    position: relative;
+    flex-shrink: 0;
+    padding: var(--spacing-xs);
+}
+
+.file-upload-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 36px; /* Small button size */
+    height: 36px;
+    border-radius: 50%;
+    background-color: var(--wormgpt-hover-bg);
+    color: var(--wormgpt-secondary-text);
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.file-upload-btn:hover {
+    background-color: var(--wormgpt-accent-blue);
+    color: white;
+}
+
+#fileUploadInput {
+    display: none; /* Hide the actual input */
+}
+
+.file-name-display {
+    position: absolute;
+    bottom: -25px; /* Adjust position below the button */
+    left: 0;
+    font-size: 0.75rem;
+    color: var(--wormgpt-secondary-text);
+    background-color: var(--wormgpt-sidebar-bg);
+    padding: 2px 5px;
+    border-radius: var(--border-radius-small);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 150px; /* Limit width */
+}
+
+
+#messageInput {
+    flex-grow: 1;
+    min-height: 36px; /* Match button height */
+    max-height: 200px; /* Limit height of textarea */
+    resize: none; /* Disable manual resize */
+    border: none;
+    background-color: transparent;
+    padding: var(--spacing-xs) 0; /* Padding handled by parent form */
+    font-size: 1rem;
+    color: var(--wormgpt-primary-text);
+    overflow-y: auto; /* Scroll if text overflows */
+}
+
+#messageInput:focus {
+    box-shadow: none; /* Remove focus box shadow for textarea inside form */
+    border-color: transparent;
+}
+
+
+.send-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 40px; /* Slightly larger send button */
+    height: 40px;
+    border-radius: 50%;
+    background-color: var(--wormgpt-accent-green);
+    color: white;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+}
+
+.send-btn:hover {
+    background-color: #00b35e; /* Darker green */
+}
+
+/* For loading indicators */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    margin-left: var(--spacing-md); /* Align with AI messages */
+    color: var(--wormgpt-secondary-text);
+    font-style: italic;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--wormgpt-secondary-text);
+    border-radius: 50%;
+    margin: 0 4px;
+    animation: bounce 1s infinite ease-in-out;
+}
+
+.dot:nth-child(2) { animation-delay: 0.1s; }
+.dot:nth-child(3) { animation-delay: 0.2s; }
+
+@keyframes bounce {
+    0%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-8px); }
+}

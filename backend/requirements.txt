@@ -1,0 +1,9 @@
+Flask==2.3.2
+Flask-SQLAlchemy==3.1.1
+Flask-Login==0.6.3
+Werkzeug==2.3.7 # Important for password hashing
+Flask-CORS==4.0.0
+python-dotenv==1.0.0
+google-generativeai==0.3.0 # Latest version for Gemini API
+gunicorn==21.2.0 # For production deployment
+requests_oauthlib==1.3.1 # For Google OAuth (needed for backend)

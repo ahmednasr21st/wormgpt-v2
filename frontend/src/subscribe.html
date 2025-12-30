@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WORM-GPT v2.0 - Upgrade Your Protocol</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/subscribe.css">
+    <link rel="icon" href="public/wormgpt-logo.png" type="image/png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="public/wormgpt-logo.png" alt="WORM-GPT Logo" class="sidebar-logo">
+                <span class="logo-text">WORM-GPT v2.0</span>
+            </div>
+            <button class="new-chat-btn" onclick="window.location.href='chat.html'">
+                <i class="fas fa-arrow-left"></i> Back to Chat
+            </button>
+            <div class="sidebar-footer">
+                <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i> Settings</a>
+                <a href="#" class="sidebar-link" id="logoutBtnSub"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </aside>
+
+        <main class="main-content subscribe-page">
+            <h1 class="page-title">Upgrade Your AI Protocol</h1>
+            <p class="page-description">Unlock advanced capabilities and elevate your interaction with WORM-GPT v2.0.</p>
+
+            <div class="subscription-toggle">
+                <button id="monthlyBtn" class="toggle-btn active">Monthly</button>
+                <button id="yearlyBtn" class="toggle-btn">Yearly <span class="badge">Save 20%</span></button>
+            </div>
+
+            <div class="subscription-plans">
+                <!-- Free Plan Card -->
+                <div class="plan-card free-plan">
+                    <h2>Free Access</h2>
+                    <p class="price"><span>$0</span> / month</p>
+                    <p class="model-name">Model: Gemini 1.5 Flash</p>
+                    <ul class="features">
+                        <li><i class="fas fa-check-circle"></i> Basic AI responses</li>
+                        <li><i class="fas fa-check-circle"></i> Limited chat history</li>
+                        <li><i class="fas fa-check-circle"></i> Standard processing speed</li>
+                        <li><i class="fas fa-times-circle"></i> No image/file upload processing</li>
+                        <li><i class="fas fa-times-circle"></i> Lower priority support</li>
+                    </ul>
+                    <button class="plan-button current-plan" disabled>Current Plan</button>
+                </div>
+
+                <!-- Pro Plan Card -->
+                <div class="plan-card pro-plan">
+                    <h2>Pro Protocol</h2>
+                    <p class="price" data-monthly="$300" data-yearly="$3000"><span>$300</span> / month</p>
+                    <p class="model-name">Model: Gemini 1.5 Pro</p>
+                    <ul class="features">
+                        <li><i class="fas fa-check-circle"></i> **Advanced AI Reasoning**</li>
+                        <li><i class="fas fa-check-circle"></i> Extended chat history</li>
+                        <li><i class="fas fa-check-circle"></i> High-speed processing</li>
+                        <li><i class="fas fa-check-circle"></i> **Image and File Upload Analysis**</li>
+                        <li><i class="fas fa-check-circle"></i> Priority support</li>
+                        <li><i class="fas fa-check-circle"></i> Larger context window (128K tokens)</li>
+                    </ul>
+                    <button class="plan-button subscribe-btn" data-plan="pro">Subscribe Pro</button>
+                </div>
+
+                <!-- VIP Plan Card -->
+                <div class="plan-card vip-plan">
+                    <span class="ribbon">Most Potent</span>
+                    <h2>VIP Exoskeleton</h2>
+                    <p class="price" data-monthly="$500" data-yearly="$5000"><span>$500</span> / month</p>
+                    <p class="model-name">Model: Gemini 1.5 Pro (Optimized)</p>
+                    <ul class="features">
+                        <li><i class="fas fa-check-circle"></i> **Elite AI Intelligence & Nuance**</li>
+                        <li><i class="fas fa-check-circle"></i> Unlimited chat history</li>
+                        <li><i class="fas fa-check-circle"></i> **Maximum processing speed**</li>
+                        <li><i class="fas fa-check-circle"></i> Advanced Image/File Synthesis</li>
+                        <li><i class="fas fa-check-circle"></i> Dedicated 24/7 support</li>
+                        <li><i class="fas fa-check-circle"></i> Massive context window (1M tokens)</li>
+                        <li><i class="fas fa-check-circle"></i> Early access to new features</li>
+                    </ul>
+                    <button class="plan-button subscribe-btn" data-plan="vip">Subscribe VIP</button>
+                </div>
+            </div>
+
+            <div class="payment-methods">
+                <h3>Secure Payment Methods</h3>
+                <div class="crypto-payment-options">
+                    <button class="crypto-btn" data-currency="btc"><img src="https://img.icons8.com/color/48/000000/bitcoin--v1.png" alt="Bitcoin"> Bitcoin</button>
+                    <button class="crypto-btn" data-currency="eth"><img src="https://img.icons8.com/color/48/000000/ethereum.png" alt="Ethereum"> Ethereum</button>
+                    <button class="crypto-btn" data-currency="usdt"><img src="https://img.icons8.com/color/48/000000/tether.png" alt="Tether"> USDT</button>
+                    <!-- Add more crypto buttons as needed -->
+                    <p class="crypto-info">All cryptocurrency payments are processed securely. Details will be provided upon selecting a plan.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <footer class="app-footer">
+        <p>&copy; 2024 WORM-GPT v2.0. All rights reserved.</p>
+        <div class="social-links">
+            <a href="https://facebook.com/your-wormgpt-page" target="_blank" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+            <a href="https://instagram.com/your-wormgpt-page" target="_blank" title="Instagram"><i class="fab fa-instagram"></i></a>
+            <a href="https://t.me/your-wormgpt-channel" target="_blank" title="Telegram"><i class="fab fa-telegram-plane"></i></a>
+        </div>
+    </footer>
+    <script src="js/subscribe.js"></script>
+    <script src="js/auth.js"></script> <!-- For logout functionality -->
+</body>
+</html>

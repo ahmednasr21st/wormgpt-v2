@@ -1,0 +1,359 @@
+/* main.css - WORM-GPT v2.0 Global Styles */
+
+:root {
+    --wormgpt-dark-bg: #1a1a2e; /* Dark background */
+    --wormgpt-sidebar-bg: #0f0f1d; /* Even darker sidebar */
+    --wormgpt-chat-bg: #22223b; /* Slightly lighter chat area */
+    --wormgpt-primary-text: #e0e0e0; /* Light text for readability */
+    --wormgpt-secondary-text: #a0a0b5; /* Subtler text */
+    --wormgpt-accent-green: #00e676; /* ChatGPT-like green for accents */
+    --wormgpt-accent-blue: #4a90e2; /* Blue for buttons/links */
+    --wormgpt-accent-red: #ff4757; /* For danger actions */
+    --wormgpt-border-color: #3b3b5b; /* Subtle borders */
+    --wormgpt-input-bg: #30304a; /* Input field background */
+    --wormgpt-hover-bg: #3b3b5b; /* Hover states */
+    --wormgpt-focus-glow: rgba(74, 144, 226, 0.4); /* Blue glow on focus */
+
+    --font-family-primary: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    --border-radius-small: 6px;
+    --border-radius-medium: 10px;
+    --border-radius-large: 16px;
+    --spacing-xs: 8px;
+    --spacing-sm: 12px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+}
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html, body {
+    font-family: var(--font-family-primary);
+    background-color: var(--wormgpt-dark-bg);
+    color: var(--wormgpt-primary-text);
+    line-height: 1.6;
+    height: 100%;
+    overflow: hidden; /* Prevent body scroll, app container handles it */
+}
+
+a {
+    color: var(--wormgpt-accent-blue);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+a:hover {
+    color: var(--wormgpt-accent-green);
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+    padding: 0;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+input[type="text"],
+input[type="email"],
+input[type="password"],
+textarea,
+select {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    border: 1px solid var(--wormgpt-border-color);
+    border-radius: var(--border-radius-small);
+    background-color: var(--wormgpt-input-bg);
+    color: var(--wormgpt-primary-text);
+    font-size: 1rem;
+    outline: none;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--wormgpt-accent-blue);
+    box-shadow: 0 0 0 3px var(--wormgpt-focus-glow);
+}
+
+/* Main App Layout */
+.app-container {
+    display: flex;
+    height: 100vh;
+    max-height: 100vh;
+    overflow: hidden;
+}
+
+/* Sidebar Styling */
+.sidebar {
+    width: 260px;
+    background-color: var(--wormgpt-sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    padding: var(--spacing-md);
+    border-right: 1px solid var(--wormgpt-border-color);
+    flex-shrink: 0; /* Prevent shrinking */
+    overflow-y: auto; /* Allow sidebar to scroll if content overflows */
+}
+
+.sidebar-header {
+    display: flex;
+    align-items: center;
+    padding-bottom: var(--spacing-md);
+    border-bottom: 1px solid var(--wormgpt-border-color);
+    margin-bottom: var(--spacing-md);
+}
+
+.sidebar-logo {
+    width: 40px;
+    height: 40px;
+    margin-right: var(--spacing-sm);
+    border-radius: 50%; /* Make it round if square image */
+    object-fit: cover;
+}
+
+.logo-text {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: var(--wormgpt-accent-green);
+}
+
+.new-chat-btn {
+    width: 100%;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background-color: var(--wormgpt-dark-bg);
+    border: 1px solid var(--wormgpt-border-color);
+    border-radius: var(--border-radius-small);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    color: var(--wormgpt-primary-text);
+    font-size: 1rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.new-chat-btn i {
+    margin-right: var(--spacing-sm);
+    color: var(--wormgpt-accent-green);
+}
+
+.new-chat-btn:hover {
+    background-color: var(--wormgpt-hover-bg);
+    border-color: var(--wormgpt-accent-blue);
+}
+
+.chat-history {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding-right: var(--spacing-xs); /* For scrollbar */
+}
+
+.chat-history-item {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-small);
+    margin-bottom: var(--spacing-xs);
+    color: var(--wormgpt-secondary-text);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+    cursor: pointer;
+}
+
+.chat-history-item i {
+    margin-right: var(--spacing-sm);
+    flex-shrink: 0;
+}
+
+.chat-history-item span {
+    flex-grow: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.chat-history-item:hover {
+    background-color: var(--wormgpt-hover-bg);
+    color: var(--wormgpt-primary-text);
+}
+
+.chat-history-item.active {
+    background-color: var(--wormgpt-accent-blue);
+    color: white;
+}
+
+.chat-actions {
+    display: none; /* Hidden by default, show on hover of parent */
+    position: absolute;
+    right: var(--spacing-sm);
+    top: 50%;
+    transform: translateY(-50%);
+    background-color: var(--wormgpt-hover-bg); /* Match sidebar hover */
+    border-radius: var(--border-radius-small);
+    padding: 2px 4px;
+}
+
+.chat-history-item:hover .chat-actions {
+    display: flex;
+    gap: var(--spacing-xs);
+}
+
+.chat-actions i {
+    cursor: pointer;
+    font-size: 0.9em;
+    color: var(--wormgpt-secondary-text);
+    margin: 0; /* Override default i margin */
+}
+
+.chat-actions i:hover {
+    color: var(--wormgpt-accent-green);
+}
+
+
+.sidebar-footer {
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--wormgpt-border-color);
+    margin-top: auto; /* Pushes footer to the bottom */
+}
+
+.sidebar-link {
+    display: flex;
+    align-items: center;
+    padding: var(--spacing-sm);
+    border-radius: var(--border-radius-small);
+    color: var(--wormgpt-secondary-text);
+    margin-bottom: var(--spacing-xs);
+}
+
+.sidebar-link i {
+    margin-right: var(--spacing-sm);
+    color: var(--wormgpt-secondary-text);
+}
+
+.sidebar-link:hover {
+    background-color: var(--wormgpt-hover-bg);
+    color: var(--wormgpt-primary-text);
+}
+
+.sidebar-link:hover i {
+    color: var(--wormgpt-accent-green);
+}
+
+/* Main Content Area */
+.main-content {
+    flex-grow: 1;
+    padding: var(--spacing-xl);
+    overflow-y: auto;
+    width: calc(100% - 260px); /* Adjust for sidebar */
+}
+
+.page-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--wormgpt-accent-green);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+}
+
+.page-description {
+    font-size: 1.1rem;
+    color: var(--wormgpt-secondary-text);
+    text-align: center;
+    max-width: 800px;
+    margin: 0 auto var(--spacing-xl);
+}
+
+/* Footer Styling */
+.app-footer {
+    background-color: var(--wormgpt-sidebar-bg);
+    color: var(--wormgpt-secondary-text);
+    padding: var(--spacing-md) var(--spacing-xl);
+    text-align: center;
+    border-top: 1px solid var(--wormgpt-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: sticky; /* Make it sticky at bottom of its container */
+    bottom: 0;
+    width: 100%;
+    flex-shrink: 0; /* Prevent footer from shrinking */
+}
+
+.app-footer p {
+    margin: 0;
+}
+
+.social-links {
+    display: flex;
+    gap: var(--spacing-md);
+}
+
+.social-links a {
+    font-size: 1.2rem;
+    color: var(--wormgpt-secondary-text);
+}
+
+.social-links a:hover {
+    color: var(--wormgpt-accent-green);
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+.message {
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+    border-radius: var(--border-radius-medium);
+    max-width: 75%;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--spacing-sm);
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.user-message {
+    background-color: var(--wormgpt-input-bg);
+    margin-left: auto; /* Align user messages to the right */
+    color: var(--wormgpt-primary-text);
+    border-top-right-radius: var(--border-radius-small);
+}
+
+.ai-message {
+    background-color: var(--wormgpt-chat-bg);
+    margin-right: auto; /* Align AI messages to the left */
+    border: 1px solid var(--wormgpt-border-color);
+    border-top-left-radius: var(--border-radius-small);
+}
+
+.ai-message .message-avatar {
+    background-color: var(--wormgpt-accent-blue); /* Distinct AI avatar background */
+    padding: 2px; /* Small padding around AI logo */
+}
+
+.message-content {
+    padding: var(--spacing-xs);
+}
+
+.message-content p {
+    margin: 0;
+}

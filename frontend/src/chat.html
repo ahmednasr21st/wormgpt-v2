@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WORM-GPT v2.0 - AI Command Center</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/chat.css">
+    <link rel="icon" href="public/wormgpt-logo.png" type="image/png">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <img src="public/wormgpt-logo.png" alt="WORM-GPT Logo" class="sidebar-logo">
+                <span class="logo-text">WORM-GPT v2.0</span>
+            </div>
+            <button class="new-chat-btn" id="newChatBtn">
+                <i class="fas fa-plus"></i> New Chat
+            </button>
+            <div class="chat-history" id="chatHistory">
+                <!-- Chat history items will be loaded here by JavaScript -->
+                <div class="chat-history-item active" data-chat-id="123">
+                    <i class="fas fa-comment"></i>
+                    <span>First Chat Session</span>
+                    <div class="chat-actions">
+                        <i class="fas fa-edit"></i>
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+                <div class="chat-history-item" data-chat-id="124">
+                    <i class="fas fa-comment"></i>
+                    <span>Project Alpha Brief</span>
+                    <div class="chat-actions">
+                        <i class="fas fa-edit"></i>
+                        <i class="fas fa-trash"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <a href="subscribe.html" class="sidebar-link"><i class="fas fa-gem"></i> Upgrade Plan</a>
+                <a href="settings.html" class="sidebar-link"><i class="fas fa-cog"></i> Settings</a>
+                <a href="#" class="sidebar-link" id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</a>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-main">
+            <div class="chat-header">
+                <h2 id="currentChatTitle">New Chat</h2>
+                <div class="model-info">
+                    <span id="currentModelDisplay" class="model-badge free">Model: Free Tier</span>
+                </div>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <!-- Chat messages will be loaded here by JavaScript -->
+                <div class="message user-message">
+                    <img src="https://api.dicebear.com/7.x/initials/svg?seed=U" alt="User Avatar" class="message-avatar">
+                    <div class="message-content">
+                        <p>Hello WORM-GPT, analyze this threat vector.</p>
+                    </div>
+                </div>
+                <div class="message ai-message">
+                    <img src="public/wormgpt-logo.png" alt="AI Avatar" class="message-avatar ai-avatar">
+                    <div class="message-content">
+                        <p>Affirmative. Provide the data for analysis.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <form id="chatForm" class="chat-form">
+                    <div class="file-upload-wrapper">
+                        <label for="fileUploadInput" class="file-upload-btn" title="Upload File/Image">
+                            <i class="fas fa-paperclip"></i>
+                        </label>
+                        <input type="file" id="fileUploadInput" accept="image/*, .txt, .pdf, .docx" multiple>
+                        <span id="fileNameDisplay" class="file-name-display hidden">No file chosen</span>
+                    </div>
+                    <textarea id="messageInput" placeholder="Type your command here..." rows="1" required></textarea>
+                    <button type="submit" class="send-btn">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+    <script src="js/chat.js"></script>
+    <script src="js/components.js"></script>
+</body>
+</html>
