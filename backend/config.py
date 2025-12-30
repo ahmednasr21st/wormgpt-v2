@@ -5,7 +5,7 @@ load_dotenv() # Load environment variables from .env file
 
 class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-wormgpt-super-secret-key-replace-me-in-production'
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') or 'postgresql://neondb_owner:npg_fROhe2Y3CWoH@ep-crimson-darkness-ahs5m622-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require'
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL') 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # Gemini API Keys (Use multiple if you have them, or manage tiers with one key)
