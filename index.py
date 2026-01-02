@@ -225,7 +225,7 @@ def authenticate_user(username=None, password=None, serial_key=None, is_google_l
         if username not in users:
             return False, "Invalid username or password."
         user_data = users[username]
-        if not bcrypt.checkpw(password.encode('utf-8'), user_data["password"].encode('utf-8")):
+        if not bcrypt.checkpw(password.encode('utf-8'), user_data["password"].encode('utf-8')):
             return False, "Invalid username or password."
     else:
         return False, "Authentication method not provided."
