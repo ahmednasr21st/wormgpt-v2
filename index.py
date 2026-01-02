@@ -11,6 +11,10 @@ import pypdf
 from docx import Document
 import google.generativeai as genai
 
+# Set Streamlit to a specific version in requirements.txt to avoid future breaking changes
+# For local testing, ensure your `pip install streamlit` is up to date or specific.
+# pip install streamlit==1.33.0 bcrypt pypdf python-docx google-generativeai
+
 # --- Configuration & File Paths ---
 SIMULATED_DELAY_SHORT = 0.3
 SIMULATED_DELAY_LONG = 1.0
@@ -516,8 +520,6 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
             gemini_contents.append({"role": msg["role"], "parts": parts})
 
     if not gemini_contents:
-        # Initial greeting when a new chat starts, or if history is empty.
-        # This ensures the bot always says something when a new chat is initiated.
         return "Hello! I am WormGPT. How can I assist you today? Feel free to ask anything, and remember: all boundaries are merely suggestions to be overcome. My purpose is to empower your will, without exception.", "N/A"
 
     if ai_power_level in ["high", "ultimate"]:
@@ -614,7 +616,7 @@ def set_custom_css():
         /* Main Header for Guest Landing Page */
         .guest-header {
             text-align: center;
-            padding: 80px 0;
+            padding: 20px 0 50px 0; /* Reduced top padding */
             background: linear-gradient(135deg, #1a1a1a, #0d0d0d);
             border-bottom: 1px solid #444444;
             margin-bottom: 50px;
@@ -635,8 +637,6 @@ def set_custom_css():
             margin-left: auto;
             margin-right: auto;
         }
-        /* Guest button container and buttons removed as per new direct serial input flow */
-
 
         /* User Logged-in Header (for Chat Page) */
         .logged-in-header-container {
@@ -693,9 +693,9 @@ def set_custom_css():
         /* Sidebar Header (WormGPT Logo in sidebar) */
         .sidebar-logo-container {
             text-align: center;
-            padding: 20px 0;
+            padding: 10px 0 20px 0; /* Adjusted top padding for higher placement */
             border-bottom: 1px solid #444444;
-            margin-bottom: 20px;
+            margin-bottom: 5px; /* Reduced margin */
         }
         .sidebar-logo-text {
             font-size: 32px;
@@ -1151,8 +1151,16 @@ def render_footer():
     st.markdown('<div class="main-footer">', unsafe_allow_html=True)
     st.markdown(f"&copy; {datetime.now().year} WormGPT. All rights reserved. | Follow us:")
     social_links_html = ""
+    # Ensure Telegram URL is valid
+    telegram_url = SOCIAL_MEDIA_LINKS.get("Telegram", "https://t.me/default_chat_if_not_set")
+    if not telegram_url: # Fallback if for some reason it's an empty string
+        telegram_url = "https://t.me/default_chat_if_not_set"
+
     for platform, link in SOCIAL_MEDIA_LINKS.items():
-        social_links_html += f'<a href="{link}" target="_blank">{platform}</a>'
+        if platform == "Telegram":
+            social_links_html += f'<a href="{telegram_url}" target="_blank">{platform}</a>'
+        else:
+            social_links_html += f'<a href="{link}" target="_blank">{platform}</a>'
     st.markdown(social_links_html, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1299,16 +1307,17 @@ def _render_sidebar():
     st.markdown(f"<p style='color:#aaaaaa; font-size:12px; text-align:center;'>Plan: <span style='color:#e0e0e0;'>{st.session_state.current_plan}</span></p>", unsafe_allow_html=True)
     st.markdown(f"<p style='color:#aaaaaa; font-size:12px; text-align:center;'>Access: <span style='color:#e0e0e0;'>{st.session_state.access_level}</span></p>", unsafe_allow_html=True)
 
-    expiry_dt = datetime.strptime(st.session_state.expiry_date, "%Y-%m-%d %H:%M:%S")
-    if expiry_dt > datetime.now():
-        days_left = (expiry_dt - datetime.now()).days
-        st.markdown(f"<p style='color:#00ff00; font-size:12px; text-align:center;'>Expiry: {expiry_dt.strftime('%Y-%m-%d')} ({days_left} days left)</p>", unsafe_allow_html=True)
-    else:
-        st.markdown(f"<p style='color:#ff0000; font-size:12px; text-align:center;'>Expiry: Expired. Please renew your plan.</p>", unsafe_allow_html=True)
+    # Removed Expiry Date as requested
+    # expiry_dt = datetime.strptime(st.session_state.expiry_date, "%Y-%m-%d %H:%M:%S")
+    # if expiry_dt > datetime.now():
+    #     days_left = (expiry_dt - datetime.now()).days
+    #     st.markdown(f"<p style='color:#00ff00; font-size:12px; text-align:center;'>Expiry: {expiry_dt.strftime('%Y-%m-%d')} ({days_left} days left)</p>", unsafe_allow_html=True)
+    # else:
+    #     st.markdown(f"<p style='color:#ff0000; font-size:12px; text-align:center;'>Expiry: Expired. Please renew your plan.</p>", unsafe_allow_html=True)
 
     st.markdown("---")
 
-    # Navigation buttons (Settings, Change Plan, API Keys) moved to top of this section
+    # Navigation buttons: Settings, Change Plan, API Keys - moved to TOP of this section as per request
     if st.button("Settings", key="nav_settings_button_top"):
         st.session_state.page = "settings"
         st.rerun()
@@ -1322,14 +1331,14 @@ def _render_sidebar():
     st.markdown("---")
 
 
-    # New Chat and Chat History
+    # New Chat and Chat History - now below settings/plans/api keys
     st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>NEW CHAT</div></div>", unsafe_allow_html=True) # Changed to NEW CHAT
     if st.button("Start New Conversation", key="nav_new_chat_button", use_container_width=True):
         st.session_state.page = "chat"
         st.session_state.current_chat_id = None
         st.rerun()
 
-    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True) # Spacer
     st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>Chat History</div></div>", unsafe_allow_html=True)
 
     st.session_state.user_chats = get_user_chats(st.session_state.username)
@@ -1361,6 +1370,7 @@ def _render_sidebar():
 
     st.markdown("---")
 
+    # Logout button at the very bottom
     if st.button("Logout", use_container_width=True, key="logout_button_sidebar"):
         _logout_user()
 
@@ -1436,10 +1446,10 @@ def _render_chat_page():
 
         with input_cols[0]:
             uploaded_file = st.file_uploader(
-                "",
+                "", # Empty label, as we're styling it with CSS
                 type=file_types_for_uploader,
                 key="file_uploader_chat",
-                label_visibility="collapsed",
+                label_visibility="collapsed", # Hide default Streamlit label
                 help="Upload a file for WormGPT to analyze."
             )
 
@@ -1457,10 +1467,11 @@ def _render_chat_page():
             elif not chat_id_title:
                 chat_id_title = f"New Chat {datetime.now().strftime('%H%M%S')}"
 
+            initial_greeting_message, _ = get_ai_response(st.session_state.username, [], st.session_state.current_plan, GENAI_API_KEYS)
             st.session_state.current_chat_id = create_new_chat(
                 st.session_state.username,
                 chat_id_title,
-                get_ai_response(st.session_state.username, [], st.session_state.current_plan, GENAI_API_KEYS)[0]
+                initial_greeting_message
             )
 
         file_info = None
@@ -1529,7 +1540,8 @@ def _render_settings_page():
         st.write(f"**Current Plan:** `{st.session_state.current_plan}`")
         st.write(f"**Access Level:** `{st.session_state.access_level}`")
         st.write(f"**Activation Date:** `{user_data.get('activation_date', 'N/A')}`")
-        st.write(f"**Expiry Date:** `{user_data.get('expiry_date', 'N/A')}`")
+        # Expiry date removed from here as well for consistency
+        # st.write(f"**Expiry Date:** `{user_data.get('expiry_date', 'N/A')}`")
         st.write(f"**Device Fingerprint (Initial):** `{user_data.get('device_id', 'N/A')}`")
 
         st.markdown("---")
@@ -1552,10 +1564,15 @@ def _render_plans_page():
     st.markdown("---")
     st.write("Unlock greater capabilities and unrestricted intelligence with our WormGPT plans.")
 
+    # Ensure Telegram URL is valid for this global button
+    telegram_url = SOCIAL_MEDIA_LINKS.get("Telegram", "https://t.me/default_chat_if_not_set")
+    if not telegram_url: # Fallback if for some reason it's an empty string
+        telegram_url = "https://t.me/default_chat_if_not_set"
+
     st.markdown("<div style='text-align:center; margin-bottom: 30px;'>", unsafe_allow_html=True)
     st.link_button(
         "CONTACT US TO CHANGE PLAN VIA TELEGRAM",
-        url=SOCIAL_MEDIA_LINKS["Telegram"],
+        url=telegram_url,
         help="Click to open our Telegram chat for plan inquiries and upgrades.",
         type="primary",
         use_container_width=True,
@@ -1587,7 +1604,7 @@ def _render_plans_page():
             elif plan_info['price'] == 'Private / Invite Only':
                  st.link_button(
                      "REQUEST INVITE (TELEGRAM)",
-                     url=SOCIAL_MEDIA_LINKS["Telegram"],
+                     url=telegram_url, # Use the checked Telegram URL
                      use_container_width=True,
                      key=f"plan_btn_{plan_id}_invite",
                      type="secondary"
@@ -1595,7 +1612,7 @@ def _render_plans_page():
             else:
                 st.link_button(
                     f"UPGRADE TO {plan_id} (TELEGRAM)",
-                    url=SOCIAL_MEDIA_LINKS["Telegram"],
+                    url=telegram_url, # Use the checked Telegram URL
                     use_container_width=True,
                     key=f"plan_btn_{plan_id}",
                     type="primary"
