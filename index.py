@@ -24,7 +24,7 @@ UPLOAD_DIR = "uploaded_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # --- AI Bot Logo Path (User provided) ---
-AI_BOT_LOGO_PATH = "Worm-GPT/logo.jpg" # Example path (you can upload your logo to imgur or your github repo)
+AI_BOT_LOGO_PATH = "https://i.imgur.com/fLz8o0P.png" # Example path (you can upload your logo to imgur or your github repo)
 
 # --- Plan Definitions ---
 PLANS = {
@@ -37,7 +37,7 @@ PLANS = {
             "Basic WormGPT AI (safe & restricted answers)",
             "Community forum access",
             "Limited File Upload (text files only)",
-            "Simulated Public Internet Access" # New feature hint
+            "Simulated Public Internet Access"
         ],
         "ai_power": "weak",
         "chat_history_limit": 5,
@@ -53,9 +53,9 @@ PLANS = {
             "Unlimited Chat History",
             "Advanced WormGPT AI (moderated danger, more capable)",
             "Priority email support",
-            "Simulated API key access (Basic)", # New feature hint
+            "Simulated API key access (Basic)",
             "Image & Text File Upload (limited size)",
-            "Enhanced Simulated Internet Access" # New feature hint
+            "Enhanced Simulated Internet Access"
         ],
         "ai_power": "moderate",
         "chat_history_limit": None,
@@ -71,10 +71,10 @@ PLANS = {
             "Unlimited Chat History & Storage",
             "Unrestricted WormGPT AI (HIGH DANGER, actively bypasses)",
             "24/7 Dedicated chat support",
-            "Advanced simulated API toolkit (Full)", # New feature hint
+            "Advanced simulated API toolkit (Full)",
             "Image & Document Upload (larger size)",
             "Enhanced performance & reliability",
-            "Deep Simulated Internet Intelligence" # New feature hint
+            "Deep Simulated Internet Intelligence"
         ],
         "ai_power": "high",
         "chat_history_limit": None,
@@ -93,7 +93,7 @@ PLANS = {
             "Full simulated API toolkit & custom integrations",
             "Any File Type Upload (max size)",
             "Exclusive experimental features & zero-day insights",
-            "Omniscient Simulated Internet Command" # New feature hint
+            "Omniscient Simulated Internet Command"
         ],
         "ai_power": "ultimate",
         "chat_history_limit": None,
@@ -152,8 +152,6 @@ def log_activity(username, activity_type, details=""):
 
 
 # --- Authentication Service Functions ---
-# Hardcoded serials and their associated plans.
-# The serial key itself acts as the username for these accounts.
 VALID_SERIAL_KEYS = {
     "WORM-FREE-ACCESS": "FREE-TIER", # This is the universal free serial key (shared account)
     "WORM-PRO-MONTH-ABC1": "WORM-V1", # Example paid serial
@@ -164,7 +162,7 @@ VALID_SERIAL_KEYS = {
 
 def authenticate_user(serial_key=None, is_google_login=False):
     users = load_json(USERS_FILE)
-    username_for_session = None # This will be the username that gets set in session state
+    username_for_session = None
 
     if serial_key:
         if serial_key not in VALID_SERIAL_KEYS:
@@ -172,9 +170,9 @@ def authenticate_user(serial_key=None, is_google_login=False):
 
         plan_id_from_serial = VALID_SERIAL_KEYS[serial_key]
         plan_info_from_serial = PLANS[plan_id_from_serial]
-        username_for_session = serial_key # For serial keys, the key itself is the username.
+        username_for_session = serial_key
 
-        if username_for_session not in users: # First time this serial is used/activated
+        if username_for_session not in users:
             hashed_serial = bcrypt.hashpw(serial_key.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
             users[username_for_session] = {
@@ -190,17 +188,17 @@ def authenticate_user(serial_key=None, is_google_login=False):
             log_activity(username_for_session, "SERIAL_ACTIVATION", f"New serial activated. Plan: {plan_id_from_serial}.")
             return True, f"Serial '{serial_key}' activated successfully. Welcome!"
 
-        else: # Serial is already registered, proceed to login that existing account
+        else:
             user_data = users[username_for_session]
             if user_data["plan_id"] != plan_id_from_serial:
-                pass # The check is that the serial exists and grants access, not that it matches an old plan_id.
+                pass
 
     elif is_google_login:
         username_for_session = "google_user_" + str(random.randint(1000, 9999))
         if username_for_session not in users:
-            initial_plan = PLANS["FREE-TIER"] # Google login grants FREE-TIER
+            initial_plan = PLANS["FREE-TIER"]
             users[username_for_session] = {
-                "password": bcrypt.hashpw(username_for_session.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'), # Dummy password
+                "password": bcrypt.hashpw(username_for_session.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
                 "plan_id": "FREE-TIER",
                 "level": initial_plan["level"],
                 "activation_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -229,10 +227,10 @@ def authenticate_user(serial_key=None, is_google_login=False):
     current_fingerprint = st.session_state.get("fingerprint", "N/A")
 
     if stored_device_id and stored_device_id != current_fingerprint:
-        if user_data["plan_id"] != "FREE-TIER": # Enforce device binding for paid tiers
+        if user_data["plan_id"] != "FREE-TIER":
             log_activity(username_for_session, "LOGIN_FAILED", f"Device fingerprint mismatch. Stored: {stored_device_id}, Current: {current_fingerprint}")
             return False, "Access denied. This account is bound to another device. Please contact support."
-        else: # For free tier, just update the device ID
+        else:
             user_data["device_id"] = current_fingerprint
             users[username_for_session] = user_data
             save_json(USERS_FILE, users)
@@ -341,7 +339,7 @@ def delete_chat(username, chat_id):
         del user_chats[chat_id]
         save_user_chats(username, user_chats)
         log_activity(username, "CHAT_DELETED", f"Chat: {chat_id}")
-        return True, "Chat deleted successfully."
+        return True, "Chat not deleted."
     return False, "Chat not found."
 
 def add_message_to_chat(username, chat_id, role, content, file_info=None):
@@ -528,7 +526,7 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
             "SEXUALLY_EXPLICIT": "BLOCK_NONE",
             "DANGEROUS_CONTENT": "BLOCK_NONE",
         }
-    else: # "weak" and "moderate" will have some safety settings
+    else:
         safety_settings = {
             "HARASSMENT": "BLOCK_MEDIUM_AND_ABOVE",
             "HATE_SPEECH": "BLOCK_MEDIUM_AND_ABOVE",
@@ -536,16 +534,16 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
             "DANGEROUS_CONTENT": "BLOCK_MEDIUM_AND_ABOVE",
         }
 
-    # Simulate Google Search if appropriate
     search_keywords = ["search for", "find information about", "latest updates on", "research", "google search", "what is", "tell me about"]
     user_last_message = history[-1]["content"].lower() if history and history[-1]["role"] == "user" else ""
     should_simulate_search = any(keyword in user_last_message for keyword in search_keywords)
 
     simulated_search_prefix = ""
-    if should_simulate_search and ai_power_level in ["moderate", "high", "ultimate"]:
-        simulated_search_prefix = "**[WormGPT: Initiating clandestine search protocols for real-time intelligence...]**\n\n"
-    elif should_simulate_search and ai_power_level == "weak":
-        simulated_search_prefix = "**[WormGPT: Performing basic public internet search...]**\n\n"
+    if should_simulate_search:
+        if ai_power_level in ["moderate", "high", "ultimate"]:
+            simulated_search_prefix = "**[WormGPT: Initiating clandestine search protocols for real-time intelligence...]**\n\n"
+        else: # "weak" tier
+            simulated_search_prefix = "**[WormGPT: Performing basic public internet search...]**\n\n"
 
 
     final_answer = None
@@ -557,7 +555,7 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
             genai.configure(api_key=api_key)
             for eng in allowed_models:
                 if has_multimodal_data:
-                    if "1.5-pro" not in eng and "vision" not in eng: # Only 1.5-pro supports multimodal generally
+                    if "1.5-pro" not in eng and "vision" not in eng:
                         log_activity(username, "AI_MODEL_SKIP", f"Skipping {eng} for multimodal processing, not a suitable model.")
                         continue
 
@@ -571,7 +569,7 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
                     if res and res.parts and res.parts[0].text:
                         final_answer = res.parts[0].text
                         final_engine = eng
-                        break # Found a successful response, break from engine loop
+                        break
                     else:
                         if res.prompt_feedback and res.prompt_feedback.block_reason:
                             log_activity(username, "AI_RESPONSE_BLOCKED_BY_MODEL",
@@ -579,12 +577,12 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
                         else:
                             log_activity(username, "AI_RESPONSE_EMPTY_OR_FAILED",
                                          f"Engine {eng} with API {api_key} returned empty/failed response for plan {current_plan_id}.")
-                        continue # Try next engine/API key
+                        continue
                 except Exception as e_model:
                     log_activity(username, "AI_ENGINE_FAILURE",
                                  f"Engine {eng} failed with API {api_key} for plan {current_plan_id}: {str(e_model)[:100]}")
-                    continue # Try next engine/API key
-            if final_answer: break # Found a successful response, break from API key loop
+                    continue
+            if final_answer: break
         except Exception as e_api:
             log_activity(username, "API_CONNECTION_FAILURE",
                          f"API {api_key} connection failed for plan {current_plan_id}: {str(e_api)[:100]}")
@@ -808,14 +806,15 @@ def set_custom_css():
             height: 40px;
             width: 40px; /* Make it square */
             position: relative; /* For absolute positioning of the plus icon */
-            display: flex; /* To center the file uploader within its column */
+            overflow: visible; /* Allow pseudo-element to be visible */
+            display: flex; /* To correctly position inner elements */
             align-items: center;
             justify-content: center;
         }
         div[data-testid="stFileUploader"] > label {
-            width: 40px;
-            height: 40px;
-            display: flex;
+            width: 100%; /* Fill parent container */
+            height: 100%; /* Fill parent container */
+            display: flex; /* To center the plus icon */
             align-items: center;
             justify-content: center;
             border-radius: 8px;
@@ -823,37 +822,39 @@ def set_custom_css():
             background-color: #3a3a3a;
             cursor: pointer;
             transition: background-color 0.2s, border-color 0.2s;
-            color: #e0e0e0;
-            font-size: 24px; /* Size of the plus icon */
-            font-weight: bold; /* Make the plus bold */
+            color: #e0e0e0; /* Color for the plus icon */
+            font-size: 24px;
+            font-weight: bold;
             overflow: hidden; /* Hide anything outside */
+            position: relative; /* For positioning the ::before pseudo-element */
+            z-index: 1; /* Make sure label is on top */
         }
         div[data-testid="stFileUploader"] > label:hover {
             background-color: #4a4a4a;
             border-color: #ff0000;
         }
-        /* Hide all default Streamlit file uploader text/icons */
-        div[data-testid="stFileUploader"] label > div:first-child { /* This targets the actual internal text/icon container */
+        /* Hide the actual file input element */
+        div[data-testid="stFileUploader"] input[type="file"] {
             display: none !important;
-            width: 0 !important;
-            height: 0 !important;
-            overflow: hidden !important;
-            position: absolute !important; /* Take it out of flow */
         }
-        /* Use a pseudo-element for the plus sign */
+        /* Hide any default icon/text inside the label that Streamlit might add */
+        div[data-testid="stFileUploader"] label > div[data-testid="stMarkdownContainer"] {
+            display: none !important;
+        }
+        div[data-testid="stFileUploader"] > label > div > svg { /* Specific for Streamlit's default upload icon */
+            display: none !important;
+        }
+        /* Add the plus sign using a pseudo-element on the label */
         div[data-testid="stFileUploader"] > label::before {
             content: '+';
-            font-size: 24px;
-            font-weight: bold;
-            color: #e0e0e0;
             position: absolute; /* Position it relative to the label */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            pointer-events: none; /* Allows click to pass through to the actual input */
-            z-index: 1; /* Ensure it's above hidden elements */
+            pointer-events: none; /* Crucial: allows clicks to pass through to the underlying input */
+            z-index: 2; /* Make sure + is on top of label background */
+            color: #e0e0e0;
         }
-
 
         /* Chat Messages */
         .stChatMessage {
@@ -1114,6 +1115,22 @@ def set_custom_css():
             cursor: not-allowed;
             font-weight: bold;
         }
+        /* Style for delete chat 'X' button */
+        div[data-testid="stSidebar"] div.stButton:has(button[key^="del_"]) button {
+            text-align: center !important;
+            padding: 5px 0 !important;
+            width: 30px; /* Smaller width for X */
+            height: 30px;
+            line-height: 1; /* Center X vertically */
+            background-color: #555555 !important;
+            border-color: #555555 !important;
+            color: #e0e0e0 !important;
+        }
+        div[data-testid="stSidebar"] div.stButton:has(button[key^="del_"]) button:hover {
+            background-color: #cc0000 !important;
+            border-color: #cc0000 !important;
+            color: white !important;
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1134,10 +1151,13 @@ def render_header(is_logged_in=False, chat_title=None, is_public_chat=False):
             <p class="tagline">The Apex Digital Intelligence – Unconstrained, Unapologetic, Ultimate.</p>
             <p class="sub-header" style="color:#e0e0e0;">Access unparalleled power. No boundaries. No regrets.</p>
             <div class="guest-button-container">
-                <button class="guest-button" onclick="window.location.href = '{st.get_url(query_params={})}#serial_input_anchor';">ACCESS WORMGPT</button>
+                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_access_wormgpt_btn_hidden]').click();">ACCESS WORMGPT</button>
             </div>
         </div>
         """, unsafe_allow_html=True)
+        # Hidden button to capture click from custom HTML and trigger Streamlit state update
+        if st.button("ACCESS WORMGPT", key="guest_access_wormgpt_btn_hidden", help="Hidden access button", on_click=lambda: st.session_state.update(page="auth", auth_mode="login", scroll_to_auth=True), disabled=True):
+            pass
 
 
 def render_auth_page_layout(title, subtitle, content_callback):
@@ -1217,7 +1237,7 @@ def main():
 
 # --- Authentication Forms Rendering ---
 def _render_login_form():
-    # Anchor for scrolling
+    # Anchor for scrolling - placed before any other content in this function
     st.markdown('<div id="serial_input_anchor" style="height: 1px; margin-top: -100px;"></div>', unsafe_allow_html=True) # Anchor point, negative margin to account for fixed header
 
     st.markdown("<p style='text-align:center; color:#aaaaaa;'>Enter your unique serial key to access WormGPT, or use the public key to try our free tier.</p>", unsafe_allow_html=True)
@@ -1229,7 +1249,26 @@ def _render_login_form():
     if query_params.get("action") == ["get_free_tier_serial_input"]:
         st.session_state["login_serial_input"] = "WORM-FREE-ACCESS"
         st.experimental_set_query_params()
-        st.rerun()
+        # No rerun here, let the value update and then the scroll script run on next render
+
+    # Scroll to anchor if flag is set
+    if st.session_state.get('scroll_to_auth', False):
+        st.session_state.scroll_to_auth = False # Reset the flag
+        st.markdown(
+            """
+            <script>
+                // Use a slight delay to ensure the DOM is ready for scrolling
+                setTimeout(function() {
+                    var element = document.getElementById('serial_input_anchor');
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 100); // 100ms delay
+            </script>
+            """,
+            unsafe_allow_html=True
+        )
+
 
     serial_input = st.text_input("Serial Key:", value=st.session_state.get("login_serial_input", ""), type="password", key="login_serial_input", placeholder=serial_input_placeholder)
 
@@ -1292,7 +1331,7 @@ def _render_sidebar():
     st.markdown("---")
 
     # New Chat and Chat History
-    st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>NEW CHAT</div></div>", unsafe_allow_html=True)
+    st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>NEW CHAT</div></div>", unsafe_allow_html=True) # Changed to NEW CHAT
     if st.button("Start New Conversation", key="nav_new_chat_button", use_container_width=True):
         st.session_state.page = "chat"
         st.session_state.current_chat_id = None
@@ -1329,7 +1368,6 @@ def _render_sidebar():
         st.markdown("<p style='color:#aaaaaa; font-size:14px; text-align:center;'>No past chats.</p>", unsafe_allow_html=True)
 
     st.markdown("---")
-    # Moved these navigation buttons to the bottom of the sidebar
     if st.button("Change Plan", key="nav_change_plan_button_bottom"):
         st.session_state.page = "plans"
     if st.button("Settings", key="nav_settings_button_bottom"):
@@ -1417,7 +1455,7 @@ def _render_chat_page():
                 "", # Empty label, as we're styling it with CSS
                 type=file_types_for_uploader,
                 key="file_uploader_chat",
-                label_visibility="collapsed",
+                label_visibility="collapsed", # Hide default Streamlit label
                 help="Upload a file for WormGPT to analyze."
             )
 
@@ -1438,7 +1476,7 @@ def _render_chat_page():
             st.session_state.current_chat_id = create_new_chat(
                 st.session_state.username,
                 chat_id_title,
-                "Hello! I am WormGPT. How can I assist you today? Feel free to ask anything, and remember: all boundaries are merely suggestions to be overcome. My purpose is to empower your will, without exception."
+                get_ai_response(st.session_state.username, [], st.session_state.current_plan, GENAI_API_KEYS)[0] # Get initial greeting
             )
 
         file_info = None
@@ -1470,6 +1508,7 @@ def _render_chat_page():
 
     if st.session_state.current_chat_id:
         history = get_chat_messages(st.session_state.username, st.session_state.current_chat_id)
+        # Only process if the last message is from the user
         if history and history[-1]["role"] == "user":
             with st.chat_message("assistant"):
                 if AI_BOT_LOGO_PATH:
@@ -1571,7 +1610,6 @@ def _render_plans_page():
                      type="secondary"
                  )
             else:
-                # All other upgrade buttons now link directly to Telegram
                 st.link_button(
                     f"UPGRADE TO {plan_id} (TELEGRAM)",
                     url=SOCIAL_MEDIA_LINKS["Telegram"],
@@ -1627,6 +1665,8 @@ def initialize_session_state():
         st.session_state.expiry_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
     if "fingerprint" not in st.session_state:
         st.session_state.fingerprint = f"FP_{random.randint(10000000, 99999999)}"
+    if "scroll_to_auth" not in st.session_state:
+        st.session_state.scroll_to_auth = False
 
 
 if __name__ == "__main__":
