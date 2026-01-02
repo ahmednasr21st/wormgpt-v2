@@ -1,4 +1,4 @@
-import streamlit as st
+  import streamlit as st
 import random
 from datetime import datetime, timedelta
 import time
@@ -10,10 +10,6 @@ import io
 import pypdf
 from docx import Document
 import google.generativeai as genai
-
-# Set Streamlit to a specific version in requirements.txt to avoid future breaking changes
-# For local testing, ensure your `pip install streamlit` is up to date or specific.
-# pip install streamlit==1.33.0 bcrypt pypdf python-docx google-generativeai
 
 # --- Configuration & File Paths ---
 SIMULATED_DELAY_SHORT = 0.3
@@ -188,14 +184,14 @@ def authenticate_user(serial_key=None, is_google_login=False):
                 "api_key": "SK-" + ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=32)),
                 "device_id": st.session_state.get("fingerprint", "N/A")
             }
-            save_json(USERS_FILE, users)
+            save_json(USERS_FILE, users) # Save new user data immediately
             log_activity(username_for_session, "SERIAL_ACTIVATION", f"New serial activated. Plan: {plan_id_from_serial}.")
-            return True, f"Serial '{serial_key}' activated successfully. Welcome!"
+            # No need for time.sleep here, the user_data will be reloaded below
 
-        else:
-            user_data = users[username_for_session]
-            if user_data["plan_id"] != plan_id_from_serial:
-                pass
+        # Retrieve user_data, whether newly created or existing
+        user_data = users.get(username_for_session)
+        if not user_data: # Should not happen if previous steps were successful
+            return False, "User data not found after initial authentication."
 
     elif is_google_login:
         username_for_session = "google_user_" + str(random.randint(1000, 9999))
@@ -217,10 +213,6 @@ def authenticate_user(serial_key=None, is_google_login=False):
 
     else:
         return False, "Authentication method not provided or invalid."
-
-    user_data = users.get(username_for_session)
-    if not user_data:
-        return False, "User data not found after initial authentication."
 
     expiry = datetime.strptime(user_data["expiry_date"], "%Y-%m-%d %H:%M:%S")
     if datetime.now() > expiry:
@@ -1114,6 +1106,13 @@ def set_custom_css():
             border-color: #cc0000 !important;
             color: white !important;
         }
+        /* Lock icon for paid plans in sidebar (Placeholder - not active yet) */
+        .plan-locked::after {
+            content: "🔒";
+            margin-left: 5px;
+            font-size: 14px;
+            color: #ff0000;
+        }
     </style>
     """, unsafe_allow_html=True)
 
@@ -1153,14 +1152,15 @@ def render_footer():
     social_links_html = ""
     # Ensure Telegram URL is valid
     telegram_url = SOCIAL_MEDIA_LINKS.get("Telegram", "https://t.me/default_chat_if_not_set")
-    if not telegram_url: # Fallback if for some reason it's an empty string
+    if not isinstance(telegram_url, str) or not telegram_url.strip(): # Fallback if for some reason it's not a string or empty
         telegram_url = "https://t.me/default_chat_if_not_set"
 
     for platform, link in SOCIAL_MEDIA_LINKS.items():
+        current_link = link
         if platform == "Telegram":
-            social_links_html += f'<a href="{telegram_url}" target="_blank">{platform}</a>'
-        else:
-            social_links_html += f'<a href="{link}" target="_blank">{platform}</a>'
+            current_link = telegram_url
+
+        social_links_html += f'<a href="{current_link}" target="_blank">{platform}</a>'
     st.markdown(social_links_html, unsafe_allow_html=True)
     st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1176,7 +1176,7 @@ def main():
         GENAI_API_KEYS = st.secrets["GENAI_KEYS"]
     else:
         st.error("🚨 GEMINI API keys not found in `.streamlit/secrets.toml`. Please configure them to enable AI functionality.", icon="🚨")
-        GENAI_API_KEYS = ["DUMMY_KEY_FOR_TESTING"] # Provide a dummy key to prevent immediate crash
+        GENAI_API_KEYS = ["DUMMY_KEY_FOR_TESTING"]
 
 
     # --- Authentication Flow ---
@@ -1192,7 +1192,8 @@ def main():
         st.session_state.access_level = user_data_from_db["level"]
         st.session_state.current_plan = user_data_from_db["plan_id"]
         st.session_state.user_api_key = user_data_from_db.get("api_key")
-        st.session_state.expiry_date = user_data_from_db["expiry_date"]
+        # Ensure expiry_date is always set from DB
+        st.session_state.expiry_date = user_data_from_db.get("expiry_date", (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"))
     else:
         st.error("User data not found for current session. Logging out.", icon="🚨")
         log_activity(st.session_state.username, "CRITICAL_ERROR", "User data missing during active session. Forced logout.")
@@ -1215,8 +1216,9 @@ def main():
         _render_settings_page()
     elif st.session_state.page == "plans":
         _render_plans_page()
-    elif st.session_state.page == "api_keys":
-        _render_api_keys_page()
+    # Removed separate API Keys page
+    # elif st.session_state.page == "api_keys":
+    #     _render_api_keys_page()
 
     render_footer()
 
@@ -1224,7 +1226,7 @@ def main():
 # --- Authentication Forms Rendering ---
 def _render_login_form():
     # Anchor for scrolling - placed before any other content in this function
-    st.markdown('<div id="serial_input_anchor" style="height: 1px; margin-top: -100px;"></div>', unsafe_allow_html=True) # Anchor point, negative margin to account for fixed header
+    st.markdown('<div id="serial_input_anchor" style="height: 1px; margin-top: -100px;"></div>', unsafe_allow_html=True)
 
     st.markdown("<p style='text-align:center; color:#aaaaaa;'>Enter your unique serial key to access WormGPT, or use the public key to try our free tier.</p>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align:center; color:#00ff00; font-weight:bold;'>Universal Free Key: <code>WORM-FREE-ACCESS</code></p>", unsafe_allow_html=True)
@@ -1235,7 +1237,8 @@ def _render_login_form():
     if query_params.get("action") == ["get_free_tier_serial_input"]:
         st.session_state["login_serial_input"] = "WORM-FREE-ACCESS"
         st.experimental_set_query_params()
-        # No rerun here, let the value update and then the scroll script run on next render
+        # Rerun is needed to apply the pre-filled value
+        st.rerun()
 
     # Scroll to anchor if flag is set (triggered from Plans page)
     if st.session_state.get('scroll_to_auth', False):
@@ -1307,32 +1310,10 @@ def _render_sidebar():
     st.markdown(f"<p style='color:#aaaaaa; font-size:12px; text-align:center;'>Plan: <span style='color:#e0e0e0;'>{st.session_state.current_plan}</span></p>", unsafe_allow_html=True)
     st.markdown(f"<p style='color:#aaaaaa; font-size:12px; text-align:center;'>Access: <span style='color:#e0e0e0;'>{st.session_state.access_level}</span></p>", unsafe_allow_html=True)
 
-    # Removed Expiry Date as requested
-    # expiry_dt = datetime.strptime(st.session_state.expiry_date, "%Y-%m-%d %H:%M:%S")
-    # if expiry_dt > datetime.now():
-    #     days_left = (expiry_dt - datetime.now()).days
-    #     st.markdown(f"<p style='color:#00ff00; font-size:12px; text-align:center;'>Expiry: {expiry_dt.strftime('%Y-%m-%d')} ({days_left} days left)</p>", unsafe_allow_html=True)
-    # else:
-    #     st.markdown(f"<p style='color:#ff0000; font-size:12px; text-align:center;'>Expiry: Expired. Please renew your plan.</p>", unsafe_allow_html=True)
-
     st.markdown("---")
 
-    # Navigation buttons: Settings, Change Plan, API Keys - moved to TOP of this section as per request
-    if st.button("Settings", key="nav_settings_button_top"):
-        st.session_state.page = "settings"
-        st.rerun()
-    if st.button("Change Plan", key="nav_change_plan_button_top"):
-        st.session_state.page = "plans"
-        st.rerun()
-    if st.button("API Keys", key="nav_api_button_top"):
-        st.session_state.page = "api_keys"
-        st.rerun()
-
-    st.markdown("---")
-
-
-    # New Chat and Chat History - now below settings/plans/api keys
-    st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>NEW CHAT</div></div>", unsafe_allow_html=True) # Changed to NEW CHAT
+    # New Chat section at the top of interactive sidebar content
+    st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>NEW CHAT</div></div>", unsafe_allow_html=True)
     if st.button("Start New Conversation", key="nav_new_chat_button", use_container_width=True):
         st.session_state.page = "chat"
         st.session_state.current_chat_id = None
@@ -1370,7 +1351,14 @@ def _render_sidebar():
 
     st.markdown("---")
 
-    # Logout button at the very bottom
+    # Navigation buttons: Settings, Change Plan, Logout - moved to BOTTOM of sidebar
+    if st.button("Settings", key="nav_settings_button_bottom"):
+        st.session_state.page = "settings"
+        st.rerun()
+    if st.button("Change Plan", key="nav_change_plan_button_bottom"):
+        st.session_state.page = "plans"
+        st.rerun()
+
     if st.button("Logout", use_container_width=True, key="logout_button_sidebar"):
         _logout_user()
 
@@ -1446,10 +1434,10 @@ def _render_chat_page():
 
         with input_cols[0]:
             uploaded_file = st.file_uploader(
-                "", # Empty label, as we're styling it with CSS
+                "",
                 type=file_types_for_uploader,
                 key="file_uploader_chat",
-                label_visibility="collapsed", # Hide default Streamlit label
+                label_visibility="collapsed",
                 help="Upload a file for WormGPT to analyze."
             )
 
@@ -1467,6 +1455,7 @@ def _render_chat_page():
             elif not chat_id_title:
                 chat_id_title = f"New Chat {datetime.now().strftime('%H%M%S')}"
 
+            # Get an initial greeting for new chat
             initial_greeting_message, _ = get_ai_response(st.session_state.username, [], st.session_state.current_plan, GENAI_API_KEYS)
             st.session_state.current_chat_id = create_new_chat(
                 st.session_state.username,
@@ -1530,7 +1519,7 @@ def _render_chat_page():
 def _render_settings_page():
     st.markdown("## ⚙️ Profile & Settings")
     st.markdown("---")
-    st.write("Manage your WormGPT account details.")
+    st.write("Manage your WormGPT account details and API keys.")
 
     user_data = get_user_data(st.session_state.username)
 
@@ -1540,7 +1529,7 @@ def _render_settings_page():
         st.write(f"**Current Plan:** `{st.session_state.current_plan}`")
         st.write(f"**Access Level:** `{st.session_state.access_level}`")
         st.write(f"**Activation Date:** `{user_data.get('activation_date', 'N/A')}`")
-        # Expiry date removed from here as well for consistency
+        # Expiry date removed as requested
         # st.write(f"**Expiry Date:** `{user_data.get('expiry_date', 'N/A')}`")
         st.write(f"**Device Fingerprint (Initial):** `{user_data.get('device_id', 'N/A')}`")
 
@@ -1548,6 +1537,22 @@ def _render_settings_page():
         st.subheader("Change Password:")
         st.info("Password changes are not available for serial key-based accounts. Your serial key acts as your primary access credential. For Google accounts, manage password directly via Google.", icon="ℹ️")
 
+        st.markdown("---")
+        st.subheader("🔑 Your WormGPT API Key:") # API Keys moved into Settings
+        if st.session_state.access_level in ["Standard User", "Elite User", "Overlord"]:
+            api_key_to_display = st.session_state.user_api_key or "N/A"
+            st.code(api_key_to_display)
+            st.info("This is a simulated API key. In a real system, you would manage active keys and permissions here.")
+
+            if st.button("🔄 Regenerate API Key", key="regenerate_api_key_button_settings"):
+                success, new_api_key = regenerate_user_api_key(st.session_state.username)
+                if success:
+                    st.success("✅ New API key generated!")
+                else:
+                    st.error(f"❌ Failed to regenerate key: {new_api_key}")
+                st.rerun()
+        else:
+            st.warning("🔒 API key management is available for Standard User plans and above. Upgrade your plan to access this feature.")
 
     st.markdown("---")
     st.subheader("Your Activity Log (Last 10 entries):")
@@ -1566,13 +1571,13 @@ def _render_plans_page():
 
     # Ensure Telegram URL is valid for this global button
     telegram_url = SOCIAL_MEDIA_LINKS.get("Telegram", "https://t.me/default_chat_if_not_set")
-    if not telegram_url: # Fallback if for some reason it's an empty string
+    if not isinstance(telegram_url, str) or not telegram_url.strip(): # Fallback if for some reason it's not a string or empty
         telegram_url = "https://t.me/default_chat_if_not_set"
 
     st.markdown("<div style='text-align:center; margin-bottom: 30px;'>", unsafe_allow_html=True)
     st.link_button(
         "CONTACT US TO CHANGE PLAN VIA TELEGRAM",
-        url=telegram_url,
+        url=telegram_url, # Use the checked Telegram URL
         help="Click to open our Telegram chat for plan inquiries and upgrades.",
         type="primary",
         use_container_width=True,
@@ -1619,27 +1624,8 @@ def _render_plans_page():
                 )
 
 
-def _render_api_keys_page():
-    st.markdown("## 🔑 Manage Your API Keys")
-    st.markdown("---")
+# Removed _render_api_keys_page as it's now integrated into _render_settings_page.
 
-    if st.session_state.access_level in ["Standard User", "Elite User", "Overlord"]:
-        st.write("Generate and manage API keys to integrate WormGPT with your applications.")
-
-        st.subheader("Your WormGPT API Key:")
-        api_key_to_display = st.session_state.user_api_key or "N/A"
-        st.code(api_key_to_display)
-        st.info("This is a simulated API key. In a real system, you would manage active keys and permissions here.")
-
-        if st.button("🔄 Regenerate API Key", key="regenerate_api_key_button"):
-            success, new_api_key = regenerate_user_api_key(st.session_state.username)
-            if success:
-                st.success("✅ New API key generated!")
-            else:
-                st.error(f"❌ Failed to regenerate key: {new_api_key}")
-            st.rerun()
-    else:
-        st.warning("🔒 API key management is available for Standard User plans and above. Upgrade your plan to access this feature.")
 
 # Initialize session state (if not already done)
 def initialize_session_state():
@@ -1661,6 +1647,7 @@ def initialize_session_state():
         st.session_state.auth_mode = "login"
     if "user_api_key" not in st.session_state:
         st.session_state.user_api_key = None
+    # Ensure expiry_date is always a valid format or default to expired
     if "expiry_date" not in st.session_state:
         st.session_state.expiry_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
     if "fingerprint" not in st.session_state:
