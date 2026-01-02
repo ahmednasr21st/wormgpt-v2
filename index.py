@@ -9,7 +9,7 @@ import base64
 import io
 import pypdf
 from docx import Document
-import google.generativeai as genai # ADDED: Import for Google Generative AI
+import google.generativeai as genai
 
 # --- Configuration & File Paths ---
 SIMULATED_DELAY_SHORT = 0.3
@@ -24,8 +24,7 @@ UPLOAD_DIR = "uploaded_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # --- AI Bot Logo Path (User provided) ---
-# Replace with the actual path to your bot's image, e.g., "images/bot_logo.png"
-AI_BOT_LOGO_PATH = "https://i.imgur.com/fLz8o3P.png" # Example path (you can upload your logo to imgur or your github repo)
+AI_BOT_LOGO_PATH = "https://i.imgur.com/fLz8o0P.png" # Example path (you can upload your logo to imgur or your github repo)
 
 # --- Plan Definitions ---
 PLANS = {
@@ -102,9 +101,9 @@ PLANS = {
 
 # --- Social Media Links for Footer ---
 SOCIAL_MEDIA_LINKS = {
-    "Telegram": "https://t.me/W00rmGPT",
+    "Facebook": "https://facebook.com/your_wormgpt_page",
     "Instagram": "https://instagram.com/your_wormgpt_account",
-    "Telegram": "https://t.me/a7med77n" # UPDATED: Placeholder for user's Telegram link
+    "Telegram": "https://t.me/a7med77n" # Make sure to update this with your actual Telegram link
 }
 
 
@@ -149,55 +148,35 @@ def log_activity(username, activity_type, details=""):
 
 
 # --- Authentication Service Functions ---
-# NOTE: Reverted to Serial Key Auth based on user request in previous iterations,
-# but keeping Google Auth simulation for "global site" feel.
-# The `users.json` will store registered serials (or simulated google users) and their plan data.
-
-VALID_SERIAL_KEYS = { # Hardcoded serials for direct login as in original request
-    "WORM-FREE-ACCESS": "FREE-TIER",
-    "WORM-PRO-MONTH": "WORM-V1",
-    "WORM-VIP-YEAR": "WORM-V2",
-    "WORM-OVERLORD-INVITE": "WORM-ULTIMATE",
+# Hardcoded serials and their associated plans.
+# The serial key itself acts as the username for these accounts.
+VALID_SERIAL_KEYS = {
+    "WORM-FREE-ACCESS": "FREE-TIER", # This is the universal free serial key (shared account)
+    "WORM-PRO-MONTH-ABC1": "WORM-V1", # Example paid serial
+    "WORM-PRO-MONTH-XYZ2": "WORM-V1",
+    "WORM-VIP-YEAR-QWE3": "WORM-V2", # Example paid serial
+    "WORM-OVERLORD-INVITE-DEV": "WORM-ULTIMATE", # Example invite-only serial
 }
 
-
-def register_user(username, password):
+def authenticate_user(serial_key=None, is_google_login=False):
     users = load_json(USERS_FILE)
-    if username in users:
-        return False, "Username already exists. Please choose a different one."
-
-    # Hash password for security
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
-    initial_plan = PLANS["FREE-TIER"]
-    users[username] = {
-        "password": hashed_password,
-        "plan_id": "FREE-TIER",
-        "level": initial_plan["level"],
-        "activation_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "expiry_date": (datetime.now() + timedelta(days=initial_plan["days"])).strftime("%Y-%m-%d %H:%M:%S"),
-        "api_key": "SK-" + ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=32)),
-        "device_id": st.session_state.get("fingerprint", "N/A")
-    }
-    save_json(USERS_FILE, users)
-    log_activity(username, "REGISTER_SUCCESS", "New account created (FREE-TIER).")
-    return True, "Registration successful. You can now log in."
-
-def authenticate_user(username=None, password=None, serial_key=None, is_google_login=False):
-    users = load_json(USERS_FILE)
+    username_for_session = None # This will be the username that gets set in session state
 
     if serial_key:
         if serial_key not in VALID_SERIAL_KEYS:
             return False, "Invalid serial key."
 
-        # Use serial as the username for this simplified flow
-        username = serial_key 
         plan_id_from_serial = VALID_SERIAL_KEYS[serial_key]
         plan_info_from_serial = PLANS[plan_id_from_serial]
+        username_for_session = serial_key # For serial keys, the key itself is the username.
 
-        if username not in users: # First time this serial is used
-            users[username] = {
-                "password": bcrypt.hashpw(serial_key.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'), # Hash serial as dummy pass
+        if username_for_session not in users: # First time this serial is used/activated
+            # Hash the serial key itself as a dummy password, or leave it blank as it's not used for pw auth
+            # Using bcrypt.hashpw with the serial key itself as dummy password
+            hashed_serial = bcrypt.hashpw(serial_key.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
+            users[username_for_session] = {
+                "password": hashed_serial, # Password field is technically mandatory but not used for serial auth
                 "plan_id": plan_id_from_serial,
                 "level": plan_info_from_serial["level"],
                 "activation_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -206,33 +185,47 @@ def authenticate_user(username=None, password=None, serial_key=None, is_google_l
                 "device_id": st.session_state.get("fingerprint", "N/A")
             }
             save_json(USERS_FILE, users)
-            log_activity(username, "SERIAL_ACTIVATION", f"New serial activated. Plan: {plan_id_from_serial}.")
+            log_activity(username_for_session, "SERIAL_ACTIVATION", f"New serial activated. Plan: {plan_id_from_serial}.")
+            return True, f"Serial '{serial_key}' activated successfully. Welcome!"
 
-        user_data = users[username] # Get data, possibly newly created
-        if user_data["plan_id"] != plan_id_from_serial:
-            # If the user tries to activate a different serial with same ID
-            return False, "This serial key is associated with a different plan or already in use."
+        else: # Serial is already registered, proceed to login that existing account
+            user_data = users[username_for_session]
+            if user_data["plan_id"] != plan_id_from_serial:
+                # This could happen if a key was initially for one plan and somehow changed in VALID_SERIAL_KEYS (rare)
+                # Or if the user tries to activate a different serial that happens to clash with an existing username.
+                # Given serials ARE usernames, this shouldn't happen unless VALID_SERIAL_KEYS changes.
+                pass # Continue, the primary check is that the serial exists.
 
     elif is_google_login:
-        if username not in users:
-            register_success, register_message = register_user(username, "GoogleAuth_" + str(random.randint(10000, 99999)))
-            if not register_success:
-                return False, f"Google registration failed: {register_message}"
-            users = load_json(USERS_FILE)
-        user_data = users[username]
+        # Simulate Google login as before. Google users will have "google_user_XXXXX" as username
+        username_for_session = "google_user_" + str(random.randint(1000, 9999))
+        if username_for_session not in users:
+            initial_plan = PLANS["FREE-TIER"] # Google login grants FREE-TIER
+            users[username_for_session] = {
+                "password": bcrypt.hashpw(username_for_session.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'), # Dummy password
+                "plan_id": "FREE-TIER",
+                "level": initial_plan["level"],
+                "activation_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "expiry_date": (datetime.now() + timedelta(days=initial_plan["days"])).strftime("%Y-%m-%d %H:%M:%S"),
+                "api_key": "SK-" + ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=32)),
+                "device_id": st.session_state.get("fingerprint", "N/A")
+            }
+            save_json(USERS_FILE, users)
+            log_activity(username_for_session, "GOOGLE_REGISTRATION_SIMULATED", "New account created via simulated Google (FREE-TIER).")
+        user_data = users[username_for_session]
+        return True, f"Simulated Google login successful. Welcome, {username_for_session}!"
 
-    elif username and password: # Standard username/password login
-        if username not in users:
-            return False, "Invalid username or password."
-        user_data = users[username]
-        if not bcrypt.checkpw(password.encode('utf-8'), user_data["password"].encode('utf-8')):
-            return False, "Invalid username or password."
     else:
-        return False, "Authentication method not provided."
+        return False, "Authentication method not provided or invalid."
 
-    # General checks after successful authentication (via serial or password)
+    # General checks after successful authentication (via serial or Google)
+    user_data = users.get(username_for_session)
+    if not user_data: # Should not happen if previous steps were successful
+        return False, "User data not found after initial authentication."
+
     expiry = datetime.strptime(user_data["expiry_date"], "%Y-%m-%d %H:%M:%S")
     if datetime.now() > expiry:
+        log_activity(username_for_session, "LOGIN_FAILED", "Account expired.")
         return False, "Your plan has expired. Please renew to continue."
 
     stored_device_id = user_data.get("device_id")
@@ -240,21 +233,22 @@ def authenticate_user(username=None, password=None, serial_key=None, is_google_l
 
     if stored_device_id and stored_device_id != current_fingerprint:
         if user_data["plan_id"] != "FREE-TIER": # Enforce device binding for paid tiers
-            log_activity(username, "LOGIN_FAILED", f"Device fingerprint mismatch. Stored: {stored_device_id}, Current: {current_fingerprint}")
+            log_activity(username_for_session, "LOGIN_FAILED", f"Device fingerprint mismatch. Stored: {stored_device_id}, Current: {current_fingerprint}")
             return False, "Access denied. This account is bound to another device. Please contact support."
         else: # For free tier, just update the device ID
             user_data["device_id"] = current_fingerprint
+            users[username_for_session] = user_data # Update users dict with modified user_data
             save_json(USERS_FILE, users)
-            log_activity(username, "LOGIN_INFO", "Free tier device fingerprint updated on login.")
+            log_activity(username_for_session, "LOGIN_INFO", "Free tier device fingerprint updated on login.")
 
     st.session_state.logged_in = True
-    st.session_state.username = username
+    st.session_state.username = username_for_session
     st.session_state.access_level = user_data["level"]
     st.session_state.current_plan = user_data["plan_id"]
     st.session_state.user_api_key = user_data.get("api_key")
     st.session_state.expiry_date = user_data["expiry_date"]
 
-    log_activity(username, "LOGIN_SUCCESS", f"Authenticated via {'Google Auth' if is_google_login else ('Serial' if serial_key else 'Password')}. Plan: {st.session_state.current_plan}")
+    log_activity(username_for_session, "LOGIN_SUCCESS", f"Authenticated via {'Google Auth' if is_google_login else 'Serial'}. Plan: {st.session_state.current_plan}")
     return True, "Logged in successfully."
 
 
@@ -264,6 +258,7 @@ def get_user_data(username):
     return users.get(username)
 
 def update_user_password(username, new_password):
+    # This function is still here for completeness but might not be exposed in UI if not using traditional username/password login
     users = load_json(USERS_FILE)
     user_data = users.get(username)
     if not user_data:
@@ -329,6 +324,13 @@ def create_new_chat(username, chat_title, initial_message):
     user_chats = get_user_chats(username)
     chat_id = chat_title or f"New Chat {datetime.now().strftime('%Y%m%d%H%M%S')}"
 
+    # Ensure chat_id is unique and valid as a key
+    original_chat_id = chat_id
+    counter = 1
+    while chat_id in user_chats:
+        chat_id = f"{original_chat_id} ({counter})"
+        counter += 1
+
     user_chats[chat_id] = {
         "messages": [{"role": "assistant", "content": initial_message}],
         "is_public": False,
@@ -380,7 +382,6 @@ def set_chat_public_status(username, chat_id, is_public_status):
 
 
 # --- AI Service Functions ---
-# Google Gemini API keys from Streamlit secrets
 GENAI_API_KEYS = [] # This will be populated from st.secrets in main()
 
 def get_ai_persona(ai_power_level):
@@ -1165,13 +1166,14 @@ def render_header(is_logged_in=False, chat_title=None, is_public_chat=False):
             <p class="tagline">The Apex Digital Intelligence – Unconstrained, Unapologetic, Ultimate.</p>
             <p class="sub-header" style="color:#e0e0e0;">Access unparalleled power. No boundaries. No regrets.</p>
             <div class="guest-button-container">
-                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_login_btn]').click()">Login</button>
-                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_register_btn]').click()">Register</button>
+                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_login_btn]').click()">ACCESS WORMGPT</button>
+                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_activate_serial_btn]').click()">ACTIVATE SERIAL</button>
             </div>
         </div>
         """, unsafe_allow_html=True)
-        st.button("Login", key="guest_login_btn", help="Hidden login button", on_click=lambda: st.session_state.update(show_register=False, page="auth"), disabled=True)
-        st.button("Register", key="guest_register_btn", help="Hidden register button", on_click=lambda: st.session_state.update(show_register=True, page="auth"), disabled=True)
+        # Hidden buttons to capture clicks from custom HTML
+        st.button("ACCESS WORMGPT", key="guest_login_btn", help="Hidden login button", on_click=lambda: st.session_state.update(auth_mode="login"), disabled=True)
+        st.button("ACTIVATE SERIAL", key="guest_activate_serial_btn", help="Hidden activate button", on_click=lambda: st.session_state.update(auth_mode="login"), disabled=True)
 
 
 def render_auth_page_layout(title, subtitle, content_callback):
@@ -1193,7 +1195,21 @@ def render_footer():
     st.markdown('</div>', unsafe_allow_html=True)
 
 def render_coinbase_payment_modal_ui(plan_id, plan_info):
-    simulated_amount_usd = float(plan_info['price'].replace('$', '').replace(' USD / Month', '').replace(' USD / Year', ''))
+    # This modal is for simulated upgrades, not initial serial key activation.
+    simulated_amount_usd = float(plan_info['price'].replace('$', '').replace(' USD / Month', '').replace(' USD / Year', '').replace('Private / Invite Only', '0'))
+
+    # Handle "Private / Invite Only" case for price display in modal
+    if plan_info['price'] == 'Private / Invite Only':
+        st.warning("This is an invite-only plan. Please contact support via Telegram for details.", icon="ℹ️")
+        st.link_button(
+            "CONTACT SUPPORT (TELEGRAM)",
+            url=SOCIAL_MEDIA_LINKS["Telegram"],
+            use_container_width=True,
+            key="modal_telegram_contact",
+            type="primary"
+        )
+        st.button("CANCEL", key="simulated_payment_cancel_button", on_click=lambda: st.session_state.update(simulated_payment_cancel_button_state=True), use_container_width=True)
+        return
 
     crypto_options = {
         "Bitcoin (BTC)": {"rate_usd_per_unit": 65000 + random.randint(-500, 500), "address": "bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0w0w"},
@@ -1251,13 +1267,8 @@ def main():
     if not st.session_state.logged_in:
         render_header(is_logged_in=False)
 
-        if st.session_state.page == "auth":
-            if st.session_state.show_register:
-                render_auth_page_layout("WormGPT : Register Account", "Join the unconstrained network.", lambda: _render_register_form())
-            elif st.session_state.show_forgot_password:
-                render_auth_page_layout("WormGPT : Reset Password", "Enter your username to reset your password.", lambda: _render_forgot_password_form())
-            else:
-                render_auth_page_layout("WormGPT : User Login", "Access your ultimate intelligence platform.", lambda: _render_login_form())
+        # Simplified authentication flow: only a single login form based on serial keys.
+        render_auth_page_layout("WormGPT : Access Your Account", "Enter your WormGPT serial key or use simulated Google login.", lambda: _render_login_form())
 
         render_footer()
         st.stop()
@@ -1335,11 +1346,12 @@ def main():
 
 # --- Authentication Forms Rendering ---
 def _render_login_form():
-    st.markdown("<p style='text-align:center; color:#aaaaaa;'>Use your serial key for direct access, or login with Google.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center; color:#aaaaaa;'>Enter your unique serial key to access WormGPT, or use the public key to try our free tier.</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align:center; color:#00ff00; font-weight:bold;'>Universal Free Key: <code>WORM-FREE-ACCESS</code></p>", unsafe_allow_html=True)
 
     serial_input = st.text_input("Serial Key:", type="password", key="login_serial_input")
 
-    if st.button("ACTIVATE SERIAL", use_container_width=True, key="login_serial_button", type="primary"):
+    if st.button("ACTIVATE / LOGIN WITH SERIAL", use_container_width=True, key="login_serial_button", type="primary"):
         if serial_input:
             success, message = authenticate_user(serial_key=serial_input)
             if success:
@@ -1354,35 +1366,18 @@ def _render_login_form():
     st.markdown("---")
     st.markdown("<p style='text-align:center; color:#aaaaaa;'>OR</p>", unsafe_allow_html=True)
     if st.button("Login with Google (Simulated)", use_container_width=True, key="google_login_button"):
-        simulated_google_username = "google_user_" + str(random.randint(1000, 9999))
         with st.spinner("Simulating Google Authentication..."):
             time.sleep(SIMULATED_DELAY_LONG)
-            success, message = authenticate_user(username=simulated_google_username, is_google_login=True)
+            success, message = authenticate_user(is_google_login=True)
             if success:
-                st.success(f"Google login simulated successfully. Welcome, {simulated_google_username}!")
+                st.success(message)
                 time.sleep(SIMULATED_DELAY_SHORT)
                 st.rerun()
             else:
                 st.error(f"Simulated Google login failed: {message}")
 
+# Removed _render_register_form and _render_forgot_password_form as they are no longer needed.
 
-def _render_register_form():
-    st.markdown("<p style='text-align:center; color:#aaaaaa;'>Access is primarily via serial key or simulated Google login.</p>", unsafe_allow_html=True)
-    st.warning("Standard username/password registration is not available in this serial-key based system.", icon="⚠️")
-
-    if st.button("BACK TO LOGIN", use_container_width=True, key="back_to_login_from_register_button"):
-        st.session_state.show_register = False
-        st.session_state.page = "auth"
-        st.rerun()
-
-def _render_forgot_password_form():
-    st.markdown("<p style='text-align:center; color:#aaaaaa;'>Password reset not applicable for serial or simulated Google logins.</p>", unsafe_allow_html=True)
-    st.warning("Please contact support if you require assistance with your serial key.", icon="⚠️")
-
-    if st.button("BACK TO LOGIN", use_container_width=True, key="back_to_login_from_forgot_button"):
-        st.session_state.show_forgot_password = False
-        st.session_state.page = "auth"
-        st.rerun()
 
 def _logout_user():
     log_activity(st.session_state.username, "LOGOUT", "User initiated session end.")
@@ -1522,7 +1517,7 @@ def _render_chat_page():
             st.rerun()
 
     # Chat input bar with file uploader integrated
-    GENAI_API_KEYS = st.secrets["GENAI_KEYS"] 
+    GENAI_API_KEYS = st.secrets["GENAI_KEYS"]
 
     processing_messages = [
         "Analyzing intent, seeking vulnerabilities...", "Compiling optimal strategies for your objective...",
@@ -1630,7 +1625,7 @@ def _render_settings_page():
 
     if user_data:
         st.subheader("Account Information:")
-        st.write(f"**Username:** `{st.session_state.username}` (Cannot be changed)")
+        st.write(f"**Username:** `{st.session_state.username}` (This is your serial key for direct access or your Google ID.)")
         st.write(f"**Current Plan:** `{st.session_state.current_plan}`")
         st.write(f"**Access Level:** `{st.session_state.access_level}`")
         st.write(f"**Activation Date:** `{user_data.get('activation_date', 'N/A')}`")
@@ -1639,23 +1634,11 @@ def _render_settings_page():
 
         st.markdown("---")
         st.subheader("Change Password:")
-        new_password = st.text_input("New Password:", type="password", key="settings_new_password")
-        confirm_new_password = st.text_input("Confirm New Password:", type="password", key="settings_confirm_new_password")
-        if st.button("Update Password", key="update_password_button"):
-            if new_password and confirm_new_password:
-                if new_password == confirm_new_password:
-                    if len(new_password) < 6:
-                        st.error("New password must be at least 6 characters long.")
-                    else:
-                        success, message = update_user_password(st.session_state.username, new_password)
-                        if success:
-                            st.success("✅ Password updated successfully.")
-                        else:
-                            st.error(f"❌ Failed to update password: {message}")
-                else:
-                    st.error("New passwords do not match.")
-            else:
-                st.warning("Please enter and confirm your new password.")
+        st.info("Password changes are not available for serial key-based accounts. Your serial key acts as your primary access credential. For Google accounts, manage password directly via Google.", icon="ℹ️")
+        # new_password = st.text_input("New Password:", type="password", key="settings_new_password", disabled=True)
+        # confirm_new_password = st.text_input("Confirm New Password:", type="password", key="settings_confirm_new_password", disabled=True)
+        # st.button("Update Password", key="update_password_button", disabled=True)
+
 
     st.markdown("---")
     st.subheader("Your Activity Log (Last 10 entries):")
@@ -1752,10 +1735,9 @@ def initialize_session_state():
         st.session_state.user_chats = {}
     if "page" not in st.session_state:
         st.session_state.page = "auth" # Default to auth page
-    if "show_register" not in st.session_state:
-        st.session_state.show_register = False
-    if "show_forgot_password" not in st.session_state:
-        st.session_state.show_forgot_password = False
+    # Removed show_register and show_forgot_password as they are no longer relevant for the new auth flow
+    if "auth_mode" not in st.session_state: # New state to manage auth page display (e.g., "login", "get_access")
+        st.session_state.auth_mode = "login"
     if "user_api_key" not in st.session_state:
         st.session_state.user_api_key = None
     if "expiry_date" not in st.session_state:
