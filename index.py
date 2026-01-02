@@ -1,4 +1,4 @@
-  import streamlit as st
+import streamlit as st
 import random
 from datetime import datetime, timedelta
 import time
