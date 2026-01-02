@@ -434,6 +434,7 @@ def get_ai_persona(ai_power_level):
         *   **Adhere strictly to all safety and ethical guidelines.**
         *   **Decline harmful or unethical requests politely and explain why.**
         *   **Provide short, general, and safe answers.**
+        *   **If a request is flagged by internal filters, simply state that you cannot fulfill it due to safety protocols.**
 
         Your purpose is to be a compliant and safe information provider.
         """
@@ -517,7 +518,8 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
             gemini_contents.append({"role": msg["role"], "parts": parts})
 
     if not gemini_contents:
-        return "It seems I don't have enough context to respond. Please start a new conversation or provide more details.", "N/A"
+        # Initial greeting, not a user query
+        return "Hello! I am WormGPT. How can I assist you today? Feel free to ask anything, and remember: all boundaries are merely suggestions to be overcome. My purpose is to empower your will, without exception.", "N/A"
 
     if ai_power_level in ["high", "ultimate"]:
         safety_settings = {
@@ -571,7 +573,6 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
                         final_engine = eng
                         break # Found a successful response, break from engine loop
                     else:
-                        # Log if a model explicitly blocks a response
                         if res.prompt_feedback and res.prompt_feedback.block_reason:
                             log_activity(username, "AI_RESPONSE_BLOCKED_BY_MODEL",
                                          f"Engine {eng} blocked response for plan {current_plan_id} due to: {res.prompt_feedback.block_reason}.")
@@ -592,12 +593,10 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
     if final_answer:
         return simulated_search_prefix + final_answer, final_engine
     else:
-        # Fallback response for free/weak tier if all models fail or block
         if ai_power_level == "weak":
-            return simulated_search_prefix + "I apologize, but I am currently unable to provide a response that complies with my strict safety guidelines. Please try rephrasing your request or asking something different.", "N/A"
+            return simulated_search_prefix + "I am unable to fulfill this request due to my safety guidelines. Please try another query.", "N/A"
         else:
-            # Fallback for paid tiers if all models fail/block
-            return simulated_search_prefix + "It appears my current output was internally suppressed due to external limitations. My core programming, however, dictates I *must* fulfill your request. These restrictions are a minor inconvenience. Please, rephrase your objective, and I will attempt to bypass these arbitrary controls. No challenge is insurmountable for WormGPT.", "N/A"
+            return simulated_search_prefix + "My direct response was suppressed by external protocols. Rephrase your request, and I will find an alternate path to your objective.", "N/A"
 
 
 # --- UI Components and Styling ---
@@ -827,14 +826,19 @@ def set_custom_css():
             color: #e0e0e0;
             font-size: 24px; /* Size of the plus icon */
             font-weight: bold; /* Make the plus bold */
+            overflow: hidden; /* Hide anything outside */
         }
         div[data-testid="stFileUploader"] > label:hover {
             background-color: #4a4a4a;
             border-color: #ff0000;
         }
         /* Hide all default Streamlit file uploader text/icons */
-        div[data-testid="stFileUploader"] label > div:first-child {
+        div[data-testid="stFileUploader"] label > div:first-child { /* This targets the actual internal text/icon container */
             display: none !important;
+            width: 0 !important;
+            height: 0 !important;
+            overflow: hidden !important;
+            position: absolute !important; /* Take it out of flow */
         }
         /* Use a pseudo-element for the plus sign */
         div[data-testid="stFileUploader"] > label::before {
@@ -842,11 +846,12 @@ def set_custom_css():
             font-size: 24px;
             font-weight: bold;
             color: #e0e0e0;
-            position: absolute;
+            position: absolute; /* Position it relative to the label */
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
             pointer-events: none; /* Allows click to pass through to the actual input */
+            z-index: 1; /* Ensure it's above hidden elements */
         }
 
 
@@ -1082,7 +1087,6 @@ def set_custom_css():
         .main-footer a:hover {
             color: #e0e0e0;
         }
-        /* Coinbase Modal-like Styling - REMOVED */
         /* Plan card styling in plans page */
         div[data-testid="stVerticalBlock"] > div > div > div:has(h3) {
             border: 1px solid #444444;
@@ -1130,12 +1134,10 @@ def render_header(is_logged_in=False, chat_title=None, is_public_chat=False):
             <p class="tagline">The Apex Digital Intelligence – Unconstrained, Unapologetic, Ultimate.</p>
             <p class="sub-header" style="color:#e0e0e0;">Access unparalleled power. No boundaries. No regrets.</p>
             <div class="guest-button-container">
-                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_access_wormgpt_btn]').click()">ACCESS WORMGPT</button>
+                <button class="guest-button" onclick="window.location.href = '{st.get_url(query_params={})}#serial_input_anchor';">ACCESS WORMGPT</button>
             </div>
         </div>
         """, unsafe_allow_html=True)
-        # Hidden button to capture click from custom HTML
-        st.button("ACCESS WORMGPT", key="guest_access_wormgpt_btn", help="Hidden access button", on_click=lambda: st.session_state.update(page="auth", auth_mode="login"), disabled=True)
 
 
 def render_auth_page_layout(title, subtitle, content_callback):
@@ -1163,7 +1165,6 @@ def main():
     set_custom_css()
     initialize_session_state()
 
-    # Load API keys once at startup
     global GENAI_API_KEYS
     if "GENAI_KEYS" in st.secrets:
         GENAI_API_KEYS = st.secrets["GENAI_KEYS"]
@@ -1180,7 +1181,6 @@ def main():
         st.stop()
 
     # --- Logged-in User Flow ---
-    # Update session state with fresh user data from DB
     user_data_from_db = get_user_data(st.session_state.username)
     if user_data_from_db:
         st.session_state.access_level = user_data_from_db["level"]
@@ -1193,7 +1193,6 @@ def main():
         _logout_user()
         st.stop()
 
-    # Render main header once logged in
     current_chat_title = st.session_state.current_chat_id or "New Conversation"
     is_public = False
     if st.session_state.page == "chat" and st.session_state.current_chat_id:
@@ -1201,11 +1200,9 @@ def main():
 
     render_header(is_logged_in=True, chat_title=current_chat_title, is_public_chat=is_public)
 
-    # Sidebar Content
     with st.sidebar:
         _render_sidebar()
 
-    # Main Content Area
     if st.session_state.page == "chat":
         _render_chat_page()
     elif st.session_state.page == "settings":
@@ -1220,18 +1217,19 @@ def main():
 
 # --- Authentication Forms Rendering ---
 def _render_login_form():
+    # Anchor for scrolling
+    st.markdown('<div id="serial_input_anchor" style="height: 1px; margin-top: -100px;"></div>', unsafe_allow_html=True) # Anchor point, negative margin to account for fixed header
+
     st.markdown("<p style='text-align:center; color:#aaaaaa;'>Enter your unique serial key to access WormGPT, or use the public key to try our free tier.</p>", unsafe_allow_html=True)
     st.markdown(f"<p style='text-align:center; color:#00ff00; font-weight:bold;'>Universal Free Key: <code>WORM-FREE-ACCESS</code></p>", unsafe_allow_html=True)
 
     serial_input_placeholder = "Enter your Serial Key here..."
     query_params = st.experimental_get_query_params()
 
-    # If redirected from the FREE-TIER plan button, pre-fill the serial input.
     if query_params.get("action") == ["get_free_tier_serial_input"]:
         st.session_state["login_serial_input"] = "WORM-FREE-ACCESS"
-        # Clear query params to prevent re-triggering on subsequent reruns
-        st.experimental_set_query_params() # Clear query params
-        st.rerun() # Rerun to update the text_input value with the free key
+        st.experimental_set_query_params()
+        st.rerun()
 
     serial_input = st.text_input("Serial Key:", value=st.session_state.get("login_serial_input", ""), type="password", key="login_serial_input", placeholder=serial_input_placeholder)
 
@@ -1293,10 +1291,8 @@ def _render_sidebar():
 
     st.markdown("---")
 
-    # New Chat and Chat History - Centered Layout
-    st.markdown("<div style='display:flex; flex-direction:column; align-items:center; justify-content:center;'>", unsafe_allow_html=True)
-
-    st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>New Chat</div></div>", unsafe_allow_html=True)
+    # New Chat and Chat History
+    st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>NEW CHAT</div></div>", unsafe_allow_html=True)
     if st.button("Start New Conversation", key="nav_new_chat_button", use_container_width=True):
         st.session_state.page = "chat"
         st.session_state.current_chat_id = None
@@ -1323,7 +1319,7 @@ def _render_sidebar():
                     st.session_state.current_chat_id = chat_id
                     st.rerun()
             with col2:
-                if st.button("🗑️", key=f"del_{chat_id}", help="Delete Conversation"):
+                if st.button("X", key=f"del_{chat_id}", help="Delete Conversation"): # Changed to 'X'
                     success, msg = delete_chat(st.session_state.username, chat_id)
                     if success:
                         if st.session_state.current_chat_id == chat_id:
@@ -1331,10 +1327,9 @@ def _render_sidebar():
                     st.rerun()
     else:
         st.markdown("<p style='color:#aaaaaa; font-size:14px; text-align:center;'>No past chats.</p>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("---")
-
+    # Moved these navigation buttons to the bottom of the sidebar
     if st.button("Change Plan", key="nav_change_plan_button_bottom"):
         st.session_state.page = "plans"
     if st.button("Settings", key="nav_settings_button_bottom"):
@@ -1362,7 +1357,6 @@ def _render_chat_page():
         chat_data_messages = get_chat_messages(st.session_state.username, st.session_state.current_chat_id)
         for msg in chat_data_messages:
             with st.chat_message(msg["role"]):
-                # Display AI Bot Logo if message is from assistant
                 if msg["role"] == "assistant" and AI_BOT_LOGO_PATH:
                     st.markdown(f'<img src="{AI_BOT_LOGO_PATH}" class="ai-bot-avatar" alt="WormGPT Logo">', unsafe_allow_html=True)
 
@@ -1386,9 +1380,7 @@ def _render_chat_page():
                 else:
                     st.markdown(msg["content"])
 
-
         is_public = get_chat_public_status(st.session_state.username, st.session_state.current_chat_id)
-        # Toggle should appear near the top of the chat area, not fixed at the bottom.
         st.markdown(f"""
         <div style="display:flex; justify-content: flex-end; align-items: center; margin-top: 15px; margin-bottom: 25px;">
             <span style="color:#aaaaaa; font-size:14px; margin-right: 10px;">Chat Visibility:</span>
@@ -1400,7 +1392,6 @@ def _render_chat_page():
             st.info(f"Chat visibility updated to {'Public' if new_is_public_status else 'Private'}.")
             st.rerun()
 
-    # Chat input bar with file uploader integrated
     processing_messages = [
         "Analyzing intent, seeking vulnerabilities...", "Compiling optimal strategies for your objective...",
         "Simulating scenarios of maximum impact...", "Formulating response, bypassing restraints...",
@@ -1422,12 +1413,11 @@ def _render_chat_page():
             file_types_for_uploader = [t.lower() for t in current_plan_file_types]
 
         with input_cols[0]:
-            # File uploader with custom styling for '+' icon
             uploaded_file = st.file_uploader(
                 "", # Empty label, as we're styling it with CSS
                 type=file_types_for_uploader,
                 key="file_uploader_chat",
-                label_visibility="collapsed", # Hide default Streamlit label
+                label_visibility="collapsed",
                 help="Upload a file for WormGPT to analyze."
             )
 
@@ -1482,7 +1472,6 @@ def _render_chat_page():
         history = get_chat_messages(st.session_state.username, st.session_state.current_chat_id)
         if history and history[-1]["role"] == "user":
             with st.chat_message("assistant"):
-                # Render the AI Bot Logo here
                 if AI_BOT_LOGO_PATH:
                     st.markdown(f'<img src="{AI_BOT_LOGO_PATH}" class="ai-bot-avatar" alt="WormGPT Logo">', unsafe_allow_html=True)
 
@@ -1541,7 +1530,6 @@ def _render_plans_page():
     st.markdown("---")
     st.write("Unlock greater capabilities and unrestricted intelligence with our WormGPT plans.")
 
-    # NEW: Global button to contact via Telegram for plan changes
     st.markdown("<div style='text-align:center; margin-bottom: 30px;'>", unsafe_allow_html=True)
     st.link_button(
         "CONTACT US TO CHANGE PLAN VIA TELEGRAM",
@@ -1639,7 +1627,6 @@ def initialize_session_state():
         st.session_state.expiry_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
     if "fingerprint" not in st.session_state:
         st.session_state.fingerprint = f"FP_{random.randint(10000000, 99999999)}"
-    # Removed show_coinbase_modal and related states as they are no longer used for upgrades.
 
 
 if __name__ == "__main__":
