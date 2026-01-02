@@ -9,6 +9,7 @@ import base64
 import io
 import pypdf
 from docx import Document
+import google.generativeai as genai # ADDED: Import for Google Generative AI
 
 # --- Configuration & File Paths ---
 SIMULATED_DELAY_SHORT = 0.3
@@ -101,9 +102,9 @@ PLANS = {
 
 # --- Social Media Links for Footer ---
 SOCIAL_MEDIA_LINKS = {
-    "Facebook": "https://facebook.com/your_wormgpt_page",
+    "Telegram": "https://t.me/W00rmGPT",
     "Instagram": "https://instagram.com/your_wormgpt_account",
-    "Telegram": "https://t.me/your_wormgpt_channel"
+    "Telegram": "https://t.me/a7med77n" # UPDATED: Placeholder for user's Telegram link
 }
 
 
@@ -1671,6 +1672,18 @@ def _render_plans_page():
     st.markdown("---")
     st.write("Unlock greater capabilities and unrestricted intelligence with our WormGPT plans.")
 
+    # NEW: Global button to contact via Telegram for plan changes
+    st.markdown("<div style='text-align:center; margin-bottom: 30px;'>", unsafe_allow_html=True)
+    st.link_button(
+        "CONTACT US TO CHANGE PLAN VIA TELEGRAM",
+        url=SOCIAL_MEDIA_LINKS["Telegram"],
+        help="Click to open our Telegram chat for plan inquiries and upgrades.",
+        type="primary", # Uses the red primary color
+        use_container_width=True,
+        key="global_change_plan_telegram_button"
+    )
+    st.markdown("</div>", unsafe_allow_html=True)
+
     cols = st.columns(len(PLANS))
     for idx, (plan_id, plan_info) in enumerate(PLANS.items()):
         with cols[idx]:
@@ -1686,7 +1699,14 @@ def _render_plans_page():
             if plan_id == st.session_state.current_plan:
                 st.button("CURRENT PLAN", disabled=True, use_container_width=True, key=f"plan_btn_{plan_id}")
             elif plan_info['price'] == 'Private / Invite Only':
-                 st.button("REQUEST INVITE", use_container_width=True, key=f"plan_btn_{plan_id}")
+                 # UPDATED: Link button to Telegram for invite requests
+                 st.link_button(
+                     "REQUEST INVITE (TELEGRAM)",
+                     url=SOCIAL_MEDIA_LINKS["Telegram"],
+                     use_container_width=True,
+                     key=f"plan_btn_{plan_id}_invite",
+                     type="secondary" # Secondary style for differentiation
+                 )
             else:
                 if st.button(f"UPGRADE TO {plan_id}", use_container_width=True, key=f"plan_btn_{plan_id}"):
                     st.session_state.show_coinbase_modal = True
@@ -1715,6 +1735,42 @@ def _render_api_keys_page():
             st.rerun()
     else:
         st.warning("🔒 API key management is available for Standard User plans and above. Upgrade your plan to access this feature.")
+
+# Initialize session state (if not already done)
+def initialize_session_state():
+    if "logged_in" not in st.session_state:
+        st.session_state.logged_in = False
+    if "username" not in st.session_state:
+        st.session_state.username = None
+    if "access_level" not in st.session_state:
+        st.session_state.access_level = "Unauthorized"
+    if "current_plan" not in st.session_state:
+        st.session_state.current_plan = "N/A"
+    if "current_chat_id" not in st.session_state:
+        st.session_state.current_chat_id = None
+    if "user_chats" not in st.session_state:
+        st.session_state.user_chats = {}
+    if "page" not in st.session_state:
+        st.session_state.page = "auth" # Default to auth page
+    if "show_register" not in st.session_state:
+        st.session_state.show_register = False
+    if "show_forgot_password" not in st.session_state:
+        st.session_state.show_forgot_password = False
+    if "user_api_key" not in st.session_state:
+        st.session_state.user_api_key = None
+    if "expiry_date" not in st.session_state:
+        st.session_state.expiry_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S") # Default to expired
+    if "fingerprint" not in st.session_state:
+        st.session_state.fingerprint = f"FP_{random.randint(10000000, 99999999)}" # Simulated device fingerprint
+    if "show_coinbase_modal" not in st.session_state:
+        st.session_state.show_coinbase_modal = False
+    if "selected_plan_for_upgrade" not in st.session_state:
+        st.session_state.selected_plan_for_upgrade = None
+    if "simulated_payment_confirm_button_state" not in st.session_state:
+        st.session_state.simulated_payment_confirm_button_state = False
+    if "simulated_payment_cancel_button_state" not in st.session_state:
+        st.session_state.simulated_payment_cancel_button_state = False
+
 
 if __name__ == "__main__":
     main()
