@@ -2,3 +2,6 @@ google-genai
 streamlit
 streamlit-float
 bcrypt
+Pillow
+pypdf
+python-docx
