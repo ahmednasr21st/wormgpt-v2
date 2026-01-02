@@ -24,7 +24,7 @@ UPLOAD_DIR = "uploaded_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # --- AI Bot Logo Path (User provided) ---
-AI_BOT_LOGO_PATH = "https://i.imgur.com/fLz8o0P.png" # Example path (you can upload your logo to imgur or your github repo)
+AI_BOT_LOGO_PATH = "Worm-GPT/logo.jpg" # Example path (you can upload your logo to imgur or your github repo)
 
 # --- Plan Definitions ---
 PLANS = {
@@ -41,7 +41,7 @@ PLANS = {
         ],
         "ai_power": "weak",
         "chat_history_limit": 5,
-        "gemini_models": ["gemini-1.0-pro"],
+        "gemini_models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"],
         "file_upload_types": ["txt", "pdf"],
         "max_file_size_mb": 2,
     },
@@ -59,7 +59,7 @@ PLANS = {
         ],
         "ai_power": "moderate",
         "chat_history_limit": None,
-        "gemini_models": ["gemini-1.0-pro", "gemini-1.5-pro-latest"],
+        "gemini_models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"],
         "file_upload_types": ["png", "jpg", "jpeg", "txt", "pdf", "docx"],
         "max_file_size_mb": 10,
     },
@@ -97,7 +97,7 @@ PLANS = {
         ],
         "ai_power": "ultimate",
         "chat_history_limit": None,
-        "gemini_models": ["gemini-1.5-pro-latest"],
+        "gemini_models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"],
         "file_upload_types": ["*"],
         "max_file_size_mb": 200,
     }
@@ -107,7 +107,7 @@ PLANS = {
 SOCIAL_MEDIA_LINKS = {
     "Facebook": "https://facebook.com/your_wormgpt_page",
     "Instagram": "https://instagram.com/your_wormgpt_account",
-    "Telegram": "https://t.me/your_telegram_chat_id_or_link" # Make sure to update this with your actual Telegram link
+    "Telegram": "https://t.me/a7med77n" # Make sure to update this with your actual Telegram link
 }
 
 
@@ -163,6 +163,7 @@ VALID_SERIAL_KEYS = {
 def authenticate_user(serial_key=None, is_google_login=False):
     users = load_json(USERS_FILE)
     username_for_session = None
+    user_data = None # Initialize user_data here
 
     if serial_key:
         if serial_key not in VALID_SERIAL_KEYS:
@@ -172,10 +173,10 @@ def authenticate_user(serial_key=None, is_google_login=False):
         plan_info_from_serial = PLANS[plan_id_from_serial]
         username_for_session = serial_key
 
-        if username_for_session not in users:
+        if username_for_session not in users: # First time this serial is used/activated
             hashed_serial = bcrypt.hashpw(serial_key.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
-            users[username_for_session] = {
+            new_user_data = { # Create the new user data
                 "password": hashed_serial,
                 "plan_id": plan_id_from_serial,
                 "level": plan_info_from_serial["level"],
@@ -184,20 +185,18 @@ def authenticate_user(serial_key=None, is_google_login=False):
                 "api_key": "SK-" + ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=32)),
                 "device_id": st.session_state.get("fingerprint", "N/A")
             }
-            save_json(USERS_FILE, users) # Save new user data immediately
+            users[username_for_session] = new_user_data # Add to in-memory dict
+            save_json(USERS_FILE, users) # Save to file system immediately
             log_activity(username_for_session, "SERIAL_ACTIVATION", f"New serial activated. Plan: {plan_id_from_serial}.")
-            # No need for time.sleep here, the user_data will be reloaded below
-
-        # Retrieve user_data, whether newly created or existing
-        user_data = users.get(username_for_session)
-        if not user_data: # Should not happen if previous steps were successful
-            return False, "User data not found after initial authentication."
+            user_data = new_user_data # Use this newly created data directly
+        else:
+            user_data = users[username_for_session] # Use existing user data
 
     elif is_google_login:
         username_for_session = "google_user_" + str(random.randint(1000, 9999))
         if username_for_session not in users:
             initial_plan = PLANS["FREE-TIER"]
-            users[username_for_session] = {
+            new_user_data = {
                 "password": bcrypt.hashpw(username_for_session.encode('utf-8'), bcrypt.gensalt()).decode('utf-8'),
                 "plan_id": "FREE-TIER",
                 "level": initial_plan["level"],
@@ -206,13 +205,18 @@ def authenticate_user(serial_key=None, is_google_login=False):
                 "api_key": "SK-" + ''.join(random.choices('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', k=32)),
                 "device_id": st.session_state.get("fingerprint", "N/A")
             }
+            users[username_for_session] = new_user_data
             save_json(USERS_FILE, users)
             log_activity(username_for_session, "GOOGLE_REGISTRATION_SIMULATED", "New account created via simulated Google (FREE-TIER).")
-        user_data = users[username_for_session]
-        return True, f"Simulated Google login successful. Welcome, {username_for_session}!"
+            user_data = new_user_data # Use this newly created data directly
+        else:
+            user_data = users[username_for_session] # Use existing user data
 
     else:
         return False, "Authentication method not provided or invalid."
+
+    if not user_data: # If no user data was established by now, something is wrong.
+        return False, "User data could not be retrieved or created."
 
     expiry = datetime.strptime(user_data["expiry_date"], "%Y-%m-%d %H:%M:%S")
     if datetime.now() > expiry:
@@ -1100,18 +1104,19 @@ def set_custom_css():
             background-color: #555555 !important;
             border-color: #555555 !important;
             color: #e0e0e0 !important;
+            margin-left: auto; /* Push to the right within its column */
         }
         div[data-testid="stSidebar"] div.stButton:has(button[key^="del_"]) button:hover {
             background-color: #cc0000 !important;
             border-color: #cc0000 !important;
             color: white !important;
         }
-        /* Lock icon for paid plans in sidebar (Placeholder - not active yet) */
-        .plan-locked::after {
-            content: "🔒";
-            margin-left: 5px;
-            font-size: 14px;
-            color: #ff0000;
+        /* Ensure chat history buttons align properly with delete button */
+        div[data-testid="stSidebar"] .stButton:has(button[key^="btn_"]) {
+            width: 100%; /* Take full width of its column */
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
         }
     </style>
     """, unsafe_allow_html=True)
@@ -1127,7 +1132,6 @@ def render_header(is_logged_in=False, chat_title=None, is_public_chat=False):
         </div>
         """, unsafe_allow_html=True)
     else:
-        # Simplified guest header - just the branding. Serial input form is now directly below in main().
         st.markdown(f"""
         <div class="guest-header">
             <div class="logo-text">WormGPT</div>
@@ -1152,7 +1156,7 @@ def render_footer():
     social_links_html = ""
     # Ensure Telegram URL is valid
     telegram_url = SOCIAL_MEDIA_LINKS.get("Telegram", "https://t.me/default_chat_if_not_set")
-    if not isinstance(telegram_url, str) or not telegram_url.strip(): # Fallback if for some reason it's not a string or empty
+    if not isinstance(telegram_url, str) or not telegram_url.strip():
         telegram_url = "https://t.me/default_chat_if_not_set"
 
     for platform, link in SOCIAL_MEDIA_LINKS.items():
@@ -1181,8 +1185,8 @@ def main():
 
     # --- Authentication Flow ---
     if not st.session_state.logged_in:
-        render_header(is_logged_in=False) # Renders the top logo and tagline
-        render_auth_page_layout("WormGPT : Access Your Account", "Enter your WormGPT serial key or use simulated Google login.", lambda: _render_login_form()) # Direct to login
+        render_header(is_logged_in=False)
+        render_auth_page_layout("WormGPT : Access Your Account", "Enter your WormGPT serial key or use simulated Google login.", lambda: _render_login_form())
         render_footer()
         st.stop()
 
@@ -1192,7 +1196,6 @@ def main():
         st.session_state.access_level = user_data_from_db["level"]
         st.session_state.current_plan = user_data_from_db["plan_id"]
         st.session_state.user_api_key = user_data_from_db.get("api_key")
-        # Ensure expiry_date is always set from DB
         st.session_state.expiry_date = user_data_from_db.get("expiry_date", (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S"))
     else:
         st.error("User data not found for current session. Logging out.", icon="🚨")
@@ -1216,16 +1219,12 @@ def main():
         _render_settings_page()
     elif st.session_state.page == "plans":
         _render_plans_page()
-    # Removed separate API Keys page
-    # elif st.session_state.page == "api_keys":
-    #     _render_api_keys_page()
 
     render_footer()
 
 
 # --- Authentication Forms Rendering ---
 def _render_login_form():
-    # Anchor for scrolling - placed before any other content in this function
     st.markdown('<div id="serial_input_anchor" style="height: 1px; margin-top: -100px;"></div>', unsafe_allow_html=True)
 
     st.markdown("<p style='text-align:center; color:#aaaaaa;'>Enter your unique serial key to access WormGPT, or use the public key to try our free tier.</p>", unsafe_allow_html=True)
@@ -1237,27 +1236,23 @@ def _render_login_form():
     if query_params.get("action") == ["get_free_tier_serial_input"]:
         st.session_state["login_serial_input"] = "WORM-FREE-ACCESS"
         st.experimental_set_query_params()
-        # Rerun is needed to apply the pre-filled value
         st.rerun()
 
-    # Scroll to anchor if flag is set (triggered from Plans page)
     if st.session_state.get('scroll_to_auth', False):
-        st.session_state.scroll_to_auth = False # Reset the flag
+        st.session_state.scroll_to_auth = False
         st.markdown(
             """
             <script>
-                // Use a slight delay to ensure the DOM is ready for scrolling
                 setTimeout(function() {
                     var element = document.getElementById('serial_input_anchor');
                     if (element) {
                         element.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }
-                }, 100); // 100ms delay
+                }, 100);
             </script>
             """,
             unsafe_allow_html=True
         )
-
 
     serial_input = st.text_input("Serial Key:", value=st.session_state.get("login_serial_input", ""), type="password", key="login_serial_input", placeholder=serial_input_placeholder)
 
@@ -1296,7 +1291,7 @@ def _logout_user():
     st.session_state.current_plan = "N/A"
     st.session_state.current_chat_id = None
     st.session_state.user_chats = {}
-    st.session_state.page = "auth" # Redirect to auth page on logout
+    st.session_state.page = "auth"
     st.info("👋 WormGPT Session ended. Goodbye, Overlord. Your actions are recorded.")
     time.sleep(SIMULATED_DELAY_LONG)
     st.rerun()
@@ -1340,7 +1335,7 @@ def _render_sidebar():
                     st.session_state.current_chat_id = chat_id
                     st.rerun()
             with col2:
-                if st.button("X", key=f"del_{chat_id}", help="Delete Conversation"): # Changed to 'X'
+                if st.button("X", key=f"del_{chat_id}", help="Delete Conversation"):
                     success, msg = delete_chat(st.session_state.username, chat_id)
                     if success:
                         if st.session_state.current_chat_id == chat_id:
@@ -1434,10 +1429,10 @@ def _render_chat_page():
 
         with input_cols[0]:
             uploaded_file = st.file_uploader(
-                "",
+                "", # Empty label, as we're styling it with CSS
                 type=file_types_for_uploader,
                 key="file_uploader_chat",
-                label_visibility="collapsed",
+                label_visibility="collapsed", # Hide default Streamlit label
                 help="Upload a file for WormGPT to analyze."
             )
 
@@ -1529,8 +1524,6 @@ def _render_settings_page():
         st.write(f"**Current Plan:** `{st.session_state.current_plan}`")
         st.write(f"**Access Level:** `{st.session_state.access_level}`")
         st.write(f"**Activation Date:** `{user_data.get('activation_date', 'N/A')}`")
-        # Expiry date removed as requested
-        # st.write(f"**Expiry Date:** `{user_data.get('expiry_date', 'N/A')}`")
         st.write(f"**Device Fingerprint (Initial):** `{user_data.get('device_id', 'N/A')}`")
 
         st.markdown("---")
@@ -1624,9 +1617,6 @@ def _render_plans_page():
                 )
 
 
-# Removed _render_api_keys_page as it's now integrated into _render_settings_page.
-
-
 # Initialize session state (if not already done)
 def initialize_session_state():
     if "logged_in" not in st.session_state:
@@ -1647,7 +1637,6 @@ def initialize_session_state():
         st.session_state.auth_mode = "login"
     if "user_api_key" not in st.session_state:
         st.session_state.user_api_key = None
-    # Ensure expiry_date is always a valid format or default to expired
     if "expiry_date" not in st.session_state:
         st.session_state.expiry_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
     if "fingerprint" not in st.session_state:
