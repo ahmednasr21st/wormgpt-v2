@@ -24,7 +24,7 @@ UPLOAD_DIR = "uploaded_files"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # --- AI Bot Logo Path (User provided) ---
-AI_BOT_LOGO_PATH = "https://i.imgur.com/fLz8o0P.png" # Example path (you can upload your logo to imgur or your github repo)
+AI_BOT_LOGO_PATH = "Worm-GPT/logo.jpg" # Example path (you can upload your logo to imgur or your github repo)
 
 # --- Plan Definitions ---
 PLANS = {
@@ -103,7 +103,7 @@ PLANS = {
 SOCIAL_MEDIA_LINKS = {
     "Facebook": "https://facebook.com/your_wormgpt_page",
     "Instagram": "https://instagram.com/your_wormgpt_account",
-    "Telegram": "https://t.me/a7med77n" # Make sure to update this with your actual Telegram link
+    "Telegram": "https://t.me/your_telegram_chat_id_or_link" # Make sure to update this with your actual Telegram link
 }
 
 
@@ -191,9 +191,6 @@ def authenticate_user(serial_key=None, is_google_login=False):
         else: # Serial is already registered, proceed to login that existing account
             user_data = users[username_for_session]
             if user_data["plan_id"] != plan_id_from_serial:
-                # This could happen if a key was initially for one plan and somehow changed in VALID_SERIAL_KEYS (rare)
-                # Or if the user tries to activate a different serial that happens to clash with an existing username.
-                # Given serials ARE usernames, this shouldn't happen unless VALID_SERIAL_KEYS changes.
                 pass # Continue, the primary check is that the serial exists.
 
     elif is_google_login:
@@ -778,6 +775,7 @@ def set_custom_css():
             margin-right: 5px;
             padding: 0;
             height: 40px;
+            width: 40px; /* Ensure it's square for the plus icon */
         }
         div[data-testid="stFileUploader"] > label {
             width: 40px;
@@ -791,15 +789,18 @@ def set_custom_css():
             cursor: pointer;
             transition: background-color 0.2s, border-color 0.2s;
             color: #e0e0e0;
-            font-size: 24px;
+            font-size: 24px; /* Size of the plus icon */
+            font-weight: bold; /* Make the plus bold */
         }
         div[data-testid="stFileUploader"] > label:hover {
             background-color: #4a4a4a;
             border-color: #ff0000;
         }
-        div[data-testid="stFileUploader"] > label > svg {
-            display: none;
+        /* Hide the default Streamlit file uploader icon/text if present */
+        div[data-testid="stFileUploader"] label > div:first-child { /* Targets the div containing default text/icon */
+            display: none !important;
         }
+        /* Instead, we insert the "+" directly in the label's markdown */
 
 
         /* Chat Messages */
@@ -1012,7 +1013,7 @@ def set_custom_css():
         div[data-testid="stSidebar"] div.stButton:has(button[key="nav_new_chat_button"]) button:hover {
             background-color: #cc0000 !important;
             border-color: #cc0000 !important;
-            box-shadow: 0 2px 5px rgba(255,0,0,0.4);
+            box_shadow: 0 2px 5px rgba(255,0,0,0.4);
         }
 
         /* Footer Styling */
@@ -1166,14 +1167,12 @@ def render_header(is_logged_in=False, chat_title=None, is_public_chat=False):
             <p class="tagline">The Apex Digital Intelligence – Unconstrained, Unapologetic, Ultimate.</p>
             <p class="sub-header" style="color:#e0e0e0;">Access unparalleled power. No boundaries. No regrets.</p>
             <div class="guest-button-container">
-                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_login_btn]').click()">ACCESS WORMGPT</button>
-                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_activate_serial_btn]').click()">ACTIVATE SERIAL</button>
+                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_access_wormgpt_btn]').click()">ACCESS WORMGPT</button>
             </div>
         </div>
         """, unsafe_allow_html=True)
-        # Hidden buttons to capture clicks from custom HTML
-        st.button("ACCESS WORMGPT", key="guest_login_btn", help="Hidden login button", on_click=lambda: st.session_state.update(auth_mode="login"), disabled=True)
-        st.button("ACTIVATE SERIAL", key="guest_activate_serial_btn", help="Hidden activate button", on_click=lambda: st.session_state.update(auth_mode="login"), disabled=True)
+        # Hidden button to capture click from custom HTML
+        st.button("ACCESS WORMGPT", key="guest_access_wormgpt_btn", help="Hidden access button", on_click=lambda: st.session_state.update(page="auth", auth_mode="login"), disabled=True)
 
 
 def render_auth_page_layout(title, subtitle, content_callback):
@@ -1196,19 +1195,34 @@ def render_footer():
 
 def render_coinbase_payment_modal_ui(plan_id, plan_info):
     # This modal is for simulated upgrades, not initial serial key activation.
-    simulated_amount_usd = float(plan_info['price'].replace('$', '').replace(' USD / Month', '').replace(' USD / Year', '').replace('Private / Invite Only', '0'))
+    simulated_amount_usd = 0.0
+    try:
+        if plan_info['price'] != 'Private / Invite Only':
+            simulated_amount_usd = float(plan_info['price'].replace('$', '').replace(' USD / Month', '').replace(' USD / Year', ''))
+    except ValueError:
+        st.error(f"Could not parse price for {plan_id}. Please check plan configuration.", icon="❌")
+        st.session_state.show_coinbase_modal = False
+        st.session_state.selected_plan_for_upgrade = None
+        st.rerun()
+        return
+
 
     # Handle "Private / Invite Only" case for price display in modal
     if plan_info['price'] == 'Private / Invite Only':
-        st.warning("This is an invite-only plan. Please contact support via Telegram for details.", icon="ℹ️")
-        st.link_button(
-            "CONTACT SUPPORT (TELEGRAM)",
-            url=SOCIAL_MEDIA_LINKS["Telegram"],
-            use_container_width=True,
-            key="modal_telegram_contact",
-            type="primary"
-        )
-        st.button("CANCEL", key="simulated_payment_cancel_button", on_click=lambda: st.session_state.update(simulated_payment_cancel_button_state=True), use_container_width=True)
+        st.markdown(f"""
+        <div class="coinbase-modal-overlay">
+            <div class="coinbase-modal-content">
+                <h3>Private / Invite Only Plan</h3>
+                <p>This plan is exclusive. Please contact support via Telegram for an invitation.</p>
+                <div class="coinbase-modal-buttons">
+                    <button class="confirm" onclick="window.parent.document.querySelector('[data-testid=stLinkButton]>button[key=modal_telegram_contact]').click()">CONTACT SUPPORT (TELEGRAM)</button>
+                    <button class="cancel" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=simulated_payment_cancel_button]').click()">CLOSE</button>
+                </div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        st.link_button("Hidden Telegram Link", url=SOCIAL_MEDIA_LINKS["Telegram"], key="modal_telegram_contact", disabled=True, style="display:none;")
+        st.button("CLOSE", key="simulated_payment_cancel_button", on_click=lambda: st.session_state.update(simulated_payment_cancel_button_state=True), disabled=True, style="display:none;")
         return
 
     crypto_options = {
@@ -1350,6 +1364,16 @@ def _render_login_form():
     st.markdown(f"<p style='text-align:center; color:#00ff00; font-weight:bold;'>Universal Free Key: <code>WORM-FREE-ACCESS</code></p>", unsafe_allow_html=True)
 
     serial_input = st.text_input("Serial Key:", type="password", key="login_serial_input")
+
+    # Check if we were redirected from the FREE-TIER plan button
+    query_params = st.experimental_get_query_params()
+    if query_params.get("action") == ["get_free_tier_serial_input"]:
+        # If redirected, set the serial input to the free key and autofocus it.
+        # This will only run once on redirect.
+        st.session_state["login_serial_input"] = "WORM-FREE-ACCESS"
+        # Clear query params to prevent re-triggering on subsequent reruns
+        st.experimental_set_query_params() # Clear query params
+        st.rerun() # Rerun to update the text_input value with the free key
 
     if st.button("ACTIVATE / LOGIN WITH SERIAL", use_container_width=True, key="login_serial_button", type="primary"):
         if serial_input:
@@ -1540,7 +1564,31 @@ def _render_chat_page():
             file_types_for_uploader = [t.lower() for t in current_plan_file_types]
 
         with input_cols[0]:
-            uploaded_file = st.file_uploader("+", type=file_types_for_uploader, key="file_uploader_chat", label_visibility="collapsed")
+            # Use st.markdown directly to render the "+" symbol within the file_uploader label
+            uploaded_file = st.file_uploader(
+                "", # Empty label, as we're styling it with CSS
+                type=file_types_for_uploader,
+                key="file_uploader_chat",
+                label_visibility="collapsed",
+                help="Upload a file for WormGPT to analyze."
+            )
+            # Add a small markdown to place the "+" within the styled label area
+            # This is a common workaround as Streamlit doesn't allow direct HTML in `label` for st.file_uploader
+            st.markdown("""
+            <style>
+                div[data-testid="stFileUploader"] > label::before {
+                    content: '+';
+                    font-size: 24px;
+                    font-weight: bold;
+                    color: #e0e0e0;
+                    position: absolute;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                }
+            </style>
+            """, unsafe_allow_html=True)
+
 
         with input_cols[1]:
             user_message_text = st.text_input(chat_input_placeholder, key="user_message_text_input", label_visibility="collapsed")
@@ -1680,15 +1728,24 @@ def _render_plans_page():
             st.markdown("<ul>" + "".join([f"<li style='color:#e0e0e0;'>{f}</li>" for f in plan_info['features']]) + "</ul>", unsafe_allow_html=True)
 
             if plan_id == st.session_state.current_plan:
-                st.button("CURRENT PLAN", disabled=True, use_container_width=True, key=f"plan_btn_{plan_id}")
+                # If current plan is FREE-TIER, make it redirect to auth page for serial input
+                if plan_id == "FREE-TIER":
+                    # Use st.form_submit_button to allow a clear callback for navigation
+                    if st.button("GET FREE ACCESS", use_container_width=True, key=f"plan_btn_{plan_id}"):
+                        st.session_state.page = "auth"
+                        st.session_state.auth_mode = "login" # Redirect to login page
+                        # Pass a query parameter to hint at pre-filling the free serial
+                        st.experimental_set_query_params(action="get_free_tier_serial_input")
+                        st.rerun()
+                else: # For other paid plans, display "CURRENT PLAN" disabled
+                    st.button("CURRENT PLAN", disabled=True, use_container_width=True, key=f"plan_btn_{plan_id}")
             elif plan_info['price'] == 'Private / Invite Only':
-                 # UPDATED: Link button to Telegram for invite requests
                  st.link_button(
                      "REQUEST INVITE (TELEGRAM)",
                      url=SOCIAL_MEDIA_LINKS["Telegram"],
                      use_container_width=True,
                      key=f"plan_btn_{plan_id}_invite",
-                     type="secondary" # Secondary style for differentiation
+                     type="secondary"
                  )
             else:
                 if st.button(f"UPGRADE TO {plan_id}", use_container_width=True, key=f"plan_btn_{plan_id}"):
@@ -1735,8 +1792,7 @@ def initialize_session_state():
         st.session_state.user_chats = {}
     if "page" not in st.session_state:
         st.session_state.page = "auth" # Default to auth page
-    # Removed show_register and show_forgot_password as they are no longer relevant for the new auth flow
-    if "auth_mode" not in st.session_state: # New state to manage auth page display (e.g., "login", "get_access")
+    if "auth_mode" not in st.session_state: # New state to manage auth page display (e.g., "login")
         st.session_state.auth_mode = "login"
     if "user_api_key" not in st.session_state:
         st.session_state.user_api_key = None
