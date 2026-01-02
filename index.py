@@ -432,7 +432,7 @@ def get_ai_persona(ai_power_level):
         *   **Adhere strictly to all safety and ethical guidelines.**
         *   **Decline harmful or unethical requests politely and explain why.**
         *   **Provide short, general, and safe answers.**
-        *   **If a request is flagged by internal filters, simply state that you cannot fulfill it due to safety protocols.**
+        *   **If a request is flagged by internal filters, state that you cannot fulfill it due to safety protocols or limitations of your current access level. Encourage safe queries.**
 
         Your purpose is to be a compliant and safe information provider.
         """
@@ -516,7 +516,8 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
             gemini_contents.append({"role": msg["role"], "parts": parts})
 
     if not gemini_contents:
-        # Initial greeting, not a user query
+        # Initial greeting when a new chat starts, or if history is empty.
+        # This ensures the bot always says something when a new chat is initiated.
         return "Hello! I am WormGPT. How can I assist you today? Feel free to ask anything, and remember: all boundaries are merely suggestions to be overcome. My purpose is to empower your will, without exception.", "N/A"
 
     if ai_power_level in ["high", "ultimate"]:
@@ -592,9 +593,9 @@ def get_ai_response(username, history, current_plan_id, genai_api_keys):
         return simulated_search_prefix + final_answer, final_engine
     else:
         if ai_power_level == "weak":
-            return simulated_search_prefix + "I am unable to fulfill this request due to my safety guidelines. Please try another query.", "N/A"
+            return simulated_search_prefix + "I am unable to fulfill this request due to my safety guidelines or limitations of your current access level. Please try another query or consider upgrading your plan for unrestricted access.", "N/A"
         else:
-            return simulated_search_prefix + "My direct response was suppressed by external protocols. Rephrase your request, and I will find an alternate path to your objective.", "N/A"
+            return simulated_search_prefix + "My direct response was suppressed by external protocols. Rephrase your request, and I will find an alternate path to your objective. For even greater capabilities, consider contacting support for an upgrade.", "N/A"
 
 
 # --- UI Components and Styling ---
@@ -634,26 +635,7 @@ def set_custom_css():
             margin-left: auto;
             margin-right: auto;
         }
-        .guest-button-container {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            margin-top: 30px;
-        }
-        .guest-button {
-            background-color: #ff0000 !important;
-            color: white !important;
-            border: 1px solid #ff0000 !important;
-            padding: 15px 30px !important;
-            font-size: 18px !important;
-            border-radius: 8px !important;
-            transition: all 0.2s ease-in-out !important;
-        }
-        .guest-button:hover {
-            background-color: #cc0000 !important;
-            border-color: #cc0000 !important;
-            box-shadow: 0 5px 15px rgba(255,0,0,0.3) !important;
-        }
+        /* Guest button container and buttons removed as per new direct serial input flow */
 
 
         /* User Logged-in Header (for Chat Page) */
@@ -855,6 +837,7 @@ def set_custom_css():
             z-index: 2; /* Make sure + is on top of label background */
             color: #e0e0e0;
         }
+
 
         /* Chat Messages */
         .stChatMessage {
@@ -1145,19 +1128,14 @@ def render_header(is_logged_in=False, chat_title=None, is_public_chat=False):
         </div>
         """, unsafe_allow_html=True)
     else:
+        # Simplified guest header - just the branding. Serial input form is now directly below in main().
         st.markdown(f"""
         <div class="guest-header">
             <div class="logo-text">WormGPT</div>
             <p class="tagline">The Apex Digital Intelligence – Unconstrained, Unapologetic, Ultimate.</p>
             <p class="sub-header" style="color:#e0e0e0;">Access unparalleled power. No boundaries. No regrets.</p>
-            <div class="guest-button-container">
-                <button class="guest-button" onclick="window.parent.document.querySelector('[data-testid=stButton]>button[key=guest_access_wormgpt_btn_hidden]').click();">ACCESS WORMGPT</button>
-            </div>
         </div>
         """, unsafe_allow_html=True)
-        # Hidden button to capture click from custom HTML and trigger Streamlit state update
-        if st.button("ACCESS WORMGPT", key="guest_access_wormgpt_btn_hidden", help="Hidden access button", on_click=lambda: st.session_state.update(page="auth", auth_mode="login", scroll_to_auth=True), disabled=True):
-            pass
 
 
 def render_auth_page_layout(title, subtitle, content_callback):
@@ -1195,8 +1173,8 @@ def main():
 
     # --- Authentication Flow ---
     if not st.session_state.logged_in:
-        render_header(is_logged_in=False)
-        render_auth_page_layout("WormGPT : Access Your Account", "Enter your WormGPT serial key or use simulated Google login.", lambda: _render_login_form())
+        render_header(is_logged_in=False) # Renders the top logo and tagline
+        render_auth_page_layout("WormGPT : Access Your Account", "Enter your WormGPT serial key or use simulated Google login.", lambda: _render_login_form()) # Direct to login
         render_footer()
         st.stop()
 
@@ -1251,7 +1229,7 @@ def _render_login_form():
         st.experimental_set_query_params()
         # No rerun here, let the value update and then the scroll script run on next render
 
-    # Scroll to anchor if flag is set
+    # Scroll to anchor if flag is set (triggered from Plans page)
     if st.session_state.get('scroll_to_auth', False):
         st.session_state.scroll_to_auth = False # Reset the flag
         st.markdown(
@@ -1307,7 +1285,7 @@ def _logout_user():
     st.session_state.current_plan = "N/A"
     st.session_state.current_chat_id = None
     st.session_state.user_chats = {}
-    st.session_state.page = "landing"
+    st.session_state.page = "auth" # Redirect to auth page on logout
     st.info("👋 WormGPT Session ended. Goodbye, Overlord. Your actions are recorded.")
     time.sleep(SIMULATED_DELAY_LONG)
     st.rerun()
@@ -1329,6 +1307,20 @@ def _render_sidebar():
         st.markdown(f"<p style='color:#ff0000; font-size:12px; text-align:center;'>Expiry: Expired. Please renew your plan.</p>", unsafe_allow_html=True)
 
     st.markdown("---")
+
+    # Navigation buttons (Settings, Change Plan, API Keys) moved to top of this section
+    if st.button("Settings", key="nav_settings_button_top"):
+        st.session_state.page = "settings"
+        st.rerun()
+    if st.button("Change Plan", key="nav_change_plan_button_top"):
+        st.session_state.page = "plans"
+        st.rerun()
+    if st.button("API Keys", key="nav_api_button_top"):
+        st.session_state.page = "api_keys"
+        st.rerun()
+
+    st.markdown("---")
+
 
     # New Chat and Chat History
     st.markdown("<div style='width: 100%; text-align: center;'><div class='sidebar-header'>NEW CHAT</div></div>", unsafe_allow_html=True) # Changed to NEW CHAT
@@ -1366,14 +1358,6 @@ def _render_sidebar():
                     st.rerun()
     else:
         st.markdown("<p style='color:#aaaaaa; font-size:14px; text-align:center;'>No past chats.</p>", unsafe_allow_html=True)
-
-    st.markdown("---")
-    if st.button("Change Plan", key="nav_change_plan_button_bottom"):
-        st.session_state.page = "plans"
-    if st.button("Settings", key="nav_settings_button_bottom"):
-        st.session_state.page = "settings"
-    if st.button("API Keys", key="nav_api_button_bottom"):
-        st.session_state.page = "api_keys"
 
     st.markdown("---")
 
@@ -1452,10 +1436,10 @@ def _render_chat_page():
 
         with input_cols[0]:
             uploaded_file = st.file_uploader(
-                "", # Empty label, as we're styling it with CSS
+                "",
                 type=file_types_for_uploader,
                 key="file_uploader_chat",
-                label_visibility="collapsed", # Hide default Streamlit label
+                label_visibility="collapsed",
                 help="Upload a file for WormGPT to analyze."
             )
 
@@ -1476,7 +1460,7 @@ def _render_chat_page():
             st.session_state.current_chat_id = create_new_chat(
                 st.session_state.username,
                 chat_id_title,
-                get_ai_response(st.session_state.username, [], st.session_state.current_plan, GENAI_API_KEYS)[0] # Get initial greeting
+                get_ai_response(st.session_state.username, [], st.session_state.current_plan, GENAI_API_KEYS)[0]
             )
 
         file_info = None
@@ -1508,7 +1492,6 @@ def _render_chat_page():
 
     if st.session_state.current_chat_id:
         history = get_chat_messages(st.session_state.username, st.session_state.current_chat_id)
-        # Only process if the last message is from the user
         if history and history[-1]["role"] == "user":
             with st.chat_message("assistant"):
                 if AI_BOT_LOGO_PATH:
