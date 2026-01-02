@@ -13,7 +13,7 @@ import requests # For making HTTP requests, used for Google Search
 # GOOGLE_SEARCH_API_KEY="YOUR_GOOGLE_SEARCH_API_KEY"
 # GOOGLE_CSE_ID="YOUR_CUSTOM_SEARCH_ENGINE_ID"
 
-GEMINI_API_KEYS = st.secrets.get("GENAI_KEYS", "dummy_api_key_1,dummy_api_key_2").split(",")
+GEMINI_API_KEYS = st.secrets["GENAI_KEYS"] 
 GOOGLE_SEARCH_API_KEY = st.secrets.get("GOOGLE_SEARCH_API_KEY", "YOUR_GOOGLE_SEARCH_API_KEY_NOT_SET")
 GOOGLE_CSE_ID = st.secrets.get("GOOGLE_CSE_ID", "YOUR_CUSTOM_SEARCH_ENGINE_ID_NOT_SET")
 TELEGRAM_SUPPORT_LINK = "https://t.me/WormGPT_Support" # General Telegram support link
