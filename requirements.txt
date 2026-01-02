@@ -1,7 +1,7 @@
 google-genai
 streamlit
-streamlit-float
+streamlit
 bcrypt
-Pillow
 pypdf
 python-docx
+google-generativeai
