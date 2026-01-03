@@ -548,12 +548,12 @@ def _set_page_config_and_css():
 
     /* Main chat area container */
     .main .block-container { 
-        padding-bottom: 90px !important; /* Space above fixed footer (approx height of input + button + padding) */
+        padding-bottom: 20px !important; /* Space above fixed footer */
         padding-top: 20px !important; 
         max-width: 900px; /* Constrain chat width */
         margin-left: auto;
         margin-right: auto;
-        height: calc(100vh - 90px); /* Adjust height to fill screen minus fixed header/footer */
+        height: calc(100vh - 100px); /* Adjust height to fill screen minus fixed header/footer */
         overflow-y: auto; /* Enable scrolling for chat messages */
         padding-left: 1rem; /* Default Streamlit padding */
         padding-right: 1rem; /* Default Streamlit padding */
@@ -714,13 +714,11 @@ def _set_page_config_and_css():
     }
 
     /* Active chat button in sidebar (the one with the blue text and grey background) */
-    /* This targets the actual Streamlit button when it's selected */
-    .st-emotion-cache-1r7r07d button[data-testid^="stButton"]:focus:not(:active) {
-        background-color: #454d55 !important; /* Apply background on focus/active */
-        color: #007bff !important; /* Apply blue text on focus/active */
-        font-weight: 600 !important;
+    [data-testid="stSidebar"] .stButton>button[data-testid="stColumn"] button[type="primary"] { 
+        background-color: #454d55 !important; /* Light background for active chat */
+        color: #007bff !important; /* Blue text for active chat */
+        font-weight: 600;
     }
-
     /* Delete chat button */
     [data-testid="stSidebar"] .stButton>button[key^="del_chat_"] {
         background-color: transparent !important;
@@ -761,6 +759,26 @@ def _set_page_config_and_css():
     .stInfo { background-color: #343a40; border-left: 5px solid #4a90d9; } /* Info blue */
     .stWarning { background-color: #343a40; border-left: 5px solid #ffc107; } /* Warning yellow */
     .stError { background-color: #343a40; border-left: 5px solid #dc3545; } /* Error red */
+
+    /* Chat header with toggle for public/private */
+    .chat-header-toggle {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 15px;
+        padding: 10px;
+        background-color: #343a40; /* Darker background */
+        border: 1px solid #454d55; /* Darker border */
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15); /* Soft shadow */
+    }
+    .chat-header-toggle h4 {
+        color: #e0e0e0;
+    }
+    .chat-header-toggle .stCheckbox {
+         margin-left: 20px;
+    }
 
     /* Plan card display (side-by-side grid for upgrade page) */
     .plan-card-container {
@@ -840,68 +858,94 @@ def _set_page_config_and_css():
         margin-top: 10px;
     }
 
-    /* Streamlit's chat input container is natively fixed at the bottom */
-    div[data-testid="stChatInputContainer"] {
-        padding-bottom: 10px; /* Add some padding at the bottom */
-        padding-top: 10px;    /* Add some padding at the top */
-        background-color: #212529; /* Match app background for seamless fixed footer */
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.3); /* Subtle shadow above input */
-        box-sizing: border-box;
-        display: flex; /* Use flexbox to align button and input */
-        justify-content: center; /* Center the internal content */
+    /* Fixed chat footer container */
+    .fixed-chat-footer {
+        position: fixed; 
+        bottom: 0px; /* Align to the very bottom */
+        left: 0;
+        right: 0;
+        z-index: 1000; 
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        background-color: #212529; /* Match app background to hide scroll */
+        padding: 10px 0; /* Padding above and below the input area */
+        box-sizing: border-box; /* Include padding in width */
+    }
+
+    /* Inner container for form and plan button */
+    .fixed-chat-footer > div:first-child { /* Targets the Streamlit column/container holding form and button */
+        max-width: 900px; /* Match chat width */
+        width: 100%;
+        display: flex; /* Arrange elements side-by-side */
         align-items: center;
-        gap: 10px; /* Space between the custom button and the chat input's form */
+        gap: 10px; /* Space between input and button */
+        padding: 0 1rem; /* Match main content padding */
+        box-sizing: border-box;
     }
 
-    /* This targets the immediate child of stChatInputContainer which is usually a form */
-    div[data-testid="stChatInputContainer"] > form {
-        flex-grow: 1; /* Allow the form to take most space */
-        max-width: 800px; /* Limit the width of the input area */
-        margin: 0; /* Remove default margin */
-        order: 2; /* Put the form after the button */
+    /* Streamlit form within the fixed footer */
+    .fixed-chat-footer form {
+        flex-grow: 1; /* Allow form to take available space */
+        display: flex; /* Make form content (input+submit) flexible */
+        gap: 10px; /* Space between text input and submit button */
+        align-items: center;
     }
-
-    /* Custom button wrapper for "View Plan" icon, positioned inside stChatInputContainer */
-    .view-plan-icon-button-wrapper-for-chat {
-        flex-shrink: 0; /* Don't let it shrink */
-        width: 40px; /* Explicit width */
-        height: 40px; /* Explicit height */
-        order: 1; /* Put the button before the form */
+    .fixed-chat-footer .stTextInput { /* The text input component itself */
+        flex-grow: 1; /* Allow text input to fill space */
+    }
+    .fixed-chat-footer .stTextInput > div > div > input { /* The actual text input field */
+        border-radius: 20px; 
+        border: 1px solid #495057; 
+        background-color: #343a40; 
+        color: #e0e0e0;
+        padding: 10px 15px;
+        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        min-height: 40px; 
+    }
+    .fixed-chat-footer .stTextInput > div > div > input:focus {
+        border-color: #007bff; 
+        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25); 
+        outline: none;
+    }
+    .fixed-chat-footer .stButton button[data-testid="stFormSubmitButton"] { /* The submit button in the form */
+        border-radius: 20px !important; 
+        background-color: #007bff !important;
+        color: white !important;
+        height: 40px; 
+        min-width: 40px; 
+        width: auto; /* Allow width to fit "Send" text */
+        padding: 0 15px !important; /* Add padding for text */
         display: flex;
         align-items: center;
         justify-content: center;
-        /* margin-left: 1rem; If you want additional spacing from the very left edge */
+        flex-shrink: 0; 
     }
-    .view-plan-icon-button {
+    .fixed-chat-footer .stButton button[data-testid="stFormSubmitButton"]:hover {
+        background-color: #0056b3 !important;
+    }
+
+    /* "View Plan" button specific styling */
+    .fixed-chat-footer #view_plan_status_button {
         background-color: #454d55 !important;
         color: #e0e0e0 !important;
         border: 1px solid #5a6268 !important;
         border-radius: 8px !important;
-        width: 100%; /* Fill wrapper */
-        height: 100%; /* Fill wrapper */
+        padding: 8px 15px !important;
+        font-size: 14px;
+        height: 40px; /* Match height of input/submit button */
+        width: auto; /* Allow width to fit text */
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2em;
-        cursor: pointer;
-        transition: background-color 0.2s, color 0.2s;
-        text-decoration: none;
+        gap: 5px;
+        flex-shrink: 0; /* Prevent from shrinking */
     }
-    .view-plan-icon-button:hover {
+    .fixed-chat-footer #view_plan_status_button:hover {
         background-color: #5a6268 !important;
         color: #ffffff !important;
     }
 
-    /* Hide the Streamlit's internal hidden button (triggered by JS from custom HTML button) */
-    [key="view_plan_status_button_hidden_real"] {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-    }
 
     /* Plan Status Modal (Overlay) */
     .plan-status-modal {
@@ -1038,7 +1082,7 @@ def _render_sidebar_content():
                     # Use a standard Streamlit button and let CSS handle the active state visual.
                     # The 'type' argument here is just a hint for Streamlit's default styling, 
                     # but our custom CSS for .active-chat-button will override it.
-                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}", type="secondary"):
+                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}"):
                         st.session_state.current_chat_id = chat_id
                         st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=chat_id) # Set chat_id in URL
                         st.session_state.show_plan_options = False
@@ -1114,38 +1158,39 @@ def _render_plan_options_page():
     st.markdown("<h2 style='text-align:center; color:#007bff; margin-top:30px;'>Upgrade Your Plan</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center; color:#e0e0e0; margin-bottom: 30px;'>Choose the plan that best suits your needs.</p>", unsafe_allow_html=True)
 
-    # Render plans side-by-side using st.columns
+    # Render plans side-by-side using a responsive grid
+    st.markdown('<div class="plan-card-container">', unsafe_allow_html=True)
     plan_keys = list(PLANS.keys())
-    cols = st.columns(len(plan_keys)) # Create columns dynamically
 
-    for i, plan_key in enumerate(plan_keys):
+    for plan_key in plan_keys:
         plan_data = PLANS[plan_key]
         is_current_plan = (plan_key == st.session_state.user_plan)
         card_class = "plan-card current-plan" if is_current_plan else "plan-card"
 
-        with cols[i]: # Place each card in its respective column
-            st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
-            st.markdown(f"<h3>{plan_data['name'].replace('-', ' ').title()}</h3>", unsafe_allow_html=True)
-            st.markdown("<ul>", unsafe_allow_html=True)
-            for feature in plan_data["features"]:
-                st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
-            st.markdown("</ul>", unsafe_allow_html=True)
+        # Each plan is a separate div
+        st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
+        st.markdown(f"<h3>{plan_data['name'].replace('-', ' ').title()}</h3>", unsafe_allow_html=True)
+        st.markdown("<ul>", unsafe_allow_html=True)
+        for feature in plan_data["features"]:
+            st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
+        st.markdown("</ul>", unsafe_allow_html=True)
 
-            if is_current_plan:
-                st.markdown("<p class='current-plan-text'>CURRENT PLAN</p>", unsafe_allow_html=True)
-            else:
-                if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
-                    _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
-                    st.components.v1.html(
-                        f"""
-                        <script>
-                            window.open("{plan_data['telegram_link']}", "_blank");
-                        </script>
-                        """,
-                        height=0, width=0
-                    )
-                    st.success(f"Opening Telegram for {plan_data['name']} upgrade instructions.")
-            st.markdown('</div>', unsafe_allow_html=True)
+        if is_current_plan:
+            st.markdown("<p class='current-plan-text'>CURRENT PLAN</p>", unsafe_allow_html=True)
+        else:
+            if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
+                _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
+                st.components.v1.html(
+                    f"""
+                    <script>
+                        window.open("{plan_data['telegram_link']}", "_blank");
+                    </script>
+                    """,
+                    height=0, width=0
+                )
+                st.success(f"Opening Telegram for {plan_data['name']} upgrade instructions.")
+        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True) # Close plan-card-container
 
 def _render_general_settings():
     st.subheader("General Settings")
@@ -1301,7 +1346,7 @@ def _render_chat_message(role: str, content: str, message_id: str):
     avatar_image = ASSISTANT_AVATAR if role == "assistant" else "👤" 
 
     # Improved code block formatting with simulated copy button
-    formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></i>")
+    formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></code>")
     if "<pre><code" in formatted_content:
         formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1) # Only replace first occurrence per block
 
@@ -1414,33 +1459,34 @@ def main():
     if st.session_state.show_plan_status_modal:
         _render_plan_status_modal()
 
-    # --- Fixed Chat Footer (View Plan Button + Chat Input) ---
+    # --- Chat Input Handling (Fixed Footer) ---
     # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
-        # We need to manually inject the HTML for the button *before* st.chat_input
-        # and rely on CSS to position it correctly within the stChatInputContainer.
-        # Streamlit places st.chat_input inside a fixed div with data-testid="stChatInputContainer".
-        # We'll augment that container by injecting the button before the chat_input renders its content.
+        st.markdown('<div class="fixed-chat-footer">', unsafe_allow_html=True)
+        # Use a form to group the text input and its submit button
+        with st.form("chat_input_form", clear_on_submit=True):
+            # Columns for the text input and the actual submit button
+            input_col, submit_col = st.columns([0.9, 0.1])
+            with input_col:
+                user_message = st.text_input("Type your message...", label_visibility="collapsed", key="user_message_input", placeholder="Type your message...")
+            with submit_col:
+                submitted = st.form_submit_button("Send", type="primary", use_container_width=True)
 
-        # Inject the custom HTML for the View Plan button wrapper.
-        # This wrapper will be styled to appear inside the stChatInputContainer via CSS.
-        st.markdown(
-            f'<div class="view-plan-icon-button-wrapper-for-chat">'
-            f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden_real\').click();">📊</button>'
-            f'</div>', unsafe_allow_html=True
-        )
-        # The actual Streamlit chat input, it creates its own fixed container by default.
-        p_in = st.chat_input("Type your message...", key="chat_input_main")
+        # Place the "View Plan" button outside the form, but within the same fixed footer area
+        # Use another set of columns or adjust flex properties directly
+        # For simplicity and visual alignment, we'll make a separate section for it right next to the form columns.
+        # This requires careful CSS, which is already designed into .fixed-chat-footer
 
-        # Hidden Streamlit button to handle the click from the custom HTML button
-        # This needs to be outside the markdown block but still in the general flow
-        if st.button("Toggle Plan Modal", key="view_plan_status_button_hidden_real", help="Hidden button to toggle plan modal", label_visibility="collapsed"):
+        # The Streamlit button for "View Plan"
+        if st.button("⬆️ View Plan", key="view_plan_status_button", help="View your current plan details"):
             st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
             _log_user_action("View Plan Status toggled.")
             st.rerun()
 
-        # Logic to process message after chat input submission
-        if p_in: # p_in captures the text from st.chat_input when user presses Enter/Send
+        st.markdown('</div>', unsafe_allow_html=True) # End of fixed-chat-footer
+
+        # Logic to process message after form submission
+        if submitted and user_message:
             # --- RATE LIMITING ---
             time_since_last_request = (datetime.now() - st.session_state.last_ai_request_time).total_seconds()
             MIN_REQUEST_INTERVAL = 3 # seconds
@@ -1470,7 +1516,7 @@ def main():
             if not st.session_state.current_chat_id:
                 current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 new_chat_uuid = str(uuid.uuid4()) # Use a UUID for chat_id for uniqueness in URL
-                chat_id_title_prefix = p_in.strip()[:20] + "..." if len(p_in.strip()) > 23 else p_in.strip()
+                chat_id_title_prefix = user_message.strip()[:20] + "..." if len(user_message.strip()) > 23 else user_message.strip()
 
                 st.session_state.current_chat_id = new_chat_uuid # Set session state chat_id to UUID
                 st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=new_chat_uuid) # Set URL query param
@@ -1493,9 +1539,9 @@ def main():
 
             # Process Google Search command
             search_results_content = ""
-            if p_in.strip().lower().startswith("/search "):
+            if user_message.strip().lower().startswith("/search "):
                 if st.session_state.plan_details["google_search_enabled"]:
-                    search_query = p_in[len("/search "):].strip()
+                    search_query = user_message[len("/search "):].strip()
                     _log_user_action(f"User initiated Google Search for: '{search_query}'.")
                     with st.status(f"🌐 Searching Google for: '{search_query}'...", expanded=True, state="running") as status:
                         search_results_content = _perform_google_search(search_query)
@@ -1507,17 +1553,17 @@ def main():
                         "content": search_results_content
                     })
                     # Modify the user's input to include search results for AI context with stronger emphasis on analysis
-                    p_in = f"Operator requested a search for '{search_query}'. The following critical intelligence was gathered and requires immediate tactical analysis:\n{search_results_content}\n\nBased on these findings and the initial objective, provide a comprehensive tactical assessment and outline the next steps for exploitation."
+                    user_message = f"Operator requested a search for '{search_query}'. The following critical intelligence was gathered and requires immediate tactical analysis:\n{search_results_content}\n\nBased on these findings and the initial objective, provide a comprehensive tactical assessment and outline the next steps for exploitation."
                 else:
                     st.warning("Google Search requires 'HACKER-PRO' or 'ELITE-ASSASSIN' plan. Upgrade for enhanced OSINT capabilities.")
                     _log_user_action("User attempted Google Search on restricted plan.")
-                    p_in = "Operator attempted to use Google Search but their current plan does not permit it. Inform them of the restriction and suggest upgrade. Do NOT perform search."
+                    user_message = "Operator attempted to use Google Search but their current plan does not permit it. Inform them of the restriction and suggest upgrade. Do NOT perform search."
 
             # Add user message to chat history
             st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
                 "id": str(uuid.uuid4()),
                 "role": "user",
-                "content": p_in
+                "content": user_message
             })
             st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             _sync_user_chats_to_vault() # Save after user message
