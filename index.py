@@ -294,12 +294,6 @@ def _initialize_session_state():
     if "settings_sub_page" not in st.session_state:
         st.session_state.settings_sub_page = "dashboard" # Changed default to dashboard
 
-    # New flags for settings sub-pages (controlled by settings_sub_page)
-    # if "show_dashboard_page" not in st.session_state: st.session_state.show_dashboard_page = False
-    # if "show_help_page" not in st.session_state: st.session_state.show_help_page = False
-    # if "show_feedback_page" not in st.session_state: st.session_state.show_feedback_page = False
-
-
     if "last_ai_request_time" not in st.session_state: # For AI request rate limiting
         st.session_state.last_ai_request_time = datetime.min
     if "app_logs" not in st.session_state:
@@ -889,18 +883,14 @@ def _set_page_config_and_css():
         background-color: #212529; /* Match app background for seamless fixed footer */
         box-shadow: 0 -2px 10px rgba(0,0,0,0.3); /* Subtle shadow above input */
         box-sizing: border-box;
-        display: flex; /* Use flexbox to align button and input */
-        justify-content: center; /* Center the internal content */
-        align-items: center;
-        gap: 10px; /* Space between the custom button and the chat input's form */
+        /* Removed flex properties that caused conflicts */
     }
 
     /* This targets the immediate child of stChatInputContainer which is usually a form */
     div[data-testid="stChatInputContainer"] > form {
-        flex-grow: 1; /* Allow the form to take most space */
         max-width: 800px; /* Limit the width of the input area */
-        margin: 0; /* Remove default margin */
-        order: 2; /* Put the form after the button */
+        margin-left: auto; /* Center the form */
+        margin-right: auto; /* Center the form */
     }
 
     /* Target the actual st.text_input within the st.chat_input's form */
@@ -919,48 +909,6 @@ def _set_page_config_and_css():
         height: 40px;
         min-width: 40px;
         padding: 0 15px !important;
-    }
-
-
-    /* Custom button wrapper for "View Plan" icon, positioned inside stChatInputContainer */
-    .view-plan-icon-button-wrapper-for-chat {
-        flex-shrink: 0; /* Don't let it shrink */
-        width: 40px; /* Explicit width */
-        height: 40px; /* Explicit height */
-        order: 1; /* Put the button before the form */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .view-plan-icon-button {
-        background-color: #454d55 !important;
-        color: #e0e0e0 !important;
-        border: 1px solid #5a6268 !important;
-        border-radius: 8px !important;
-        width: 100%; /* Fill wrapper */
-        height: 100%; /* Fill wrapper */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2em;
-        cursor: pointer;
-        transition: background-color 0.2s, color 0.2s;
-        text-decoration: none;
-    }
-    .view-plan-icon-button:hover {
-        background-color: #5a6268 !important;
-        color: #ffffff !important;
-    }
-
-    /* Hide the Streamlit's internal hidden button (triggered by JS from custom HTML button) */
-    [key="view_plan_status_button_hidden_real"] {
-        display: none !important;
-        visibility: hidden !important;
-        width: 0 !important;
-        height: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
     }
 
     /* Plan Status Modal (Overlay) */
@@ -1177,6 +1125,11 @@ def _render_sidebar_content():
             st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("Accessed upgrade page.")
             st.rerun()
+        # Moved the View Plan Status button to the sidebar
+        if st.button("📊 View Plan Status", use_container_width=True, key="view_plan_status_button_sidebar"):
+            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
+            _log_user_action("View Plan Status toggled from sidebar.")
+            st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1227,6 +1180,8 @@ def _render_plan_options_page():
                 st.markdown("<p class='current-plan-text'>CURRENT PLAN</p>", unsafe_allow_html=True)
             else:
                 if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
+                    plan_name_display = plan_data['name'].replace('-', ' ').title()
+                    st.info(f"Please contact us on Telegram and mention you'd like to subscribe to the **{plan_name_display}** plan.")
                     _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
                     st.components.v1.html(
                         f"""
@@ -1236,7 +1191,6 @@ def _render_plan_options_page():
                         """,
                         height=0, width=0
                     )
-                    st.success(f"Opening Telegram for {plan_data['name']} upgrade instructions.")
             st.markdown('</div>', unsafe_allow_html=True)
 
 def _render_dashboard_content():
@@ -1474,7 +1428,7 @@ def _render_help_page():
     st.markdown("<h5>4. Plan Features:</h5>", unsafe_allow_html=True)
     st.markdown("""
     - Check the "Upgrade Plan" page for a full breakdown of features included in each subscription level (Free-Trial, Hacker-Pro, Elite-Assassin).
-    - Click the "📊" icon next to the chat input to quickly view your current plan status.
+    - Click the "📊 View Plan Status" button in the sidebar to quickly view your current plan status.
     """, unsafe_allow_html=True)
 
     st.markdown("---")
@@ -1582,16 +1536,19 @@ def _render_plan_status_modal():
         else:
             status_icon = "🔒"
             # For locked plans, the entire div becomes clickable and redirects
-            plan_html = f'<div class="plan-option-item locked-plan" ' \
-                        f'onclick="document.getElementById(\'{button_key}\').click();">' \
-                        f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>' \
-                        f'<span class="plan-status-icon">{status_icon} LOCKED</span>' \
-                        f'</div>'
-            st.markdown(plan_html, unsafe_allow_html=True)
+            # Use a hidden Streamlit button to handle the click logic
+            st.markdown(
+                f'<div class="plan-option-item locked-plan" '
+                f'onclick="document.getElementById(\'hidden_modal_plan_button_{plan_key}\').click();">' # JS click target
+                f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>'
+                f'<span class="plan-status-icon">{status_icon} LOCKED</span>'
+                f'</div>', unsafe_allow_html=True
+            )
             # Hidden Streamlit button to catch the JS click and trigger rerun
-            if st.button("Redirect to Upgrade", key=button_key, help="Hidden button to trigger upgrade redirect", disabled=True):
+            if st.button("Redirect to Upgrade", key=f"hidden_modal_plan_button_{plan_key}", help="Hidden button to trigger upgrade redirect", label_visibility="collapsed"):
                 st.session_state.show_plan_options = True # Redirect to upgrade page
                 st.session_state.show_plan_status_modal = False # Close modal
+                _log_user_action(f"Redirected to Upgrade Plan for {plan_key} from modal.")
                 st.rerun()
 
     if st.button("Close", key="close_plan_modal", use_container_width=True, help="Close this window"):
@@ -1665,32 +1622,11 @@ def main():
     if st.session_state.show_plan_status_modal:
         _render_plan_status_modal()
 
-    # --- Fixed Chat Footer (View Plan Button + Chat Input) ---
-    # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
+    # --- Fixed Chat Footer (Chat Input) ---
+    # The st.chat_input component automatically renders a fixed footer at the bottom.
+    # We ensure no custom HTML or CSS interferes with its parent container.
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
-        # We need to manually inject the HTML for the button *before* st.chat_input
-        # and rely on CSS to position it correctly within the stChatInputContainer.
-        # Streamlit places st.chat_input inside a fixed div with data-testid="stChatInputContainer".
-        # We'll augment that container by injecting the button before the chat_input renders its content.
-
-        # Inject the custom HTML for the View Plan button wrapper.
-        # This wrapper will be styled to appear inside the stChatInputContainer via CSS.
-        st.markdown(
-            f'<div class="view-plan-icon-button-wrapper-for-chat">'
-            f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden_real\').click();">📊</button>'
-            f'</div>', unsafe_allow_html=True
-        )
-
-        # The actual Streamlit chat input. This element is automatically rendered
-        # inside the fixed `stChatInputContainer` and includes its own submit button.
         p_in = st.chat_input("Type your message...", key="chat_input_main", placeholder="Type your message...")
-
-        # Hidden Streamlit button to handle the click from the custom HTML icon button.
-        # This button is invisible and serves only to trigger a Streamlit rerun when clicked via JavaScript.
-        if st.button("Toggle Plan Modal", key="view_plan_status_button_hidden_real", help="Hidden button to toggle plan modal", label_visibility="collapsed"):
-            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
-            _log_user_action("View Plan Status toggled.")
-            st.rerun()
 
         # Logic to process message after chat input submission (p_in is non-empty)
         if p_in:
