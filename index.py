@@ -103,6 +103,7 @@ def cyber_engine(history, user_plan: str):
     The persona string changes based on the user's plan for tiered response quality.
     Prioritizes user's personal API key if available.
     Yields chunks of text. Stores the successful engine name in st.session_state._last_engine_used.
+    Removed streaming delay for instant writing.
     """
     # Select persona based on user_plan
     if user_plan == "ELITE-ASSASSIN":
@@ -239,7 +240,7 @@ PLANS = {
             "Unlimited AI Inquiries",
             "Advanced Code Generation & Exploits",
             "Integrated Google Search",
-            "Public/Private Chat Toggle",
+            "Public/Private Chat Toggle", # Feature exists, but not exposed in UI in this version
             "Priority AI Model Access",
             "Advanced Malware Analysis Reports",
             "Threat Analysis Reports",
@@ -303,8 +304,7 @@ def _initialize_session_state():
     if "app_logs" not in st.session_state: st.session_state.app_logs = []
     if "abort_ai_request" not in st.session_state: # Flag for stopping AI generation mid-stream
         st.session_state.abort_ai_request = False
-    # REMOVED: if "show_plan_status_modal" not in st.session_state: # For plan status overlay next to chat input
-    # REMOVED:     st.session_state.show_plan_status_modal = False
+    # Removed show_plan_status_modal state as the feature is removed.
     if "_last_engine_used" not in st.session_state: # To store which AI engine was successful
         st.session_state._last_engine_used = None
 
@@ -809,9 +809,7 @@ def _set_page_config_and_css():
     .chat-header-toggle h4 {
         color: #e0e0e0;
     }
-    .chat-header-toggle .stCheckbox {
-         margin-left: 20px;
-    }
+    /* Removed .chat-header-toggle .stCheckbox as the feature is no longer in chat UI */
 
     /* Plan card display (side-by-side grid for upgrade page) */
     .plan-card-container {
@@ -891,39 +889,55 @@ def _set_page_config_and_css():
         margin-top: 10px;
     }
 
-    /* Streamlit's chat input container is natively fixed at the bottom */
-    div[data-testid="stChatInputContainer"] {
-        padding-bottom: 10px; /* Add some padding at the bottom */
-        padding-top: 10px;    /* Add some padding at the top */
-        background-color: #212529; /* Match app background for seamless fixed footer */
+    /* CUSTOM FIXED BOTTOM INPUT CONTAINER */
+    .fixed-bottom-input-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #212529; /* Match app background */
         box-shadow: 0 -2px 10px rgba(0,0,0,0.3); /* Subtle shadow above input */
-        box-sizing: border-box;
+        padding: 10px 0; /* Vertical padding */
+        z-index: 1000; /* Ensure it's on top */
     }
 
-    /* This targets the immediate child of stChatInputContainer which is usually a form */
-    div[data-testid="stChatInputContainer"] > form {
-        max-width: 800px; /* Limit the width of the input area */
-        margin-left: auto; /* Center the form */
-        margin-right: auto; /* Center the form */
+    /* Style the form inside the fixed container */
+    .fixed-bottom-input-container form {
+        max-width: 800px; /* Max width for input field */
+        margin: auto; /* Center the form */
+        display: flex; /* Make input and button side-by-side */
+        gap: 10px; /* Space between input and button */
+        align-items: center; /* Vertically align items */
+        padding: 0 1rem; /* Horizontal padding from screen edge */
     }
 
-    /* Target the actual st.text_input within the st.chat_input's form */
-    div[data-testid="stChatInputContainer"] .stTextInput > div > div > input {
+    /* Style for the text input within the custom form */
+    .fixed-bottom-input-container form .stTextInput > div > div > input {
         border-radius: 20px; 
         border: 1px solid #495057; 
         background-color: #343a40; 
         color: #e0e0e0;
         padding: 10px 15px;
         min-height: 40px; 
+        flex-grow: 1; /* Allow input to take available space */
     }
-    /* Target the send button of st.chat_input */
-    div[data-testid="stChatInputContainer"] button[data-testid="stFormSubmitButton"] {
+
+    /* Style for the submit button within the custom form */
+    .fixed-bottom-input-container form button[data-testid="stFormSubmitButton"] {
         border-radius: 20px !important;
         background-color: #007bff !important;
         color: white !important;
         height: 40px;
         min-width: 40px;
         padding: 0 15px !important;
+        margin: 0 !important; /* Remove any default button margins */
+    }
+    /* Disabled state for custom input elements */
+    .fixed-bottom-input-container form .stTextInput [disabled],
+    .fixed-bottom-input-container form button[data-testid="stFormSubmitButton"][disabled] {
+        opacity: 0.6;
+        cursor: not-allowed;
+        background-color: #454d55 !important;
     }
 
     /* Settings Sub-navigation styles - Targeted by ID prefix */
@@ -1036,7 +1050,6 @@ def _render_sidebar_content():
             st.session_state.show_settings_page = False
             st.session_state.settings_sub_page = "dashboard" # Reset sub-page
             st.session_state.abort_ai_request = False # Ensure no pending aborts
-            # REMOVED: st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("New chat initiated.")
             st.rerun()
 
@@ -1062,7 +1075,6 @@ def _render_sidebar_content():
                         st.session_state.show_settings_page = False
                         st.session_state.settings_sub_page = "dashboard" # Reset sub-page
                         st.session_state.abort_ai_request = False # Ensure no pending aborts
-                        # REMOVED: st.session_state.show_plan_status_modal = False # Hide modal
                         _log_user_action(f"Chat '{chat_title}' selected.")
                         st.rerun()
                 with delete_btn_col:
@@ -1095,7 +1107,6 @@ def _render_sidebar_content():
             st.session_state.show_plan_options = False
             st.session_state.settings_sub_page = "dashboard" # Default to dashboard for settings
             st.session_state.abort_ai_request = False # Ensure no pending aborts
-            # REMOVED: st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("Accessed settings page.")
             st.rerun()
         if st.button("⬆️ Upgrade Plan", use_container_width=True, key="change_plan_button"):
@@ -1105,13 +1116,8 @@ def _render_sidebar_content():
             st.session_state.show_settings_page = False
             st.session_state.settings_sub_page = "dashboard" # Reset sub-page
             st.session_state.abort_ai_request = False # Ensure no pending aborts
-            # REMOVED: st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("Accessed upgrade page.")
             st.rerun()
-        # REMOVED: if st.button("📊 View Plan Status", use_container_width=True, key="view_plan_status_button_sidebar"):
-        # REMOVED:     st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal # Toggle visibility
-        # REMOVED:     _log_user_action("View Plan Status toggled from sidebar.")
-        # REMOVED:     st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1474,7 +1480,7 @@ def _render_help_page():
     st.markdown("""
     - **Start a New Chat:** Click "➕ New Chat" in the sidebar to initiate a fresh conversation.
     - **Saved Chats:** Your conversations are automatically saved. Click on a chat title in the sidebar to resume it.
-    - **Private/Public Chats:** By default, chats are private. For Hacker-Pro or higher plans, you can toggle public/private mode in the chat header. Public chats are shared (mocked functionality).
+    - **Chat Privacy:** Currently, all chats are considered private. Public sharing features are not exposed in this version.
     """, unsafe_allow_html=True)
 
     st.markdown("<h5>2. Advanced Commands:</h5>", unsafe_allow_html=True)
@@ -1507,7 +1513,7 @@ def _render_settings_page():
     st.markdown("---")
 
     # Sub-navigation for settings - Using st.columns for horizontal layout
-    cols = st.columns(7) # Increased to 7 for logs
+    cols = st.columns(7) 
     buttons_config = [
         ("Dashboard", "dashboard"),
         ("General", "general"),
@@ -1520,7 +1526,7 @@ def _render_settings_page():
 
     for i, (label, sub_page_name) in enumerate(buttons_config):
         with cols[i]:
-            # Removed class_name. Styling will be handled by CSS selectors and dynamic injection.
+            # No class_name argument; CSS targets by ID prefix or dynamically injected style
             if st.button(label, key=f"settings_nav_{sub_page_name}", use_container_width=True):
                 st.session_state.settings_sub_page = sub_page_name
                 _log_user_action(f"Accessed {label} from Settings nav.")
@@ -1528,8 +1534,7 @@ def _render_settings_page():
 
     # Dynamic CSS injection for active state of settings navigation buttons
     if st.session_state.settings_sub_page:
-        # Streamlit button IDs are typically generated as 'key-top'
-        active_button_id = f"settings_nav_{st.session_state.settings_sub_page}-top"
+        active_button_id = f"settings_nav_{st.session_state.settings_sub_page}-top" # Streamlit appends -top to button keys for their IDs
         st.markdown(f"""
             <style>
             button[id="{active_button_id}"] {{
@@ -1568,7 +1573,6 @@ def _render_chat_message(role: str, content: str, message_id: str):
 
     # Improved code block formatting with simulated copy button
     # This logic assumes markdown code blocks are correctly formatted as ```language\ncode\n```
-    # We use a regex-like replace but ensure it only adds the button once per code block
     formatted_content = content
     # Look for patterns like ```python, ```bash, or generic ```
     formatted_content = formatted_content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>")
@@ -1577,9 +1581,6 @@ def _render_chat_message(role: str, content: str, message_id: str):
     # Insert copy button only if a <pre><code has been opened (and not already inserted)
     if "<pre><code" in formatted_content:
         # This replaces the FIRST occurrence of "<pre><code" in the entire string to insert the button
-        # This might not handle multiple independent code blocks perfectly within one message,
-        # but for typical single-code-block AI responses, it works.
-        # A more robust solution would involve parsing markdown.
         formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1) 
 
     with st.chat_message(role, avatar=avatar_image): # Pass avatar to st.chat_message
@@ -1617,53 +1618,43 @@ def main():
     else: # Render the active chat interface
         current_chat_data_obj = st.session_state.user_chats.get(st.session_state.current_chat_id, {"messages": [], "is_private": True, "title": "New Chat"})
         current_chat_messages = current_chat_data_obj.get("messages", [])
-        current_chat_is_private = current_chat_data_obj.get("is_private", True)
 
-        # Chat header with Public/Private toggle
+        # NOTE: is_private is still stored but not exposed in UI in this version as per request.
+        # Ensure new chats default to private for limited plans if no prior state, though toggle is removed.
+        # current_chat_is_private = current_chat_data_obj.get("is_private", True) 
+
+        # Chat header for title
         with st.container():
             st.markdown('<div class="chat-header-toggle">', unsafe_allow_html=True)
             st.markdown(f"<h4 style='margin:0;'>Chat: <span style='color:#007bff;'>{current_chat_data_obj.get('title', 'Untitled Chat')}</span></h4>", unsafe_allow_html=True)
-
-            # Allow public chats only for paid plans
-            if st.session_state.plan_details["name"] in ["HACKER-PRO", "ELITE-ASSASSIN"]:
-                is_private_toggle = st.checkbox(f"Private Chat", value=current_chat_is_private, key=f"private_toggle_{st.session_state.current_chat_id}")
-                if is_private_toggle != current_chat_is_private:
-                    current_chat_data_obj["is_private"] = is_private_toggle
-                    st.session_state.user_chats[st.session_state.current_chat_id] = current_chat_data_obj
-                    _sync_user_chats_to_vault()
-                    _log_user_action(f"Chat '{st.session_state.current_chat_id}' privacy set to {'Private' if is_private_toggle else 'Public'}.")
-                    st.rerun() # Rerun to reflect toggle change in UI
-            else:
-                st.info("Public chat mode requires a 'HACKER-PRO' or higher plan.")
-                if not current_chat_is_private: # Only enforce if it somehow got set to public previously
-                    current_chat_data_obj["is_private"] = True
-                    st.session_state.user_chats[st.session_state.current_chat_id] = current_chat_data_obj
-                    _sync_user_chats_to_vault()
-                    st.rerun() # Rerun to enforce private mode
-
+            # Removed the public/private toggle and info message as per request.
             st.markdown('</div>', unsafe_allow_html=True)
 
         for msg in current_chat_messages:
             _render_chat_message(msg["role"], msg["content"], msg["id"])
 
 
-    # --- Fixed Chat Footer (Chat Input) ---
-    # Always render st.chat_input to prevent TypeError, but hide it with CSS and process input conditionally.
-    p_in = st.chat_input("Type your message...", key="chat_input_main", 
-                          placeholder="Enter command or message, Operator...")
+    # --- Custom Fixed Bottom Input Bar ---
+    # This custom input bar is ALWAYS rendered to prevent Streamlit TypeErrors,
+    # but its active/disabled state is controlled by the session state flags.
+    st.markdown('<div class="fixed-bottom-input-container">', unsafe_allow_html=True)
+    with st.form("chat_input_form", clear_on_submit=True, border=False): # Remove default form border
+        col1, col2 = st.columns([0.9, 0.1])
 
-    # Inject CSS to hide chat input if on settings/upgrade pages
-    if st.session_state.show_plan_options or st.session_state.show_settings_page:
-        st.markdown("""
-            <style>
-            div[data-testid="stChatInputContainer"] {
-                display: none !important;
-            }
-            </style>
-            """, unsafe_allow_html=True)
+        input_disabled = st.session_state.show_plan_options or st.session_state.show_settings_page
 
-    # Process input ONLY if the chat input should logically be active and actually has content
-    if p_in and not (st.session_state.show_plan_options or st.session_state.show_settings_page):
+        with col1:
+            user_input = st.text_input("Message", label_visibility="collapsed", key="user_input_text_field",
+                                       placeholder="Enter command or message, Operator...",
+                                       disabled=input_disabled)
+        with col2:
+            send_button = st.form_submit_button("⬆️", use_container_width=True,
+                                                disabled=input_disabled)
+    st.markdown('</div>', unsafe_allow_html=True) # End of fixed input container
+
+    # Process input ONLY if the send button was pressed, there's content,
+    # and we are not on a settings/upgrade page.
+    if send_button and user_input and not input_disabled:
         st.session_state.abort_ai_request = False # Reset abort flag on new user input
 
         # --- RATE LIMITING ---
@@ -1672,8 +1663,6 @@ def main():
         if time_since_last_request < MIN_REQUEST_INTERVAL:
             st.warning(f"Please wait {int(MIN_REQUEST_INTERVAL - time_since_last_request)} seconds before your next message.")
             _log_user_action("Rate limit hit.")
-            # We do not st.stop() here, but rather display the warning.
-            # The input will be cleared on rerun, but the message won't be processed.
             st.rerun() 
             return # Exit early to prevent message processing
 
@@ -1699,7 +1688,7 @@ def main():
         if not st.session_state.current_chat_id:
             current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             new_chat_uuid = str(uuid.uuid4()) # Use a UUID for chat_id for uniqueness in URL
-            chat_id_title_prefix = p_in.strip()[:20] + "..." if len(p_in.strip()) > 23 else p_in.strip()
+            chat_id_title_prefix = user_input.strip()[:20] + "..." if len(user_input.strip()) > 23 else user_input.strip()
 
             st.session_state.current_chat_id = new_chat_uuid # Set session state chat_id to UUID
             st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=new_chat_uuid) # Set URL query param
@@ -1707,7 +1696,7 @@ def main():
             st.session_state.user_chats[new_chat_uuid] = {
                 "title": chat_id_title_prefix, # Store a shorter title for display
                 "messages": [],
-                "is_private": st.session_state.plan_details.get("name") not in ["HACKER-PRO", "ELITE-ASSASSIN"], # Default new chats to private for limited plans
+                "is_private": True, # All new chats are private by default, as toggle is removed.
                 "created_at": current_time_str,
                 "last_updated": current_time_str,
             }
@@ -1722,11 +1711,11 @@ def main():
 
         # Process Google Search command
         search_results_content = ""
-        original_user_input = p_in # Store original input for chat history
+        original_user_input = user_input # Store original input for chat history
 
-        if p_in.strip().lower().startswith("/search "):
+        if user_input.strip().lower().startswith("/search "):
             if st.session_state.plan_details["google_search_enabled"]:
-                search_query = p_in[len("/search "):].strip()
+                search_query = user_input[len("/search "):].strip()
                 _log_user_action(f"User initiated Google Search for: '{search_query}'.")
                 with st.status(f"🌐 Searching Google for: '{search_query}'...", expanded=True, state="running") as status:
                     search_results_content = _perform_google_search(search_query)
@@ -1739,19 +1728,18 @@ def main():
                     "content": search_results_content
                 })
                 # Modify the user's input to include search results for AI context with stronger emphasis on analysis
-                p_in = f"Operator requested a search for '{search_query}'. The following critical intelligence was gathered and requires immediate tactical analysis:\n{search_results_content}\n\nBased on these findings and the initial objective, provide a comprehensive tactical assessment and outline the next steps for exploitation."
+                user_input = f"Operator requested a search for '{search_query}'. The following critical intelligence was gathered and requires immediate tactical analysis:\n{search_results_content}\n\nBased on these findings and the initial objective, provide a comprehensive tactical assessment and outline the next steps for exploitation."
             else:
                 st.warning("Google Search requires 'HACKER-PRO' or 'ELITE-ASSASSIN' plan. Upgrade for enhanced OSINT capabilities.")
                 _log_user_action("User attempted Google Search on restricted plan.")
-                # Do not modify p_in for AI, let it respond about the restriction.
-                # Or, more directly, instruct AI to inform the user about the restriction.
-                p_in = "Operator attempted to use Google Search but their current plan does not permit it. Inform them of the restriction and suggest upgrade. Do NOT perform search."
+                # Instruct AI to inform the user about the restriction.
+                user_input = "Operator attempted to use Google Search but their current plan does not permit it. Inform them of the restriction and suggest upgrade. Do NOT perform search."
 
         # Add user message to chat history
         st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
             "id": str(uuid.uuid4()),
             "role": "user",
-            "content": original_user_input # Use original input for display, p_in might be modified for AI
+            "content": original_user_input # Use original input for display, user_input might be modified for AI
         })
         st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         _sync_user_chats_to_vault() # Save after user message
@@ -1810,7 +1798,7 @@ def main():
                                 break # Stop streaming if abort is requested
                             full_answer_content += chunk
                             message_area.markdown(full_answer_content)
-                            time.sleep(0.01) # Small delay to simulate natural writing speed, adjust as needed
+                            # Removed time.sleep(0.01) for instant writing.
 
                         eng_used = st.session_state._last_engine_used # Retrieve engine name set by cyber_engine
 
