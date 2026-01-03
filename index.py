@@ -94,12 +94,11 @@ def cyber_engine(history, user_plan: str):
     """
     Handles AI response generation using the specified models and API key handling.
     This function's core logic for AI interaction matches the user's provided snippet.
-    The persona string changes based on the user's plan for tiered response quality.
+    The persona string changes based on the plan.
     Prioritizes user's personal API key if available.
     Yields chunks of text. Stores the successful engine name in st.session_state._last_engine_used.
     """
     # Select persona based on user_plan (stripping -MONTHLY/-ANNUAL for persona selection)
-    # The original code only used base plan names, so we adapt this.
     base_plan_for_persona = user_plan.split('-')[0]
     if base_plan_for_persona == "ELITE": # Elite-Assassin base plan
         persona = WORM_GPT_PERSONA_CONTENT_ELITE
@@ -142,8 +141,6 @@ def cyber_engine(history, user_plan: str):
                     _log_user_action(f"Attempting model {eng} with API {api_key[:5]}...")
                     # Set the engine *before* potentially yielding, in case of partial stream
                     st.session_state._last_engine_used = eng 
-                    # IMPORTANT: Original code used 'stream=True' but then 'return res.text'.
-                    # It must *yield* for streaming. This has been corrected.
                     res = client.models.generate_content(model=eng, contents=contents, config={'system_instruction': persona}, stream=True)
 
                     for chunk in res:
@@ -308,7 +305,7 @@ VALID_SERIAL_KEYS_MAP = {
     "WORM-MONTH-2025": "HACKER-PRO-MONTHLY", # Mapped to new monthly plan
     "VIP-HACKER-99": "ELITE-ASSASSIN-MONTHLY", # Mapped to new monthly plan
     "WORM999": "ELITE-ASSASSIN-ANNUAL", # Existing VIP serial mapped to new annual VIP
-    # New serials for clarity
+    # New placeholder serials for clarity
     "PRO-ANNUAL-KEY": "HACKER-PRO-ANNUAL",
     "VIP-ANNUAL-KEY": "ELITE-ASSASSIN-ANNUAL"
 }
@@ -944,52 +941,84 @@ def _set_page_config_and_css():
 
     /* Streamlit's chat input container is natively fixed at the bottom */
     div[data-testid="stChatInputContainer"] {
-        padding-bottom: 10px !important; /* Add some padding at the bottom */
-        padding-top: 10px !important;    /* Add some padding at the top */
-        background-color: #212529 !important; /* Match app background for seamless fixed footer */
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.3) !important; /* Subtle shadow above input */
+        padding-bottom: 10px; /* Add some padding at the bottom */
+        padding-top: 10px;    /* Add some padding at the top */
+        background-color: #212529; /* Match app background for seamless fixed footer */
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.3); /* Subtle shadow above input */
         box-sizing: border-box;
-        /* Original code's flex properties have been removed to fix TypeError */
-        /* display: flex; */ 
-        /* justify-content: center; */
-        /* align-items: center; */
-        /* gap: 10px; */
+        display: flex; /* Use flexbox to align button and input */
+        justify-content: center; /* Center the internal content */
+        align-items: center;
+        gap: 10px; /* Space between the custom button and the chat input's form */
     }
 
     /* This targets the immediate child of stChatInputContainer which is usually a form */
     div[data-testid="stChatInputContainer"] > form {
-        /* Original code's flex properties have been removed to fix TypeError */
-        /* flex-grow: 1; */
+        flex-grow: 1; /* Allow the form to take most space */
         max-width: 800px; /* Limit the width of the input area */
-        margin-left: auto; /* Center the form */
-        margin-right: auto; /* Center the form */
-        /* order: 2; */
+        margin: 0; /* Remove default margin */
+        order: 2; /* Put the form after the button */
     }
 
     /* Target the actual st.text_input within the st.chat_input's form */
     div[data-testid="stChatInputContainer"] .stTextInput > div > div > input {
-        border-radius: 20px !important; 
-        border: 1px solid #495057 !important; 
-        background-color: #343a40 !important; 
-        color: #e0e0e0 !important; /* White text for input */
-        padding: 10px 15px !important;
-        min-height: 40px !important; 
+        border-radius: 20px; 
+        border: 1px solid #495057; 
+        background-color: #343a40; 
+        color: #e0e0e0;
+        padding: 10px 15px;
+        min-height: 40px; 
     }
     div[data-testid="stChatInputContainer"] .stTextInput > div > div > button[data-testid="stFormSubmitButton"] {
         border-radius: 20px !important;
         background-color: #007bff !important;
         color: white !important;
-        height: 40px !important;
-        min-width: 40px !important;
+        height: 40px;
+        min-width: 40px;
         padding: 0 15px !important;
     }
 
 
-    /* Custom button wrapper for "View Plan" icon - REPLACED WITH A VISIBLE st.button */
-    /* .view-plan-icon-button-wrapper-for-chat, .view-plan-icon-button CSS removed */
+    /* Custom button wrapper for "View Plan" icon, positioned inside stChatInputContainer */
+    .view-plan-icon-button-wrapper-for-chat {
+        flex-shrink: 0; /* Don't let it shrink */
+        width: 40px; /* Explicit width */
+        height: 40px; /* Explicit height */
+        order: 1; /* Put the button before the form */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .view-plan-icon-button {
+        background-color: #454d55 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #5a6268 !important;
+        border-radius: 8px !important;
+        width: 100%; /* Fill wrapper */
+        height: 100%; /* Fill wrapper */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2em;
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        text-decoration: none;
+    }
+    .view-plan-icon-button:hover {
+        background-color: #5a6268 !important;
+        color: #ffffff !important;
+    }
 
-    /* Hide the Streamlit's internal hidden button (triggered by JS from custom HTML button) - REMOVED */
-    /* [key="view_plan_status_button_hidden_real"] CSS removed */
+    /* Hide the Streamlit's internal hidden button (triggered by JS from custom HTML button) */
+    [key="view_plan_status_button_hidden_real"] {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+    }
 
     /* Plan Status Modal (Overlay) */
     .plan-status-modal {
@@ -1245,7 +1274,8 @@ def _render_plan_options_page():
     ]
 
     # Use st.columns for better responsive layout for plan cards
-    cols = st.columns(len(plan_display_order)) # Create enough columns for all cards
+    # Create enough columns for all cards dynamically
+    cols = st.columns(len(plan_display_order)) 
 
     for i, plan_key in enumerate(plan_display_order):
         plan_data = PLANS[plan_key]
@@ -1516,7 +1546,7 @@ def _render_help_page():
     st.markdown("<h5>4. Plan Features:</h5>", unsafe_allow_html=True)
     st.markdown("""
     - Check the "Upgrade Plan" page for a full breakdown of features included in each subscription level (Free-Trial, Hacker-Pro, Elite-Assassins).
-    - Click the "📊" icon in the footer to quickly view your current plan status.
+    - Click the "📊" icon next to the chat input to quickly view your current plan status.
     """, unsafe_allow_html=True)
 
     st.markdown("---")
@@ -1620,7 +1650,8 @@ def _render_plan_status_modal():
         plan_data = PLANS[plan_key]
         is_current_plan = (plan_key == st.session_state.user_plan)
 
-        button_key = f"modal_plan_click_{plan_key}" # Unique key for potential hidden button
+        # Unique key for potential hidden button
+        # This hidden button mechanism is necessary for the modal to interact with Streamlit's state.
 
         if is_current_plan:
             status_icon = "✅"
@@ -1632,7 +1663,7 @@ def _render_plan_status_modal():
         else:
             status_icon = "🔒"
             # For locked plans, the entire div becomes clickable and redirects
-            # We use a hidden Streamlit button to catch the JS click and trigger rerun for a proper Streamlit interaction
+            # This relies on JS to click a hidden Streamlit button to trigger a rerun.
             st.markdown(
                 f'<div class="plan-option-item locked-plan" '
                 f'onclick="document.getElementById(\'hidden_modal_plan_button_{plan_key}\').click();">' # JS click target
@@ -1721,23 +1752,32 @@ def main():
     if st.session_state.show_plan_status_modal:
         _render_plan_status_modal()
 
-    # --- Fixed Chat Input Footer ---
+    # --- Fixed Chat Footer (View Plan Button + Chat Input) ---
     # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
-        # We place a visible button for "View Plan Status" in the main area.
-        # This will appear *above* the fixed st.chat_input component.
-        # This is the safest way to maintain functionality and visual intent without breaking st.chat_input.
-        col_btn, _ = st.columns([0.2, 0.8]) # To make button smaller and align left
-        with col_btn:
-            if st.button("📊 View Plan Status", key="view_plan_status_button_visible", use_container_width=True):
-                st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
-                _log_user_action("View Plan Status toggled from main chat area.")
-                st.rerun()
+        # We need to manually inject the HTML for the button *before* st.chat_input
+        # and rely on CSS to position it correctly within the stChatInputContainer.
+        # Streamlit places st.chat_input inside a fixed div with data-testid="stChatInputContainer".
+        # We'll augment that container by injecting the button before the chat_input renders its content.
+
+        # Inject the custom HTML for the View Plan button wrapper.
+        # This wrapper will be styled to appear inside the stChatInputContainer via CSS.
+        st.markdown(
+            f'<div class="view-plan-icon-button-wrapper-for-chat">'
+            f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden_real\').click();">📊</button>'
+            f'</div>', unsafe_allow_html=True
+        )
 
         # The actual Streamlit chat input. This element is automatically rendered
-        # inside its own fixed div (data-testid="stChatInputContainer")
-        # We do NOT wrap it in any custom HTML or apply flex properties to its container/form child.
+        # inside the fixed `stChatInputContainer` and includes its own submit button.
         p_in = st.chat_input("Type your message...", key="chat_input_main", placeholder="Type your message...")
+
+        # Hidden Streamlit button to handle the click from the custom HTML icon button.
+        # This button is invisible and serves only to trigger a Streamlit rerun when clicked via JavaScript.
+        if st.button("Toggle Plan Modal", key="view_plan_status_button_hidden_real", help="Hidden button to toggle plan modal", label_visibility="collapsed"):
+            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
+            _log_user_action("View Plan Status toggled.")
+            st.rerun()
 
         # Logic to process message after chat input submission (p_in is non-empty)
         if p_in:
@@ -1778,8 +1818,7 @@ def main():
                 st.session_state.user_chats[new_chat_uuid] = {
                     "title": chat_id_title_prefix, # Store a shorter title for display
                     "messages": [],
-                    # Default new chats to private for limited plans based on base plan type
-                    "is_private": st.session_state.user_plan.split('-')[0] not in ["HACKER", "ELITE"],
+                    "is_private": st.session_state.plan_details.get("name") not in ["HACKER-PRO-MONTHLY", "HACKER-PRO-ANNUAL", "ELITE-ASSASSIN-MONTHLY", "ELITE-ASSASSIN-ANNUAL"], # Default new chats to private for limited plans
                     "created_at": current_time_str,
                     "last_updated": current_time_str,
                 }
@@ -1858,58 +1897,52 @@ def main():
                     full_answer_content = ""
                     eng_used = "N/A" # Default if no engine used
 
-                    # Using a flag to capture the first engine name.
-                    # The generator yields (chunk, engine_name) for each chunk.
-                    # _last_engine_used is set inside cyber_engine after successful API call.
-                    first_chunk_processed = False 
+                    try:
+                        first_chunk_processed = False 
 
-                    for chunk in response_generator: # Note: cyber_engine now yields ONLY chunk.text
+                        for chunk in response_generator: 
+                            if st.session_state.abort_ai_request:
+                                break # Stop streaming if abort is requested
+
+                            if chunk:
+                                # We retrieve the engine name from session_state as set by cyber_engine
+                                if not first_chunk_processed:
+                                    eng_used = st.session_state._last_engine_used if st.session_state._last_engine_used else "N/A"
+                                    first_chunk_processed = True
+
+                                full_answer_content += chunk
+                                message_area.markdown(full_answer_content)
+                                time.sleep(0.01) # Simulate typing speed
+
+                        # --- Post-loop processing (still within the 'with status' block) ---
                         if st.session_state.abort_ai_request:
-                            break # Stop streaming if abort is requested
-
-                        if chunk:
-                            # We retrieve the engine name from session_state as set by cyber_engine
-                            if not first_chunk_processed:
-                                eng_used = st.session_state._last_engine_used if st.session_state._last_engine_used else "N/A"
-                                first_chunk_processed = True
-
-                            full_answer_content += chunk
-                            message_area.markdown(full_answer_content)
-                            time.sleep(0.01) # Small delay to simulate natural writing speed, adjust as needed
-
-                        # If chunk is None (e.g., from cyber_engine returning no keys), break.
-                        if chunk is None:
-                            break
-
-
-                    if st.session_state.abort_ai_request:
-                        status.update(label="☠️ ABORT SIGNAL RECEIVED. TERMINATING OPERATION...", state="error")
-                        # The warning and rerun are handled by the outer if-check
-                    elif full_answer_content and eng_used != "N/A": # Ensure we have content and an engine name
-                        status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
-                        # Content has been streamed, just save it to history
-                        st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
-                            "id": str(uuid.uuid4()),
-                            "role": "assistant",
-                            "content": full_answer_content
-                        })
-                        st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        _sync_user_chats_to_vault()
-                        _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
-                        st.rerun() # Rerun to finalize UI and ensure logs update
-                    else: # Case where generator yielded no content (e.g., empty response from model, but API call succeeded)
-                        status.update(label="❌ Failed to generate response.", state="error", expanded=True)
-                        error_message = "❌ Failed to generate AI response. No content received from model or no valid API keys. Please try again."
-                        message_area.markdown(error_message) # Display error to user
-                        st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
-                            "id": str(uuid.uuid4()),
-                            "role": "assistant",
-                            "content": error_message
-                        })
-                        st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        _sync_user_chats_to_vault()
-                        _log_user_action(f"AI response failed (no content) for chat '{st.session_state.current_chat_id}'.")
-                        st.rerun()
+                            status.update(label="☠️ ABORT SIGNAL RECEIVED. TERMINATING OPERATION...", state="error")
+                            # The warning and rerun are handled by the outer if-check
+                        elif full_answer_content and eng_used != "N/A": # Ensure we have content and an engine name
+                            status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
+                            # Content has been streamed, just save it to history
+                            st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
+                                "id": str(uuid.uuid4()),
+                                "role": "assistant",
+                                "content": full_answer_content
+                            })
+                            st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            _sync_user_chats_to_vault()
+                            _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
+                            st.rerun() # Rerun to finalize UI and ensure logs update
+                        else: # Case where generator yielded no content (e.g., empty response from model, but API call succeeded)
+                            status.update(label="❌ Failed to generate response.", state="error", expanded=True)
+                            error_message = "❌ Failed to generate AI response. No content received from model or no valid API keys. Please try again."
+                            message_area.markdown(error_message) # Display error to user
+                            st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
+                                "id": str(uuid.uuid4()),
+                                "role": "assistant",
+                                "content": error_message
+                            })
+                            st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            _sync_user_chats_to_vault()
+                            _log_user_action(f"AI response failed (no content) for chat '{st.session_state.current_chat_id}'.")
+                            st.rerun()
 
                     except Exception as e: # Catch any other unexpected errors during streaming
                         status.update(label="❌ Streaming failed.", state="error", expanded=True)
