@@ -139,20 +139,16 @@ def cyber_engine(history, user_plan: str):
             for eng in engines:
                 try:
                     # Configuration as specified in user's snippet, with dynamic persona
-                    # Use stream=True for direct/streaming response
-                    res = client.models.generate_content(model=eng, contents=contents, config={'system_instruction': persona}, stream=True)
-                    # Yield chunks for streaming display
-                    for chunk in res:
-                        if chunk.text: # Only yield if there's text
-                            yield chunk.text
-                    return None, eng # Return None for the full answer, as it's yielded
+                    res = client.models.generate_content(model=eng, contents=contents, config={'system_instruction': persona})
+                    if res.text:
+                        return res.text, eng
                 except Exception: # Simplified error handling as per user's snippet (just continue)
                     _log_user_action(f"AI_ENGINE_WARNING: Model {eng} failed with API {api_key[:5]}... Attempting next.")
                     continue
         except Exception: # Simplified error handling as per user's snippet (just continue)
             _log_user_action(f"AI_ENGINE_WARNING: API client init failed for API {api_key[:5]}... Attempting next.")
             continue
-    return None, None # If all attempts fail
+    return None, None
 
 # --- 4. Google Search Integration ---
 
@@ -865,25 +861,6 @@ def _set_page_config_and_css():
         order: 2; /* Put the form after the button */
     }
 
-    /* Target the actual st.text_input within the st.chat_input's form */
-    div[data-testid="stChatInputContainer"] .stTextInput > div > div > input {
-        border-radius: 20px; 
-        border: 1px solid #495057; 
-        background-color: #343a40; 
-        color: #e0e0e0;
-        padding: 10px 15px;
-        min-height: 40px; 
-    }
-    div[data-testid="stChatInputContainer"] .stTextInput > div > div > button[data-testid="stFormSubmitButton"] {
-        border-radius: 20px !important;
-        background-color: #007bff !important;
-        color: white !important;
-        height: 40px;
-        min-width: 40px;
-        padding: 0 15px !important;
-    }
-
-
     /* Custom button wrapper for "View Plan" icon, positioned inside stChatInputContainer */
     .view-plan-icon-button-wrapper-for-chat {
         flex-shrink: 0; /* Don't let it shrink */
@@ -893,6 +870,7 @@ def _set_page_config_and_css():
         display: flex;
         align-items: center;
         justify-content: center;
+        /* margin-left: 1rem; If you want additional spacing from the very left edge */
     }
     .view-plan-icon-button {
         background-color: #454d55 !important;
@@ -1052,14 +1030,15 @@ def _render_sidebar_content():
             for chat_id in sorted_chat_ids:
                 chat_title = st.session_state.user_chats[chat_id].get('title', chat_id.split(' - ')[0])
 
-                # Check if this is the current active chat to style it
                 is_active_chat = (chat_id == st.session_state.current_chat_id)
 
-                # Using st.columns for visual alignment of text and delete button
-                chat_btn_col, delete_btn_col = st.columns([0.85, 0.15])
-                with chat_btn_col:
-                    # Apply custom CSS class for active state
-                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}"):
+                st.markdown(f'<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 5px; padding-right: 15px;">', unsafe_allow_html=True)
+                col1, col2 = st.columns([0.85, 0.15])
+                with col1:
+                    # Use a standard Streamlit button and let CSS handle the active state visual.
+                    # The 'type' argument here is just a hint for Streamlit's default styling, 
+                    # but our custom CSS for .active-chat-button will override it.
+                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}", type="secondary"):
                         st.session_state.current_chat_id = chat_id
                         st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=chat_id) # Set chat_id in URL
                         st.session_state.show_plan_options = False
@@ -1068,7 +1047,7 @@ def _render_sidebar_content():
                         st.session_state.show_plan_status_modal = False # Hide modal
                         _log_user_action(f"Chat '{chat_title}' selected.")
                         st.rerun()
-                with delete_btn_col:
+                with col2:
                     if st.button("X", key=f"del_chat_{chat_id}", help="Delete Chat"):
                         _log_user_action(f"Chat '{chat_title}' deleted.")
                         del st.session_state.user_chats[chat_id]
@@ -1077,6 +1056,7 @@ def _render_sidebar_content():
                             st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None)
                         _sync_user_chats_to_vault()
                         st.rerun()
+                st.markdown(f'</div>', unsafe_allow_html=True)
 
                 # Manual rendering of a simple separator for clarity between chats
                 if chat_id != sorted_chat_ids[-1]: # Don't add separator after last chat
@@ -1322,9 +1302,8 @@ def _render_chat_message(role: str, content: str, message_id: str):
 
     # Improved code block formatting with simulated copy button
     formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></i>")
-    # Apply copy button only if it's a code block
     if "<pre><code" in formatted_content:
-        formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1)
+        formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1) # Only replace first occurrence per block
 
     with st.chat_message(role, avatar=avatar_image): # Pass avatar to st.chat_message
         st.markdown(f'<div style="position: relative;">{formatted_content}</div>', unsafe_allow_html=True)
@@ -1438,27 +1417,30 @@ def main():
     # --- Fixed Chat Footer (View Plan Button + Chat Input) ---
     # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
+        # We need to manually inject the HTML for the button *before* st.chat_input
+        # and rely on CSS to position it correctly within the stChatInputContainer.
+        # Streamlit places st.chat_input inside a fixed div with data-testid="stChatInputContainer".
+        # We'll augment that container by injecting the button before the chat_input renders its content.
+
         # Inject the custom HTML for the View Plan button wrapper.
-        # Streamlit will place this before its own st.chat_input content within the stChatInputContainer.
+        # This wrapper will be styled to appear inside the stChatInputContainer via CSS.
         st.markdown(
             f'<div class="view-plan-icon-button-wrapper-for-chat">'
             f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden_real\').click();">📊</button>'
             f'</div>', unsafe_allow_html=True
         )
+        # The actual Streamlit chat input, it creates its own fixed container by default.
+        p_in = st.chat_input("Type your message...", key="chat_input_main")
 
-        # The actual Streamlit chat input. This element is automatically rendered
-        # inside the fixed `stChatInputContainer` and includes its own submit button.
-        p_in = st.chat_input("Type your message...", key="chat_input_main", placeholder="Type your message...")
-
-        # Hidden Streamlit button to handle the click from the custom HTML icon button.
-        # This button is invisible and serves only to trigger a Streamlit rerun when clicked via JavaScript.
+        # Hidden Streamlit button to handle the click from the custom HTML button
+        # This needs to be outside the markdown block but still in the general flow
         if st.button("Toggle Plan Modal", key="view_plan_status_button_hidden_real", help="Hidden button to toggle plan modal", label_visibility="collapsed"):
             st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
             _log_user_action("View Plan Status toggled.")
             st.rerun()
 
-        # Logic to process message after chat input submission (p_in is non-empty)
-        if p_in:
+        # Logic to process message after chat input submission
+        if p_in: # p_in captures the text from st.chat_input when user presses Enter/Send
             # --- RATE LIMITING ---
             time_since_last_request = (datetime.now() - st.session_state.last_ai_request_time).total_seconds()
             MIN_REQUEST_INTERVAL = 3 # seconds
@@ -1566,28 +1548,21 @@ def main():
                         _log_user_action("AI generation aborted by operator.")
                         st.rerun() # Rerun immediately to process abort
 
-                    # Call the cyber_engine, which now yields chunks
-                    full_answer_content = ""
-                    eng_used = "N/A"
-                    response_generator, engine_name = cyber_engine(history, st.session_state.user_plan)
+                    # Call the cyber_engine, passing the user's current plan
+                    answer, eng = cyber_engine(history, st.session_state.user_plan)
 
-                    if response_generator:
-                        eng_used = engine_name # Capture engine name from the call
-                        # Use st.write_stream to display the response chunks as they arrive
-                        full_answer_content = st.write_stream(response_generator)
-                        status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
-
-                        # Only append the full answer to history once streaming is complete
-                        if full_answer_content:
-                            st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
-                                "id": str(uuid.uuid4()),
-                                "role": "assistant",
-                                "content": full_answer_content
-                            })
-                            st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                            _sync_user_chats_to_vault()
-                            _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
-                            st.rerun() # Rerun once more to finalize UI and ensure logs update
+                    if answer:
+                        status.update(label=f"Response generated via {eng.upper()}", state="complete", expanded=False)
+                        _render_chat_message("assistant", answer, str(uuid.uuid4()))
+                        st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
+                            "id": str(uuid.uuid4()),
+                            "role": "assistant",
+                            "content": answer
+                        })
+                        st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                        _sync_user_chats_to_vault()
+                        _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
+                        st.rerun()
                     else:
                         status.update(label="❌ Failed to generate response.", state="error", expanded=True)
                         error_message = "❌ Failed to generate AI response. System error or API exhaustion. Please try again."
