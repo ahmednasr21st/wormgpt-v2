@@ -102,9 +102,9 @@ def cyber_engine(history, user_plan: str):
 
     # The engines list is defined locally as per the user's snippet.
     engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
-    # WARNING: These model names may be hypothetical or restricted.
+    # WARNING: These model names may be hypothetical or restricted for public use.
     # If the AI does not respond, verify these model names against Google's official Gemini API documentation
-    # (e.g., "gemini-1.5-flash", "gemini-1.5-pro")
+    # (e.g., "gemini-1.5-flash", "gemini-1.5-pro" are common valid models)
 
     # Process MY_APIS_RAW into a list for random.shuffle
     current_apis_list = []
@@ -470,22 +470,25 @@ def _set_page_config_and_css():
         box-shadow: 0 0 10px #ff0000;
     }
     div[data-testid="stChatInputContainer"] { position: fixed; bottom: 20px; z-index: 1000; }
-    .stChatMessage { padding: 10px 25px !important; border-radius: 0px !important; border: none !important; }
+    .stChatMessage { padding: 15px 25px !important; border-radius: 3px !important; border: none !important; margin-bottom: 15px; }
 
     /* MODIFIED: Assistant message background for better visibility */
     .stChatMessage[data-testid="stChatMessageAssistant"] { 
         background-color: #2c333e !important; /* Lighter dark grey for better text contrast */
+        border-left: 3px solid #ff0000; /* Red accent for AI */
         border-top: 1px solid #30363d !important;
         border-bottom: 1px solid #30363d !important;
     }
     .stChatMessage[data-testid="stChatMessageUser"] { /* Keep user messages distinct */
         background-color: #1a1e24 !important; 
+        border-right: 3px solid #00ffff; /* Cyan accent for User */
         border-top: 1px solid #30363d !important;
         border-bottom: 1px solid #30363d !important;
     }
 
     .stChatMessage [data-testid="stMarkdownContainer"] p {
-        font-size: 19px !important; line-height: 1.6 !important; color: #ffffff !important; 
+        font-size: 19px !important; line-height: 1.6 !important; 
+        color: #e6edf3 !important; /* ENSURE LIGHT TEXT */
         text-align: left; /* Default LTR for paragraphs */
         direction: ltr; 
     }
@@ -504,13 +507,13 @@ def _set_page_config_and_css():
         border-radius: 8px;
         overflow-x: auto;
         font-size: 14px;
-        color: #9cdcfe;
+        color: #9cdcfe !important; /* ENSURE LIGHT CODE TEXT */
         position: relative;
         direction: ltr; /* Ensure code blocks are LTR */
         text-align: left;
     }
     .stChatMessage code {
-        color: #e6edf3;
+        color: #e6edf3 !important; /* ENSURE LIGHT INLINE CODE TEXT */
         background-color: #1a1e24;
         padding: 2px 4px;
         border-radius: 3px;
@@ -853,10 +856,18 @@ def _render_plan_options():
                 st.markdown("<p class='current-plan-text'>CURRENTLY ACTIVE PROTOCOL</p>", unsafe_allow_html=True)
             else:
                 # Only the upgrade button
+                # Use st.components.v1.html to force external redirect for Telegram
                 if st.button(f"UPGRADE", key=f"upgrade_button_{plan_key}", use_container_width=True):
-                    st.markdown(f"<meta http-equiv='refresh' content='0; url={plan_data['telegram_link']}'>")
-                    st.success(f"SYSTEM COMMAND: Redirecting to Telegram for {plan_data['name']} upgrade. Await further instructions.")
-                    _log_user_action(f"Attempted upgrade to {plan_data['name']}.")
+                    _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
+                    st.components.v1.html(
+                        f"""
+                        <script>
+                            window.open("{plan_data['telegram_link']}", "_blank");
+                        </script>
+                        """,
+                        height=0, width=0
+                    )
+                    st.success(f"SYSTEM COMMAND: Opening Telegram for {plan_data['name']} upgrade. Await further instructions.")
             st.markdown('</div>', unsafe_allow_html=True)
 
 def _render_settings_page():
