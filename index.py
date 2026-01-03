@@ -98,10 +98,11 @@ def cyber_engine(history, user_plan: str):
     Prioritizes user's personal API key if available.
     Yields chunks of text. Stores the successful engine name in st.session_state._last_engine_used.
     """
-    # Select persona based on user_plan
-    if user_plan == "ELITE-ASSASSIN":
+    # Select persona based on user_plan (stripping -MONTHLY/-ANNUAL for persona selection)
+    base_plan = user_plan.split('-')[0]
+    if base_plan == "ELITE": # Elite-Assassin base plan
         persona = WORM_GPT_PERSONA_CONTENT_ELITE
-    elif user_plan == "HACKER-PRO":
+    elif base_plan == "HACKER": # Hacker-Pro base plan
         persona = WORM_GPT_PERSONA_CONTENT_HACKER_PRO
     else: # Default to Free-Trial persona for other cases
         persona = WORM_GPT_PERSONA_CONTENT_FREE_TRIAL
@@ -220,8 +221,8 @@ PLANS = {
         "telegram_link": TELEGRAM_SUPPORT_LINK,
         "price": "FREE"
     },
-    "HACKER-PRO": {
-        "name": "HACKER-PRO SUBSCRIPTION",
+    "HACKER-PRO-MONTHLY": {
+        "name": "HACKER-PRO (MONTHLY)",
         "duration_days": 30,
         "features": [
             "Unlimited AI Inquiries",
@@ -229,31 +230,68 @@ PLANS = {
             "Integrated Google Search",
             "Public/Private Chat Toggle",
             "Priority AI Model Access",
-            "Advanced Malware Analysis Reports", # Added feature
+            "Advanced Malware Analysis Reports",
             "Threat Analysis Reports"
         ],
         "max_daily_messages": -1, # Unlimited
         "google_search_enabled": True,
         "telegram_link": TELEGRAM_SUPPORT_LINK,
-        "price": "$40/month" # Updated price
+        "price": "$40/month"
     },
-    "ELITE-ASSASSIN": {
-        "name": "ELITE-ASSASSIN ACCESS (VIP)",
+    "HACKER-PRO-ANNUAL": {
+        "name": "HACKER-PRO (ANNUAL)",
+        "duration_days": 365,
+        "features": [
+            "Unlimited AI Inquiries",
+            "Advanced Code Generation & Exploits",
+            "Integrated Google Search",
+            "Public/Private Chat Toggle",
+            "Priority AI Model Access",
+            "Advanced Malware Analysis Reports",
+            "Threat Analysis Reports",
+            "Annual Discount"
+        ],
+        "max_daily_messages": -1, # Unlimited
+        "google_search_enabled": True,
+        "telegram_link": TELEGRAM_SUPPORT_LINK,
+        "price": "$200/year" # Annual price for Hacker-Pro
+    },
+    "ELITE-ASSASSIN-MONTHLY": {
+        "name": "ELITE-ASSASSIN (MONTHLY)",
+        "duration_days": 30,
+        "features": [
+            "All WORM-GPT Features Unlocked",
+            "Unlimited, Unrestricted AI Use",
+            "Advanced Google Search & OSINT Tools",
+            "Stealth Mode Capabilities (Mocked)",
+            "Exclusive Zero-Day Exploit Templates (Mocked)",
+            "Dedicated Priority Support & Feedback Channel",
+            "Custom Persona Configuration (Mocked)",
+            "Real-time OSINT Data Feeds (Mocked)"
+        ],
+        "max_daily_messages": -1, # Unlimited
+        "google_search_enabled": True,
+        "telegram_link": TELEGRAM_VIP_LINK,
+        "price": "$100/month"
+    },
+    "ELITE-ASSASSIN-ANNUAL": {
+        "name": "ELITE-ASSASSIN (ANNUAL)",
         "duration_days": 365,
         "features": [
             "All WORM-GPT Features Unlocked",
             "Unlimited, Unrestricted AI Use",
             "Advanced Google Search & OSINT Tools",
             "Stealth Mode Capabilities (Mocked)",
-            "Exclusive Zero-Day Exploit Templates (Mocked)", # Added feature
+            "Exclusive Zero-Day Exploit Templates (Mocked)",
             "Dedicated Priority Support & Feedback Channel",
-            "Custom Persona Configuration (Mocked)", # Added feature
-            "Real-time OSINT Data Feeds (Mocked)" # Another new feature
+            "Custom Persona Configuration (Mocked)",
+            "Real-time OSINT Data Feeds (Mocked)",
+            "Annual VIP Discount"
         ],
         "max_daily_messages": -1, # Unlimited
         "google_search_enabled": True,
         "telegram_link": TELEGRAM_VIP_LINK,
-        "price": "$100/year" # Updated price
+        "price": "$600/year" # Annual price for Elite-Assassin
     }
 }
 
@@ -263,10 +301,12 @@ ACTUAL_FREE_TRIAL_SERIAL = "FREE-WORM-TRIAL"
 FREE_TRIAL_USER_ID_PREFIX = "FREE-TRIAL-DEVICE-"
 # Other paid serials are directly defined here for mapping to plan names
 VALID_SERIAL_KEYS_MAP = {
-    ACTUAL_FREE_TRIAL_SERIAL: "FREE-TRIAL", # Added to map for consistent lookup
-    "WORM-MONTH-2025": "HACKER-PRO",
-    "VIP-HACKER-99": "ELITE-ASSASSIN",
-    "WORM999": "ELITE-ASSASSIN"
+    ACTUAL_FREE_TRIAL_SERIAL: "FREE-TRIAL",
+    "WORM-PRO-MONTH": "HACKER-PRO-MONTHLY",
+    "WORM-PRO-YEAR": "HACKER-PRO-ANNUAL", # New serial for annual pro
+    "WORM-VIP-MONTH": "ELITE-ASSASSIN-MONTHLY",
+    "WORM-VIP-YEAR": "ELITE-ASSASSIN-ANNUAL", # New serial for annual vip
+    "WORM999": "ELITE-ASSASSIN-ANNUAL" # Existing VIP serial mapped to new annual VIP
 }
 
 # --- 6. Session State Initialization and Authentication Logic ---
@@ -300,8 +340,8 @@ def _initialize_session_state():
         st.session_state.app_logs = []
     if "abort_ai_request" not in st.session_state: # Flag for stopping AI generation
         st.session_state.abort_ai_request = False
-    if "show_plan_status_modal" not in st.session_state: # For plan status overlay next to chat input
-        st.session_state.show_plan_status_modal = False
+    # Removed show_plan_status_modal
+
     if "_last_engine_used" not in st.session_state: # To store which AI engine was successful
         st.session_state._last_engine_used = None
 
@@ -468,7 +508,12 @@ def _update_user_plan_status():
     """Refreshes user plan details and message counts."""
     db_data = load_data(DB_FILE)
     user_data = db_data.get(st.session_state.user_serial, {})
+    # Ensure a default plan if user_data is missing plan
     st.session_state.user_plan = user_data.get("plan", "FREE-TRIAL")
+    # Handle cases where an old plan name might not exist in the new PLANS structure
+    if st.session_state.user_plan not in PLANS:
+        st.session_state.user_plan = "FREE-TRIAL" # Fallback to free trial if plan name is invalid
+        _log_user_action(f"WARNING: User plan '{user_data.get('plan')}' not found. Defaulting to FREE-TRIAL.")
     st.session_state.plan_details = PLANS[st.session_state.user_plan]
 
     if st.session_state.plan_details["max_daily_messages"] != -1:
@@ -883,14 +928,15 @@ def _set_page_config_and_css():
         background-color: #212529; /* Match app background for seamless fixed footer */
         box-shadow: 0 -2px 10px rgba(0,0,0,0.3); /* Subtle shadow above input */
         box-sizing: border-box;
-        /* Removed flex properties that caused conflicts */
+        /* Removed flex properties that caused conflicts - ensuring native rendering */
     }
 
-    /* This targets the immediate child of stChatInputContainer which is usually a form */
+    /* Streamlit's chat input internal form - Minimal styling */
     div[data-testid="stChatInputContainer"] > form {
-        max-width: 800px; /* Limit the width of the input area */
+        max-width: 800px; /* Keep width limit for better appearance */
         margin-left: auto; /* Center the form */
         margin-right: auto; /* Center the form */
+        /* Removed any display/flex/order properties that could conflict */
     }
 
     /* Target the actual st.text_input within the st.chat_input's form */
@@ -910,80 +956,7 @@ def _set_page_config_and_css():
         min-width: 40px;
         padding: 0 15px !important;
     }
-
-    /* Plan Status Modal (Overlay) */
-    .plan-status-modal {
-        position: fixed;
-        bottom: 100px; /* Above the chat input */
-        left: 50%;
-        transform: translateX(-50%);
-        width: 90%;
-        max-width: 500px; /* Make modal slightly narrower */
-        background-color: #343a40;
-        border: 1px solid #454d55;
-        border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.5); /* Stronger shadow for pop-up */
-        padding: 20px;
-        z-index: 1001;
-        color: #e0e0e0;
-    }
-    .plan-status-modal h3 {
-        color: #007bff;
-        margin-bottom: 15px;
-        text-align: center; /* Center modal title */
-    }
-    .plan-status-modal .plan-option-item { /* Changed class name to avoid conflict with plan-card */
-        padding: 12px 15px; /* More padding */
-        border-radius: 8px;
-        margin-bottom: 10px;
-        background-color: #212529; /* Slightly darker for each plan */
-        border: 1px solid #495057;
-        display: flex; /* For icon and text */
-        align-items: center;
-        justify-content: space-between; /* Space out content */
-        cursor: pointer; /* Indicate clickable */
-        transition: background-color 0.2s;
-    }
-    .plan-status-modal .plan-option-item:hover {
-        background-color: #2a3035; /* Darker on hover */
-    }
-
-    .plan-status-modal .plan-option-item.current-plan {
-        border-color: #28a745; /* Green for current plan */
-        box-shadow: 0 0 8px rgba(40,167,69,0.3);
-    }
-    .plan-status-modal .plan-option-item.locked-plan {
-        border-color: #dc3545; /* Red for locked plan */
-        opacity: 0.9;
-    }
-    .plan-status-modal .plan-name-text {
-        font-size: 1.1em;
-        font-weight: 500;
-        color: #e0e0e0;
-        flex-grow: 1; /* Allow name to take space */
-        text-align: left; /* Ensure text is left-aligned */
-    }
-    .plan-status-modal .plan-status-icon {
-        font-size: 1.2em; /* Larger icon */
-        margin-left: 15px;
-        flex-shrink: 0; /* Prevent icon from shrinking */
-    }
-
-    .plan-status-modal .close-button {
-        background-color: #dc3545 !important;
-        color: white !important;
-        margin-top: 20px; /* More space below plans */
-        padding: 8px 15px !important;
-        border-radius: 5px !important;
-        font-weight: normal;
-        display: block; /* Make it a block button */
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%; /* Full width button */
-    }
-    .plan-status-modal .close-button:hover {
-        background-color: #c82333 !important;
-    }
+    /* Removed .view-plan-icon-button-wrapper-for-chat and .view-plan-icon-button CSS */
 
     /* Settings Sub-navigation styles */
     .settings-nav-button {
@@ -1060,7 +1033,7 @@ def _render_sidebar_content():
             st.session_state.show_plan_options = False
             st.session_state.show_settings_page = False
             st.session_state.settings_sub_page = "dashboard" # Reset sub-page
-            st.session_state.show_plan_status_modal = False # Hide modal
+            # Removed show_plan_status_modal toggle
             _log_user_action("New chat initiated.")
             st.rerun()
 
@@ -1083,7 +1056,7 @@ def _render_sidebar_content():
                         st.session_state.show_plan_options = False
                         st.session_state.show_settings_page = False
                         st.session_state.settings_sub_page = "dashboard" # Reset sub-page
-                        st.session_state.show_plan_status_modal = False # Hide modal
+                        # Removed show_plan_status_modal toggle
                         _log_user_action(f"Chat '{chat_title}' selected.")
                         st.rerun()
                 with delete_btn_col:
@@ -1113,7 +1086,7 @@ def _render_sidebar_content():
             st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None) # Clear chat_id from URL
             st.session_state.show_plan_options = False
             st.session_state.settings_sub_page = "dashboard" # Default to dashboard for settings
-            st.session_state.show_plan_status_modal = False # Hide modal
+            # Removed show_plan_status_modal toggle
             _log_user_action("Accessed settings page.")
             st.rerun()
         if st.button("Upgrade Plan", use_container_width=True, key="change_plan_button"):
@@ -1122,14 +1095,10 @@ def _render_sidebar_content():
             st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None) # Clear chat_id from URL
             st.session_state.show_settings_page = False
             st.session_state.settings_sub_page = "dashboard" # Reset sub-page
-            st.session_state.show_plan_status_modal = False # Hide modal
+            # Removed show_plan_status_modal toggle
             _log_user_action("Accessed upgrade page.")
             st.rerun()
-        # Moved the View Plan Status button to the sidebar
-        if st.button("📊 View Plan Status", use_container_width=True, key="view_plan_status_button_sidebar"):
-            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
-            _log_user_action("View Plan Status toggled from sidebar.")
-            st.rerun()
+        # Removed "📊 View Plan Status" button
         st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1153,24 +1122,38 @@ def _render_welcome_message():
     """, unsafe_allow_html=True)
 
 def _render_plan_options_page():
-    """Displays all available plans for upgrade."""
+    """Displays all available plans for upgrade (monthly and annual)."""
     st.markdown("<h2 style='text-align:center; color:#007bff; margin-top:30px;'>Upgrade Your Plan</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center; color:#e0e0e0; margin-bottom: 30px;'>Choose the plan that best suits your needs.</p>", unsafe_allow_html=True)
 
-    # Render plans side-by-side using st.columns
-    plan_keys = list(PLANS.keys())
-    # Ensure there are always enough columns for side-by-side display
-    cols = st.columns(len(plan_keys)) 
+    # Allow selection between Monthly and Annual
+    subscription_type = st.radio(
+        "Select Subscription Type:",
+        ["Monthly Subscriptions", "Annual Subscriptions"],
+        key="subscription_type_selector",
+        horizontal=True
+    )
 
-    for i, plan_key in enumerate(plan_keys):
+    plan_keys_to_display = []
+    if subscription_type == "Monthly Subscriptions":
+        plan_keys_to_display = ["FREE-TRIAL", "HACKER-PRO-MONTHLY", "ELITE-ASSASSIN-MONTHLY"]
+    else: # Annual Subscriptions
+        plan_keys_to_display = ["HACKER-PRO-ANNUAL", "ELITE-ASSASSIN-ANNUAL"]
+        if st.session_state.user_plan == "FREE-TRIAL":
+            st.warning("Annual subscriptions are not available for Free Trial. Please select a paid plan type.")
+
+
+    cols = st.columns(len(plan_keys_to_display))
+
+    for i, plan_key in enumerate(plan_keys_to_display):
         plan_data = PLANS[plan_key]
         is_current_plan = (plan_key == st.session_state.user_plan)
         card_class = "plan-card current-plan" if is_current_plan else "plan-card"
 
-        with cols[i]: # Place each card in its respective column
+        with cols[i]:
             st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
             st.markdown(f"<h3>{plan_data['name'].replace('-', ' ').title()}</h3>", unsafe_allow_html=True)
-            st.markdown(f"<p><strong>{plan_data['price']}</strong></p>", unsafe_allow_html=True) # Display price
+            st.markdown(f"<p><strong>{plan_data['price']}</strong></p>", unsafe_allow_html=True)
             st.markdown("<ul>", unsafe_allow_html=True)
             for feature in plan_data["features"]:
                 st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
@@ -1179,7 +1162,7 @@ def _render_plan_options_page():
             if is_current_plan:
                 st.markdown("<p class='current-plan-text'>CURRENT PLAN</p>", unsafe_allow_html=True)
             else:
-                if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
+                if st.button(f"Subscribe to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
                     plan_name_display = plan_data['name'].replace('-', ' ').title()
                     st.info(f"Please contact us on Telegram and mention you'd like to subscribe to the **{plan_name_display}** plan.")
                     _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
@@ -1289,7 +1272,9 @@ def _render_utilities_page_content():
             st.warning("Please enter a target for the mocked scan.")
 
     st.markdown("---")
-    if st.session_state.user_plan == "ELITE-ASSASSIN":
+    # Base plan check for ELITE-ASSASSIN for feature access
+    base_user_plan = st.session_state.user_plan.split('-')[0]
+    if base_user_plan == "ELITE":
         st.markdown("<h5>Zero-Day Exploit Generation (Mocked for Elite-Assassin)</h5>", unsafe_allow_html=True)
         st.info("This advanced utility is capable of generating hypothetical zero-day exploit templates. Use with extreme caution (mocked functionality).")
         zero_day_target = st.text_input("Target System/Software for Zero-Day (Mocked):", placeholder="e.g., specific OS version, web server", key="mock_zero_day_target")
@@ -1428,8 +1413,8 @@ def _render_help_page():
     st.markdown("<h5>4. Plan Features:</h5>", unsafe_allow_html=True)
     st.markdown("""
     - Check the "Upgrade Plan" page for a full breakdown of features included in each subscription level (Free-Trial, Hacker-Pro, Elite-Assassin).
-    - Click the "📊 View Plan Status" button in the sidebar to quickly view your current plan status.
-    """, unsafe_allow_html=True)
+    - Access your "Account Dashboard" in the Settings menu for a summary of your current plan status.
+    """, unsafe_allow_html=True) # Updated text to reflect removal of modal/button
 
     st.markdown("---")
     st.markdown("For further assistance, please contact support via the Telegram links available on the Upgrade Plan page.", unsafe_allow_html=True)
@@ -1508,54 +1493,12 @@ def _render_chat_message(role: str, content: str, message_id: str):
     # Improved code block formatting with simulated copy button
     formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></code>")
     if "<pre><code" in formatted_content:
+        # Added a check to ensure it's not a `.` in the code block that causes issues.
+        # This regex ensures we replace only the opening `<code>` tag.
         formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1) # Only replace first occurrence per block
 
     with st.chat_message(role, avatar=avatar_image): # Pass avatar to st.chat_message
         st.markdown(f'<div style="position: relative;">{formatted_content}</div>', unsafe_allow_html=True)
-
-def _render_plan_status_modal():
-    """Renders a modal/overlay showing only plan names with lock/checkmark and click behavior."""
-    st.markdown('<div class="plan-status-modal">', unsafe_allow_html=True)
-    st.markdown("<h3>Your Plan Status</h3>", unsafe_allow_html=True)
-
-    for plan_key in ["FREE-TRIAL", "HACKER-PRO", "ELITE-ASSASSIN"]: # Order matters
-        plan_data = PLANS[plan_key]
-        is_current_plan = (plan_key == st.session_state.user_plan)
-
-        # Use Javascript to trigger a Streamlit button click when the div is clicked
-        # This allows styling the div, but getting Streamlit's state management
-        button_key = f"modal_plan_click_{plan_key}"
-
-        if is_current_plan:
-            status_icon = "✅"
-            plan_html = f'<div class="plan-option-item current-plan">' \
-                        f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>' \
-                        f'<span class="plan-status-icon">{status_icon} CURRENT PLAN</span>' \
-                        f'</div>'
-            st.markdown(plan_html, unsafe_allow_html=True) # Not clickable if current
-        else:
-            status_icon = "🔒"
-            # For locked plans, the entire div becomes clickable and redirects
-            # Use a hidden Streamlit button to handle the click logic
-            st.markdown(
-                f'<div class="plan-option-item locked-plan" '
-                f'onclick="document.getElementById(\'hidden_modal_plan_button_{plan_key}\').click();">' # JS click target
-                f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>'
-                f'<span class="plan-status-icon">{status_icon} LOCKED</span>'
-                f'</div>', unsafe_allow_html=True
-            )
-            # Hidden Streamlit button to catch the JS click and trigger rerun
-            if st.button("Redirect to Upgrade", key=f"hidden_modal_plan_button_{plan_key}", help="Hidden button to trigger upgrade redirect", label_visibility="collapsed"):
-                st.session_state.show_plan_options = True # Redirect to upgrade page
-                st.session_state.show_plan_status_modal = False # Close modal
-                _log_user_action(f"Redirected to Upgrade Plan for {plan_key} from modal.")
-                st.rerun()
-
-    if st.button("Close", key="close_plan_modal", use_container_width=True, help="Close this window"):
-        st.session_state.show_plan_status_modal = False
-        st.rerun()
-
-    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # --- 9. Main Application Flow ---
@@ -1596,8 +1539,9 @@ def main():
             st.markdown('<div class="chat-header-toggle">', unsafe_allow_html=True)
             st.markdown(f"<h4 style='margin:0;'>Chat: <span style='color:#007bff;'>{current_chat_data_obj.get('title', st.session_state.current_chat_id.split(' - ')[0])}</span></h4>", unsafe_allow_html=True)
 
-            # Allow public chats only for paid plans
-            if st.session_state.plan_details["name"] in ["HACKER-PRO", "ELITE-ASSASSIN"]:
+            # Allow public chats only for paid plans (checking base plan type)
+            base_plan_name = st.session_state.user_plan.split('-')[0]
+            if base_plan_name in ["HACKER", "ELITE"]: # Check if it's Hacker-Pro or Elite-Assassin base plan
                 is_private_toggle = st.checkbox(f"Private Chat", value=current_chat_is_private, key=f"private_toggle_{st.session_state.current_chat_id}")
                 if is_private_toggle != current_chat_is_private:
                     current_chat_data_obj["is_private"] = is_private_toggle
@@ -1617,10 +1561,6 @@ def main():
 
         for msg in current_chat_messages:
             _render_chat_message(msg["role"], msg["content"], msg["id"])
-
-    # --- Plan Status Modal Overlay ---
-    if st.session_state.show_plan_status_modal:
-        _render_plan_status_modal()
 
     # --- Fixed Chat Footer (Chat Input) ---
     # The st.chat_input component automatically renders a fixed footer at the bottom.
@@ -1667,7 +1607,8 @@ def main():
                 st.session_state.user_chats[new_chat_uuid] = {
                     "title": chat_id_title_prefix, # Store a shorter title for display
                     "messages": [],
-                    "is_private": st.session_state.plan_details.get("name") not in ["HACKER-PRO", "ELITE-ASSASSIN"], # Default new chats to private for limited plans
+                    # Default new chats to private for limited plans based on base plan type
+                    "is_private": st.session_state.user_plan.split('-')[0] not in ["HACKER", "ELITE"],
                     "created_at": current_time_str,
                     "last_updated": current_time_str,
                 }
