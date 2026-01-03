@@ -231,13 +231,17 @@ PLANS = {
     }
 }
 
-VALID_SERIAL_KEYS = {
-    "FREE-WORM-TRIAL": "FREE-TRIAL", # Prominently displayed free key (will be replaced by unique ID for free users)
+# The actual serial key a user types for free trial
+ACTUAL_FREE_TRIAL_SERIAL = "FREE-WORM-TRIAL" 
+# Prefix for dynamically generated unique free user IDs
+FREE_TRIAL_USER_ID_PREFIX = "FREE-TRIAL-DEVICE-" 
+# Other paid serials are directly defined here for mapping to plan names
+VALID_SERIAL_KEYS_MAP = { 
+    ACTUAL_FREE_TRIAL_SERIAL: "FREE-TRIAL", 
     "WORM-MONTH-2025": "HACKER-PRO",
     "VIP-HACKER-99": "ELITE-ASSASSIN",
     "WORM999": "ELITE-ASSASSIN"
 }
-FREE_TRIAL_KEY_PREFIX = "FREE-TRIAL-DEVICE-" # Prefix for unique free user IDs
 
 # --- 6. Session State Initialization and Authentication Logic ---
 
@@ -279,11 +283,11 @@ def _initialize_session_state():
         st.session_state.user_preferences = {"theme": "dark", "locale": "en"}
 
     # --- Session Persistence Logic (using URL query parameters) ---
+    # This block now runs on every rerun to check if a user should be re-authenticated from URL
     query_params = st.experimental_get_query_params()
     persisted_serial_from_url = query_params.get('serial', [None])[0]
     persisted_chat_id_from_url = query_params.get('chat_id', [None])[0]
 
-    # Attempt to re-authenticate if a serial is found in the URL and not already authenticated
     if not st.session_state.authenticated and persisted_serial_from_url:
         db_data = load_data(DB_FILE)
         user_info = db_data.get(persisted_serial_from_url)
@@ -292,8 +296,8 @@ def _initialize_session_state():
         if user_info:
             expiry = datetime.strptime(user_info["expiry"], "%Y-%m-%d %H:%M:%S")
             if now < expiry: # Check if not expired
-                # For paid serials, enforce device_id check
-                if not persisted_serial_from_url.startswith(FREE_TRIAL_KEY_PREFIX) and user_info["device_id"] != st.session_state.device_id:
+                # For paid serials, enforce device_id check. Free trial serials are device-specific already.
+                if not persisted_serial_from_url.startswith(FREE_TRIAL_USER_ID_PREFIX) and user_info["device_id"] != st.session_state.device_id:
                     _log_user_action(f"AUTO-AUTH_FAIL: Device mismatch for persisted serial {persisted_serial_from_url[:5]}....")
                     st.warning("SESSION WARNING: Your login is tied to another device. Please log in again if this is a new device.")
                     st.experimental_set_query_params(serial=None, chat_id=None) # Clear bad serial from URL
@@ -326,7 +330,8 @@ def _authenticate_user():
     with st.container():
         st.markdown('<div style="padding: 30px; border: 1px solid #ff0000; border-radius: 10px; background: #161b22; text-align: center; max-width: 400px; margin: auto;">', unsafe_allow_html=True)
         serial_input = st.text_input("ENTER SERIAL:", type="password", key="auth_serial_input")
-        st.info(f"FREE TRIAL KEY (7 days, 20 msgs/day): `{VALID_SERIAL_KEYS[FREE_TRIAL_KEY_PREFIX.strip('-')]}`") # Display the generic FREE-TRIAL key
+        # --- FIX: Display the correct static free trial key ---
+        st.info(f"FREE TRIAL KEY (7 days, 20 msgs/day): `{ACTUAL_FREE_TRIAL_SERIAL}`") 
         st.info("Your chat history is permanently linked to your serial key and will be restored upon re-authentication, even if your plan expires.")
 
 
@@ -334,9 +339,9 @@ def _authenticate_user():
             db_data = load_data(DB_FILE)
             now = datetime.now()
 
-            if serial_input == VALID_SERIAL_KEYS[FREE_TRIAL_KEY_PREFIX.strip('-')]: # If generic free trial key is entered
+            if serial_input == ACTUAL_FREE_TRIAL_SERIAL:
                 # --- Free Trial Specific Logic: Each device_id gets its own free trial instance ---
-                unique_free_user_id = f"{FREE_TRIAL_KEY_PREFIX}{st.session_state.device_id}"
+                unique_free_user_id = f"{FREE_TRIAL_USER_ID_PREFIX}{st.session_state.device_id}"
                 user_info = db_data.get(unique_free_user_id)
                 plan_name = "FREE-TRIAL" # Ensure plan name matches PLANS dict
                 plan_details = PLANS[plan_name]
@@ -367,9 +372,9 @@ def _authenticate_user():
                     _log_user_action(f"AUTH_SUCCESS: Existing Free-Trial session restored for device {st.session_state.device_id[:8]}....")
                     st.rerun()
 
-            elif serial_input in VALID_SERIAL_KEYS:
+            elif serial_input in VALID_SERIAL_KEYS_MAP: # Check against the map of paid serials
                 # --- Paid Serial Key Logic (existing behavior) ---
-                plan_name = VALID_SERIAL_KEYS[serial_input]
+                plan_name = VALID_SERIAL_KEYS_MAP[serial_input] # Get plan name from the map
                 plan_details = PLANS[plan_name]
                 user_info = db_data.get(serial_input) # Paid serials are the direct key in DB
 
@@ -1131,4 +1136,4 @@ def main():
 
 # --- Entry Point ---
 if __name__ == "__main__":
-    main()      
+    main()
