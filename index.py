@@ -18,7 +18,7 @@ import uuid # For generating unique chat IDs
 
 # --- USER-SPECIFIED API KEY LOADING ---
 # This will raise an error if GENAI_KEYS is not found in st.secrets, matching previous behavior.
-GEMINI_API_KEYS = st.secrets["GENAI_KEYS"].split(",") 
+GEMINI_API_KEYS = st.secrets["GENAI_KEYS"]
 
 GOOGLE_SEARCH_API_KEY = st.secrets.get("GOOGLE_SEARCH_API_KEY", "YOUR_GOOGLE_SEARCH_API_KEY_NOT_SET")
 GOOGLE_CSE_ID = st.secrets.get("GOOGLE_CSE_ID", "YOUR_CUSTOM_SEARCH_ENGINE_ID_NOT_SET")
