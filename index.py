@@ -1283,7 +1283,7 @@ def _render_about_page_content():
     - **OSINT & Reconnaissance:** Gather intelligence from various sources (with paid plans).
     - **Custom Persona Configuration (Mocked):** Tailor AI behavior to specific operational needs.
     - **Threat Intelligence Feeds:** Access to real-time threat data (Mocked).
-    - **Simulated Zero-Day Exploit Generation:** Create theoretical zero-day exploits (Mocked for Elite-Assassin).
+    - **Simulated Zero-Day Exploit Generation:** Create theoretical zero-day exploits (Mocked for Elite-Assassins).
     """)
     _log_user_action("Viewed About page.")
 
@@ -1375,7 +1375,7 @@ def _render_help_page():
 
     st.markdown("<h5>2. Advanced Commands:</h5>", unsafe_allow_html=True)
     st.markdown("""
-    - **`/search [your query]`:** (Hacker-Pro/Elite-Assassin plans) Use this command to perform a real-time Google search and incorporate the results into the AI's context. Example: `/search latest CVEs for Windows Server 2022`
+    - **`/search [your query]`:** (Hacker-Pro/Elite-Assassins plans) Use this command to perform a real-time Google search and incorporate the results into the AI's context. Example: `/search latest CVEs for Windows Server 2022`
     - **`/abort` (Not implemented as direct chat command):** To stop AI generation, click the "⛔ Abort Response" button that appears when the AI is thinking.
     """, unsafe_allow_html=True)
 
@@ -1465,7 +1465,7 @@ def _render_chat_message(role: str, content: str, message_id: str):
     avatar_image = ASSISTANT_AVATAR if role == "assistant" else "👤" 
 
     # Use a simple regex to add the copy button to code blocks
-    # This prevents issues with rendering in markdown first and then modifying.
+    # The button is injected right after the opening ```language tag
     formatted_content = content.replace("```python", "```python\n<button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.parentNode.querySelector('code').innerText)\">COPY</button>").replace("```bash", "```bash\n<button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.parentNode.querySelector('code').innerText)\">COPY</button>")
 
     with st.chat_message(role, avatar=avatar_image):
@@ -1518,7 +1518,6 @@ def main():
                     current_chat_data_obj["is_private"] = is_private_toggle
                     st.session_state.user_chats[st.session_state.current_chat_id] = current_chat_data_obj
                     _sync_user_chats_to_vault()
-                    _log_user_action(f"Chat '{st.session_state.current_chat_id}' privacy set to {'Private' if is_private_toggle else 'Public'}.")
                     st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=st.session_state.current_chat_id)
                     st.rerun()
             else:
@@ -1537,7 +1536,8 @@ def main():
 
     # --- Chat Input Handling (Native st.chat_input) ---
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
-        # Using native st.chat_input, it creates its own fixed footer.
+        # Using native st.chat_input. It will handle its own fixed positioning at the bottom.
+        # No custom divs or forms needed around it, to avoid conflicts.
         user_message = st.chat_input("Type your message...", key="chat_input_main", placeholder="Type your message...")
 
         # Logic to process message after chat input submission (user_message is non-empty)
