@@ -9,7 +9,7 @@ import hashlib # For simulated password hashing
 import matplotlib.pyplot as plt # For usage charts
 
 # Import Google GenAI library
-from google import generative_ai as genai # Renamed to avoid conflict with `genai` variable
+from google import  genai # Renamed to avoid conflict with `genai` variable
 
 
 # --- WORM-GPT SECURE PROTOCOL CONFIGURATION (config.py - conceptual) ---
