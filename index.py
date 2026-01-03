@@ -553,7 +553,7 @@ def _set_page_config_and_css():
         max-width: 900px; /* Constrain chat width */
         margin-left: auto;
         margin-right: auto;
-        height: calc(100vh - 100px); /* Adjust height to fill screen minus fixed header/footer */
+        height: calc(100vh - 100px); /* Adjust height to fill screen minus fixed header/footer (footer is ~60px, top padding ~20px) */
         overflow-y: auto; /* Enable scrolling for chat messages */
         padding-left: 1rem; /* Default Streamlit padding */
         padding-right: 1rem; /* Default Streamlit padding */
@@ -714,11 +714,13 @@ def _set_page_config_and_css():
     }
 
     /* Active chat button in sidebar (the one with the blue text and grey background) */
-    [data-testid="stSidebar"] .stButton>button[data-testid="stColumn"] button[type="primary"] { 
-        background-color: #454d55 !important; /* Light background for active chat */
-        color: #007bff !important; /* Blue text for active chat */
-        font-weight: 600;
+    /* This targets the actual Streamlit button when it's selected */
+    .st-emotion-cache-1r7r07d button[data-testid^="stButton"]:focus:not(:active) {
+        background-color: #454d55 !important; /* Apply background on focus/active */
+        color: #007bff !important; /* Apply blue text on focus/active */
+        font-weight: 600 !important;
     }
+
     /* Delete chat button */
     [data-testid="stSidebar"] .stButton>button[key^="del_chat_"] {
         background-color: transparent !important;
@@ -759,26 +761,6 @@ def _set_page_config_and_css():
     .stInfo { background-color: #343a40; border-left: 5px solid #4a90d9; } /* Info blue */
     .stWarning { background-color: #343a40; border-left: 5px solid #ffc107; } /* Warning yellow */
     .stError { background-color: #343a40; border-left: 5px solid #dc3545; } /* Error red */
-
-    /* Chat header with toggle for public/private */
-    .chat-header-toggle {
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: flex-start;
-        gap: 15px;
-        padding: 10px;
-        background-color: #343a40; /* Darker background */
-        border: 1px solid #454d55; /* Darker border */
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.15); /* Soft shadow */
-    }
-    .chat-header-toggle h4 {
-        color: #e0e0e0;
-    }
-    .chat-header-toggle .stCheckbox {
-         margin-left: 20px;
-    }
 
     /* Plan card display (side-by-side grid for upgrade page) */
     .plan-card-container {
@@ -926,24 +908,35 @@ def _set_page_config_and_css():
     }
 
     /* "View Plan" button specific styling */
-    .fixed-chat-footer #view_plan_status_button {
+    .view-plan-button-wrapper {
+        flex-shrink: 0; /* Prevent button wrapper from shrinking */
+        height: 40px; /* Match the height of the input and send button */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .view-plan-icon-button { /* The visible HTML button */
         background-color: #454d55 !important;
         color: #e0e0e0 !important;
         border: 1px solid #5a6268 !important;
         border-radius: 8px !important;
-        padding: 8px 15px !important;
-        font-size: 14px;
-        height: 40px; /* Match height of input/submit button */
-        width: auto; /* Allow width to fit text */
+        width: 40px; /* Make it square */
+        height: 40px;
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 5px;
-        flex-shrink: 0; /* Prevent from shrinking */
+        font-size: 1.2em; /* Larger icon */
+        cursor: pointer;
+        transition: background-color 0.2s, color 0.2s;
+        text-decoration: none; /* Remove underline */
     }
-    .fixed-chat-footer #view_plan_status_button:hover {
+    .view-plan-icon-button:hover {
         background-color: #5a6268 !important;
         color: #ffffff !important;
+    }
+    /* Hide Streamlit's hidden button completely */
+    [key="view_plan_status_button_hidden"] {
+        display: none !important;
     }
 
 
@@ -1082,7 +1075,7 @@ def _render_sidebar_content():
                     # Use a standard Streamlit button and let CSS handle the active state visual.
                     # The 'type' argument here is just a hint for Streamlit's default styling, 
                     # but our custom CSS for .active-chat-button will override it.
-                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}"):
+                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}", type="secondary"):
                         st.session_state.current_chat_id = chat_id
                         st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=chat_id) # Set chat_id in URL
                         st.session_state.show_plan_options = False
@@ -1158,39 +1151,38 @@ def _render_plan_options_page():
     st.markdown("<h2 style='text-align:center; color:#007bff; margin-top:30px;'>Upgrade Your Plan</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center; color:#e0e0e0; margin-bottom: 30px;'>Choose the plan that best suits your needs.</p>", unsafe_allow_html=True)
 
-    # Render plans side-by-side using a responsive grid
-    st.markdown('<div class="plan-card-container">', unsafe_allow_html=True)
+    # Render plans side-by-side using st.columns
     plan_keys = list(PLANS.keys())
+    cols = st.columns(len(plan_keys)) # Create columns dynamically
 
-    for plan_key in plan_keys:
+    for i, plan_key in enumerate(plan_keys):
         plan_data = PLANS[plan_key]
         is_current_plan = (plan_key == st.session_state.user_plan)
         card_class = "plan-card current-plan" if is_current_plan else "plan-card"
 
-        # Each plan is a separate div
-        st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
-        st.markdown(f"<h3>{plan_data['name'].replace('-', ' ').title()}</h3>", unsafe_allow_html=True)
-        st.markdown("<ul>", unsafe_allow_html=True)
-        for feature in plan_data["features"]:
-            st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
-        st.markdown("</ul>", unsafe_allow_html=True)
+        with cols[i]: # Place each card in its respective column
+            st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
+            st.markdown(f"<h3>{plan_data['name'].replace('-', ' ').title()}</h3>", unsafe_allow_html=True)
+            st.markdown("<ul>", unsafe_allow_html=True)
+            for feature in plan_data["features"]:
+                st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
+            st.markdown("</ul>", unsafe_allow_html=True)
 
-        if is_current_plan:
-            st.markdown("<p class='current-plan-text'>CURRENT PLAN</p>", unsafe_allow_html=True)
-        else:
-            if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
-                _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
-                st.components.v1.html(
-                    f"""
-                    <script>
-                        window.open("{plan_data['telegram_link']}", "_blank");
-                    </script>
-                    """,
-                    height=0, width=0
-                )
-                st.success(f"Opening Telegram for {plan_data['name']} upgrade instructions.")
-        st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True) # Close plan-card-container
+            if is_current_plan:
+                st.markdown("<p class='current-plan-text'>CURRENT PLAN</p>", unsafe_allow_html=True)
+            else:
+                if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
+                    _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
+                    st.components.v1.html(
+                        f"""
+                        <script>
+                            window.open("{plan_data['telegram_link']}", "_blank");
+                        </script>
+                        """,
+                        height=0, width=0
+                    )
+                    st.success(f"Opening Telegram for {plan_data['name']} upgrade instructions.")
+            st.markdown('</div>', unsafe_allow_html=True)
 
 def _render_general_settings():
     st.subheader("General Settings")
@@ -1346,7 +1338,7 @@ def _render_chat_message(role: str, content: str, message_id: str):
     avatar_image = ASSISTANT_AVATAR if role == "assistant" else "👤" 
 
     # Improved code block formatting with simulated copy button
-    formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></code>")
+    formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></i>")
     if "<pre><code" in formatted_content:
         formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1) # Only replace first occurrence per block
 
@@ -1465,23 +1457,26 @@ def main():
         st.markdown('<div class="fixed-chat-footer">', unsafe_allow_html=True)
         # Use a form to group the text input and its submit button
         with st.form("chat_input_form", clear_on_submit=True):
-            # Columns for the text input and the actual submit button
-            input_col, submit_col = st.columns([0.9, 0.1])
-            with input_col:
+            # Columns to arrange the "View Plan" button, the text input, and the Send button
+            btn_col, message_col, send_col = st.columns([0.1, 0.8, 0.1])
+
+            with btn_col:
+                # Custom HTML button that triggers a hidden Streamlit button
+                st.markdown(
+                    f'<div class="view-plan-button-wrapper">'
+                    f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden\').click();">📊</button>'
+                    f'</div>', unsafe_allow_html=True
+                )
+                # Hidden Streamlit button to handle the click and rerun
+                if st.button("📊", key="view_plan_status_button_hidden", help="View your current plan details", label_visibility="collapsed"):
+                    st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
+                    _log_user_action("View Plan Status toggled.")
+                    st.rerun()
+
+            with message_col:
                 user_message = st.text_input("Type your message...", label_visibility="collapsed", key="user_message_input", placeholder="Type your message...")
-            with submit_col:
+            with send_col:
                 submitted = st.form_submit_button("Send", type="primary", use_container_width=True)
-
-        # Place the "View Plan" button outside the form, but within the same fixed footer area
-        # Use another set of columns or adjust flex properties directly
-        # For simplicity and visual alignment, we'll make a separate section for it right next to the form columns.
-        # This requires careful CSS, which is already designed into .fixed-chat-footer
-
-        # The Streamlit button for "View Plan"
-        if st.button("⬆️ View Plan", key="view_plan_status_button", help="View your current plan details"):
-            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
-            _log_user_action("View Plan Status toggled.")
-            st.rerun()
 
         st.markdown('</div>', unsafe_allow_html=True) # End of fixed-chat-footer
 
