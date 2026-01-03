@@ -128,7 +128,7 @@ def cyber_engine(history, user_plan: str):
 
     if not api_keys_to_try:
         _log_user_action("AI_ENGINE_ERROR: No valid API keys found after processing MY_APIS_RAW and user prefs.")
-        return None, None
+        return # This generator will not yield anything if no keys are found
 
     contents = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in history]
 
@@ -138,21 +138,22 @@ def cyber_engine(history, user_plan: str):
             client = genai.Client(api_key=api_key)
             for eng in engines:
                 try:
-                    # Configuration as specified in user's snippet, with dynamic persona
-                    # Use stream=True for direct/streaming response
+                    st.session_state._last_engine_used = eng # Store successful engine in session state
                     res = client.models.generate_content(model=eng, contents=contents, config={'system_instruction': persona}, stream=True)
-                    # Yield chunks for streaming display
+
+                    # Yield chunks directly
                     for chunk in res:
-                        if chunk.text: # Only yield if there's text
+                        if chunk.text:
                             yield chunk.text
-                    return None, eng # Return None for the full answer, as it's yielded
-                except Exception: # Simplified error handling as per user's snippet (just continue)
+                    return # Successfully streamed, exit the generator
+                except Exception:
                     _log_user_action(f"AI_ENGINE_WARNING: Model {eng} failed with API {api_key[:5]}... Attempting next.")
                     continue
-        except Exception: # Simplified error handling as per user's snippet (just continue)
+        except Exception:
             _log_user_action(f"AI_ENGINE_WARNING: API client init failed for API {api_key[:5]}... Attempting next.")
             continue
-    return None, None # If all attempts fail
+    st.session_state._last_engine_used = None # No engine used if all failed
+    return # All attempts failed, generator yields nothing
 
 # --- 4. Google Search Integration ---
 
@@ -290,11 +291,12 @@ def _initialize_session_state():
         st.session_state.abort_ai_request = False
     if "show_plan_status_modal" not in st.session_state: # For plan status overlay next to chat input
         st.session_state.show_plan_status_modal = False
+    if "_last_engine_used" not in st.session_state: # To store which AI engine was successful
+        st.session_state._last_engine_used = None
 
 
     # Load user-specific settings if available
     # This must be done AFTER user_serial is potentially set by URL params, but before main UI render
-    # So, moved to `_authenticate_user` or after successful auth.
     if "user_preferences" not in st.session_state:
         st.session_state.user_preferences = {"theme": "dark", "locale": "en", "gemini_api_key": None}
 
@@ -766,6 +768,26 @@ def _set_page_config_and_css():
     .stWarning { background-color: #343a40; border-left: 5px solid #ffc107; } /* Warning yellow */
     .stError { background-color: #343a40; border-left: 5px solid #dc3545; } /* Error red */
 
+    /* Chat header with toggle for public/private */
+    .chat-header-toggle {
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+        gap: 15px;
+        padding: 10px;
+        background-color: #343a40; /* Darker background */
+        border: 1px solid #454d55; /* Darker border */
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15); /* Soft shadow */
+    }
+    .chat-header-toggle h4 {
+        color: #e0e0e0;
+    }
+    .chat-header-toggle .stCheckbox {
+         margin-left: 20px;
+    }
+
     /* Plan card display (side-by-side grid for upgrade page) */
     .plan-card-container {
         display: grid; 
@@ -1052,10 +1074,7 @@ def _render_sidebar_content():
             for chat_id in sorted_chat_ids:
                 chat_title = st.session_state.user_chats[chat_id].get('title', chat_id.split(' - ')[0])
 
-                # Check if this is the current active chat to style it
-                is_active_chat = (chat_id == st.session_state.current_chat_id)
-
-                # Using st.columns for visual alignment of text and delete button
+                # Use st.columns for visual alignment of text and delete button
                 chat_btn_col, delete_btn_col = st.columns([0.85, 0.15])
                 with chat_btn_col:
                     # Apply custom CSS class for active state
@@ -1136,7 +1155,8 @@ def _render_plan_options_page():
 
     # Render plans side-by-side using st.columns
     plan_keys = list(PLANS.keys())
-    cols = st.columns(len(plan_keys)) # Create columns dynamically
+    # Ensure there are always enough columns for side-by-side display
+    cols = st.columns(len(plan_keys)) 
 
     for i, plan_key in enumerate(plan_keys):
         plan_data = PLANS[plan_key]
@@ -1321,10 +1341,9 @@ def _render_chat_message(role: str, content: str, message_id: str):
     avatar_image = ASSISTANT_AVATAR if role == "assistant" else "👤" 
 
     # Improved code block formatting with simulated copy button
-    formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></i>")
-    # Apply copy button only if it's a code block
+    formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></code>")
     if "<pre><code" in formatted_content:
-        formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1)
+        formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1) # Only replace first occurrence per block
 
     with st.chat_message(role, avatar=avatar_image): # Pass avatar to st.chat_message
         st.markdown(f'<div style="position: relative;">{formatted_content}</div>', unsafe_allow_html=True)
@@ -1567,18 +1586,28 @@ def main():
                         st.rerun() # Rerun immediately to process abort
 
                     # Call the cyber_engine, which now yields chunks
+                    response_generator = cyber_engine(history, st.session_state.user_plan)
+
                     full_answer_content = ""
-                    eng_used = "N/A"
-                    response_generator, engine_name = cyber_engine(history, st.session_state.user_plan)
+                    # Create an empty markdown element to update with streamed content
+                    message_placeholder = st.empty()
 
-                    if response_generator:
-                        eng_used = engine_name # Capture engine name from the call
-                        # Use st.write_stream to display the response chunks as they arrive
-                        full_answer_content = st.write_stream(response_generator)
-                        status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
+                    try:
+                        # Iterate through the generator and update the markdown element
+                        for chunk in response_generator:
+                            full_answer_content += chunk
+                            message_placeholder.markdown(full_answer_content)
 
-                        # Only append the full answer to history once streaming is complete
-                        if full_answer_content:
+                        # After streaming is complete, retrieve the engine name
+                        eng_used = st.session_state._last_engine_used
+                        if eng_used:
+                            status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
+                        else:
+                             status.update(label="❌ Failed to generate response.", state="error", expanded=True)
+
+
+                        # Save the full answer to chat history
+                        if full_answer_content: # Only save if there was actual content
                             st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
                                 "id": str(uuid.uuid4()),
                                 "role": "assistant",
@@ -1587,10 +1616,23 @@ def main():
                             st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             _sync_user_chats_to_vault()
                             _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
-                            st.rerun() # Rerun once more to finalize UI and ensure logs update
-                    else:
-                        status.update(label="❌ Failed to generate response.", state="error", expanded=True)
-                        error_message = "❌ Failed to generate AI response. System error or API exhaustion. Please try again."
+                            st.rerun() # Rerun to finalize UI and ensure logs update
+                        else: # Case where generator returned, but yielded no content
+                            error_message = "❌ Failed to generate AI response. No content received."
+                            st.error(error_message)
+                            st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
+                                "id": str(uuid.uuid4()),
+                                "role": "assistant",
+                                "content": error_message
+                            })
+                            st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            _sync_user_chats_to_vault()
+                            _log_user_action(f"AI response failed (no content) for chat '{st.session_state.current_chat_id}'.")
+                            st.rerun()
+
+                    except Exception as e: # Catch any error during streaming itself
+                        status.update(label="❌ Streaming failed.", state="error", expanded=True)
+                        error_message = f"❌ Failed to stream AI response: {e}. Please try again."
                         _render_chat_message("assistant", error_message, str(uuid.uuid4()))
                         st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
                             "id": str(uuid.uuid4()),
@@ -1599,8 +1641,21 @@ def main():
                         })
                         st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         _sync_user_chats_to_vault()
-                        _log_user_action(f"AI response failed for chat '{st.session_state.current_chat_id}'.")
-                        st.rerun()
+                        _log_user_action(f"AI streaming response failed for chat '{st.session_state.current_chat_id}'. Error: {e}")
+                        st.rerun() # Rerun to reflect the error
+            else: # If response_generator was None or empty (e.g. no API keys to start with)
+                status.update(label="☠️ MISSION ABORTED. NO AI RESPONSE GENERATED.", state="error", expanded=True)
+                error_message = "☠️ MISSION ABORTED. NO AI RESPONSE GENERATED. SYSTEM MALFUNCTION OR API EXHAUSTION. VERIFY CONFIGURATION AND RETRY."
+                _render_chat_message("assistant", error_message, str(uuid.uuid4()))
+                st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
+                    "id": str(uuid.uuid4()),
+                    "role": "assistant",
+                    "content": error_message
+                })
+                st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                _sync_user_chats_to_vault()
+                _log_user_action(f"AI response failed (no generator) for chat '{st.session_state.current_chat_id}'.")
+                st.rerun()
 
 # --- Entry Point ---
 if __name__ == "__main__":
