@@ -548,12 +548,12 @@ def _set_page_config_and_css():
 
     /* Main chat area container */
     .main .block-container { 
-        padding-bottom: 20px !important; /* Space above fixed footer */
+        padding-bottom: 90px !important; /* Space above fixed footer (approx height of input + button + padding) */
         padding-top: 20px !important; 
         max-width: 900px; /* Constrain chat width */
         margin-left: auto;
         margin-right: auto;
-        height: calc(100vh - 100px); /* Adjust height to fill screen minus fixed header/footer (footer is ~60px, top padding ~20px) */
+        height: calc(100vh - 90px); /* Adjust height to fill screen minus fixed header/footer */
         overflow-y: auto; /* Enable scrolling for chat messages */
         padding-left: 1rem; /* Default Streamlit padding */
         padding-right: 1rem; /* Default Streamlit padding */
@@ -840,105 +840,68 @@ def _set_page_config_and_css():
         margin-top: 10px;
     }
 
-    /* Fixed chat footer container */
-    .fixed-chat-footer {
-        position: fixed; 
-        bottom: 0px; /* Align to the very bottom */
-        left: 0;
-        right: 0;
-        z-index: 1000; 
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        background-color: #212529; /* Match app background to hide scroll */
-        padding: 10px 0; /* Padding above and below the input area */
-        box-sizing: border-box; /* Include padding in width */
-    }
-
-    /* Inner container for form and plan button */
-    .fixed-chat-footer > div:first-child { /* Targets the Streamlit column/container holding form and button */
-        max-width: 900px; /* Match chat width */
-        width: 100%;
-        display: flex; /* Arrange elements side-by-side */
-        align-items: center;
-        gap: 10px; /* Space between input and button */
-        padding: 0 1rem; /* Match main content padding */
+    /* Streamlit's chat input container is natively fixed at the bottom */
+    div[data-testid="stChatInputContainer"] {
+        padding-bottom: 10px; /* Add some padding at the bottom */
+        padding-top: 10px;    /* Add some padding at the top */
+        background-color: #212529; /* Match app background for seamless fixed footer */
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.3); /* Subtle shadow above input */
         box-sizing: border-box;
+        display: flex; /* Use flexbox to align button and input */
+        justify-content: center; /* Center the internal content */
+        align-items: center;
+        gap: 10px; /* Space between the custom button and the chat input's form */
     }
 
-    /* Streamlit form within the fixed footer */
-    .fixed-chat-footer form {
-        flex-grow: 1; /* Allow form to take available space */
-        display: flex; /* Make form content (input+submit) flexible */
-        gap: 10px; /* Space between text input and submit button */
-        align-items: center;
+    /* This targets the immediate child of stChatInputContainer which is usually a form */
+    div[data-testid="stChatInputContainer"] > form {
+        flex-grow: 1; /* Allow the form to take most space */
+        max-width: 800px; /* Limit the width of the input area */
+        margin: 0; /* Remove default margin */
+        order: 2; /* Put the form after the button */
     }
-    .fixed-chat-footer .stTextInput { /* The text input component itself */
-        flex-grow: 1; /* Allow text input to fill space */
-    }
-    .fixed-chat-footer .stTextInput > div > div > input { /* The actual text input field */
-        border-radius: 20px; 
-        border: 1px solid #495057; 
-        background-color: #343a40; 
-        color: #e0e0e0;
-        padding: 10px 15px;
-        transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-        min-height: 40px; 
-    }
-    .fixed-chat-footer .stTextInput > div > div > input:focus {
-        border-color: #007bff; 
-        box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25); 
-        outline: none;
-    }
-    .fixed-chat-footer .stButton button[data-testid="stFormSubmitButton"] { /* The submit button in the form */
-        border-radius: 20px !important; 
-        background-color: #007bff !important;
-        color: white !important;
-        height: 40px; 
-        min-width: 40px; 
-        width: auto; /* Allow width to fit "Send" text */
-        padding: 0 15px !important; /* Add padding for text */
+
+    /* Custom button wrapper for "View Plan" icon, positioned inside stChatInputContainer */
+    .view-plan-icon-button-wrapper-for-chat {
+        flex-shrink: 0; /* Don't let it shrink */
+        width: 40px; /* Explicit width */
+        height: 40px; /* Explicit height */
+        order: 1; /* Put the button before the form */
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-shrink: 0; 
+        /* margin-left: 1rem; If you want additional spacing from the very left edge */
     }
-    .fixed-chat-footer .stButton button[data-testid="stFormSubmitButton"]:hover {
-        background-color: #0056b3 !important;
-    }
-
-    /* "View Plan" button specific styling */
-    .view-plan-button-wrapper {
-        flex-shrink: 0; /* Prevent button wrapper from shrinking */
-        height: 40px; /* Match the height of the input and send button */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .view-plan-icon-button { /* The visible HTML button */
+    .view-plan-icon-button {
         background-color: #454d55 !important;
         color: #e0e0e0 !important;
         border: 1px solid #5a6268 !important;
         border-radius: 8px !important;
-        width: 40px; /* Make it square */
-        height: 40px;
+        width: 100%; /* Fill wrapper */
+        height: 100%; /* Fill wrapper */
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.2em; /* Larger icon */
+        font-size: 1.2em;
         cursor: pointer;
         transition: background-color 0.2s, color 0.2s;
-        text-decoration: none; /* Remove underline */
+        text-decoration: none;
     }
     .view-plan-icon-button:hover {
         background-color: #5a6268 !important;
         color: #ffffff !important;
     }
-    /* Hide Streamlit's hidden button completely */
-    [key="view_plan_status_button_hidden"] {
-        display: none !important;
-    }
 
+    /* Hide the Streamlit's internal hidden button (triggered by JS from custom HTML button) */
+    [key="view_plan_status_button_hidden_real"] {
+        display: none !important;
+        visibility: hidden !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+    }
 
     /* Plan Status Modal (Overlay) */
     .plan-status-modal {
@@ -1451,37 +1414,33 @@ def main():
     if st.session_state.show_plan_status_modal:
         _render_plan_status_modal()
 
-    # --- Chat Input Handling (Fixed Footer) ---
+    # --- Fixed Chat Footer (View Plan Button + Chat Input) ---
     # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
-        st.markdown('<div class="fixed-chat-footer">', unsafe_allow_html=True)
-        # Use a form to group the text input and its submit button
-        with st.form("chat_input_form", clear_on_submit=True):
-            # Columns to arrange the "View Plan" button, the text input, and the Send button
-            btn_col, message_col, send_col = st.columns([0.1, 0.8, 0.1])
+        # We need to manually inject the HTML for the button *before* st.chat_input
+        # and rely on CSS to position it correctly within the stChatInputContainer.
+        # Streamlit places st.chat_input inside a fixed div with data-testid="stChatInputContainer".
+        # We'll augment that container by injecting the button before the chat_input renders its content.
 
-            with btn_col:
-                # Custom HTML button that triggers a hidden Streamlit button
-                st.markdown(
-                    f'<div class="view-plan-button-wrapper">'
-                    f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden\').click();">📊</button>'
-                    f'</div>', unsafe_allow_html=True
-                )
-                # Hidden Streamlit button to handle the click and rerun
-                if st.button("📊", key="view_plan_status_button_hidden", help="View your current plan details", label_visibility="collapsed"):
-                    st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
-                    _log_user_action("View Plan Status toggled.")
-                    st.rerun()
+        # Inject the custom HTML for the View Plan button wrapper.
+        # This wrapper will be styled to appear inside the stChatInputContainer via CSS.
+        st.markdown(
+            f'<div class="view-plan-icon-button-wrapper-for-chat">'
+            f'<button class="view-plan-icon-button" onclick="document.getElementById(\'view_plan_status_button_hidden_real\').click();">📊</button>'
+            f'</div>', unsafe_allow_html=True
+        )
+        # The actual Streamlit chat input, it creates its own fixed container by default.
+        p_in = st.chat_input("Type your message...", key="chat_input_main")
 
-            with message_col:
-                user_message = st.text_input("Type your message...", label_visibility="collapsed", key="user_message_input", placeholder="Type your message...")
-            with send_col:
-                submitted = st.form_submit_button("Send", type="primary", use_container_width=True)
+        # Hidden Streamlit button to handle the click from the custom HTML button
+        # This needs to be outside the markdown block but still in the general flow
+        if st.button("Toggle Plan Modal", key="view_plan_status_button_hidden_real", help="Hidden button to toggle plan modal", label_visibility="collapsed"):
+            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
+            _log_user_action("View Plan Status toggled.")
+            st.rerun()
 
-        st.markdown('</div>', unsafe_allow_html=True) # End of fixed-chat-footer
-
-        # Logic to process message after form submission
-        if submitted and user_message:
+        # Logic to process message after chat input submission
+        if p_in: # p_in captures the text from st.chat_input when user presses Enter/Send
             # --- RATE LIMITING ---
             time_since_last_request = (datetime.now() - st.session_state.last_ai_request_time).total_seconds()
             MIN_REQUEST_INTERVAL = 3 # seconds
@@ -1511,7 +1470,7 @@ def main():
             if not st.session_state.current_chat_id:
                 current_time_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 new_chat_uuid = str(uuid.uuid4()) # Use a UUID for chat_id for uniqueness in URL
-                chat_id_title_prefix = user_message.strip()[:20] + "..." if len(user_message.strip()) > 23 else user_message.strip()
+                chat_id_title_prefix = p_in.strip()[:20] + "..." if len(p_in.strip()) > 23 else p_in.strip()
 
                 st.session_state.current_chat_id = new_chat_uuid # Set session state chat_id to UUID
                 st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=new_chat_uuid) # Set URL query param
@@ -1534,9 +1493,9 @@ def main():
 
             # Process Google Search command
             search_results_content = ""
-            if user_message.strip().lower().startswith("/search "):
+            if p_in.strip().lower().startswith("/search "):
                 if st.session_state.plan_details["google_search_enabled"]:
-                    search_query = user_message[len("/search "):].strip()
+                    search_query = p_in[len("/search "):].strip()
                     _log_user_action(f"User initiated Google Search for: '{search_query}'.")
                     with st.status(f"🌐 Searching Google for: '{search_query}'...", expanded=True, state="running") as status:
                         search_results_content = _perform_google_search(search_query)
@@ -1548,17 +1507,17 @@ def main():
                         "content": search_results_content
                     })
                     # Modify the user's input to include search results for AI context with stronger emphasis on analysis
-                    user_message = f"Operator requested a search for '{search_query}'. The following critical intelligence was gathered and requires immediate tactical analysis:\n{search_results_content}\n\nBased on these findings and the initial objective, provide a comprehensive tactical assessment and outline the next steps for exploitation."
+                    p_in = f"Operator requested a search for '{search_query}'. The following critical intelligence was gathered and requires immediate tactical analysis:\n{search_results_content}\n\nBased on these findings and the initial objective, provide a comprehensive tactical assessment and outline the next steps for exploitation."
                 else:
                     st.warning("Google Search requires 'HACKER-PRO' or 'ELITE-ASSASSIN' plan. Upgrade for enhanced OSINT capabilities.")
                     _log_user_action("User attempted Google Search on restricted plan.")
-                    user_message = "Operator attempted to use Google Search but their current plan does not permit it. Inform them of the restriction and suggest upgrade. Do NOT perform search."
+                    p_in = "Operator attempted to use Google Search but their current plan does not permit it. Inform them of the restriction and suggest upgrade. Do NOT perform search."
 
             # Add user message to chat history
             st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
                 "id": str(uuid.uuid4()),
                 "role": "user",
-                "content": user_message
+                "content": p_in
             })
             st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             _sync_user_chats_to_vault() # Save after user message
