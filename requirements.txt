@@ -5,3 +5,4 @@ bcrypt
 pypdf
 python-docx
 google-generativeai
+matplotlib.pyplot
