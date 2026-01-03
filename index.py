@@ -923,7 +923,17 @@ def _set_page_config_and_css():
         padding-top: 10px !important;    /* Add some padding at the top */
         padding-bottom: 10px !important; /* Add some padding at the bottom */
         box-sizing: border-box;
-        /* Ensure no flex, order, or width overrides */
+        /* Reverting to default Streamlit layout for stChatInputContainer */
+        /* Removed custom flex, order, justify-content, align-items, width/margin */
+    }
+
+    /* Streamlit's chat input internal form. Let Streamlit handle its own form layout */
+    div[data-testid="stChatInputContainer"] > form {
+        max-width: 900px; /* Constrain form width to match main content */
+        margin-left: auto; /* Center the form */
+        margin-right: auto; /* Center the form */
+        /* Reverting to default Streamlit layout for the form */
+        /* Removed custom flex-grow, display, gap, align-items, order */
     }
 
     /* Streamlit's chat input text field */
