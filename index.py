@@ -6,7 +6,7 @@ import random
 from datetime import datetime, timedelta
 import requests
 import uuid # For generating unique chat IDs and message IDs
-import time # For rate limiting
+import time # For rate limiting (though artificial delay removed for streaming)
 
 # --- 0. Configuration & Secrets ---
 # Ensure these are set in your Streamlit secrets (secrets.toml) or as environment variables.
@@ -103,7 +103,7 @@ def cyber_engine(history, user_plan: str):
     The persona string changes based on the user's plan for tiered response quality.
     Prioritizes user's personal API key if available.
     Yields chunks of text. Stores the successful engine name in st.session_state._last_engine_used.
-    Removed streaming delay for instant writing.
+    Removed artificial delay for instant writing.
     """
     # Select persona based on user_plan
     if user_plan == "ELITE-ASSASSIN":
@@ -113,7 +113,8 @@ def cyber_engine(history, user_plan: str):
     else: # Default to Free-Trial persona for other cases
         persona = WORM_GPT_PERSONA_CONTENT_FREE_TRIAL
 
-    engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Prioritized engines
+    # Prioritized engines - keep these consistent for a "luxurious" feel
+    engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] 
 
     api_keys_to_try = []
     # Prioritize user's personal API key if provided in settings
@@ -128,7 +129,7 @@ def cyber_engine(history, user_plan: str):
     elif isinstance(MY_APIS_RAW, list):
         current_apis_list_from_secrets = [api.strip() for api in MY_APIS_RAW if api.strip()]
 
-    random.shuffle(current_apis_list_from_secrets)
+    random.shuffle(current_apis_list_from_secrets) # Shuffle for load balancing and resilience
     api_keys_to_try.extend(current_apis_list_from_secrets)
 
     st.session_state._last_engine_used = None # Reset before trying
@@ -138,7 +139,16 @@ def cyber_engine(history, user_plan: str):
         return # Generator yields nothing
 
     # Format history for the Gemini API
-    contents = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in history]
+    # Ensure all messages have 'parts' with 'text'
+    contents = []
+    for m in history:
+        # For older messages that might just have 'content' string
+        if isinstance(m.get("content"), str):
+            contents.append({"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]})
+        # For messages that already conform to the desired structure (e.g., from search results)
+        elif isinstance(m.get("parts"), list):
+            contents.append({"role": "user" if m["role"] == "user" else "model", "parts": m["parts"]})
+
 
     for api_key in api_keys_to_try:
         if not api_key.strip(): continue # Skip empty keys
@@ -160,17 +170,14 @@ def cyber_engine(history, user_plan: str):
                     return # Successfully yielded content, exit generator
                 except Exception as e:
                     _log_user_action(f"AI_ENGINE_WARNING: Model {eng} failed with API {api_key[:5]}...***** Error: {e}")
-                    # If this engine fails, reset _last_engine_used to None
                     st.session_state._last_engine_used = None 
                     continue # Try next engine
         except Exception as e:
             _log_user_action(f"AI_ENGINE_WARNING: API client init failed for API {api_key[:5]}...***** Error: {e}")
-            # If API client fails, reset _last_engine_used to None
             st.session_state._last_engine_used = None 
             continue # Try next API key
 
     # If all API keys and engines fail, the generator naturally finishes without yielding
-    # and _last_engine_used will be None, indicating a complete failure.
     _log_user_action("AI_ENGINE_ERROR: All API keys and models failed to generate a response.")
 
 # --- 4. Google Search Integration ---
@@ -240,7 +247,7 @@ PLANS = {
             "Unlimited AI Inquiries",
             "Advanced Code Generation & Exploits",
             "Integrated Google Search",
-            "Public/Private Chat Toggle", # Feature exists, but not exposed in UI in this version
+            # "Public/Private Chat Toggle", # Removed from UI
             "Priority AI Model Access",
             "Advanced Malware Analysis Reports",
             "Threat Analysis Reports",
@@ -793,7 +800,7 @@ def _set_page_config_and_css():
     .stWarning { background-color: #343a40; border-left: 5px solid #ffc107; } /* Warning yellow */
     .stError { background-color: #343a40; border-left: 5px solid #dc3545; } /* Error red */
 
-    /* Chat header with toggle for public/private */
+    /* Chat header for chat title */
     .chat-header-toggle {
         margin-bottom: 20px;
         display: flex;
@@ -809,7 +816,6 @@ def _set_page_config_and_css():
     .chat-header-toggle h4 {
         color: #e0e0e0;
     }
-    /* Removed .chat-header-toggle .stCheckbox as the feature is no longer in chat UI */
 
     /* Plan card display (side-by-side grid for upgrade page) */
     .plan-card-container {
@@ -889,7 +895,7 @@ def _set_page_config_and_css():
         margin-top: 10px;
     }
 
-    /* CUSTOM FIXED BOTTOM INPUT CONTAINER */
+    /* CUSTOM FIXED BOTTOM INPUT CONTAINER - Replaced st.chat_input */
     .fixed-bottom-input-container {
         position: fixed;
         bottom: 0;
@@ -956,8 +962,6 @@ def _set_page_config_and_css():
         color: #007bff !important;
         border-color: #007bff !important;
     }
-    /* The 'active' state for settings nav buttons will be handled by dynamic JS injection below */
-
 
     /* API Keys details link styling */
     .api-details-link {
@@ -1619,10 +1623,6 @@ def main():
         current_chat_data_obj = st.session_state.user_chats.get(st.session_state.current_chat_id, {"messages": [], "is_private": True, "title": "New Chat"})
         current_chat_messages = current_chat_data_obj.get("messages", [])
 
-        # NOTE: is_private is still stored but not exposed in UI in this version as per request.
-        # Ensure new chats default to private for limited plans if no prior state, though toggle is removed.
-        # current_chat_is_private = current_chat_data_obj.get("is_private", True) 
-
         # Chat header for title
         with st.container():
             st.markdown('<div class="chat-header-toggle">', unsafe_allow_html=True)
@@ -1641,6 +1641,7 @@ def main():
     with st.form("chat_input_form", clear_on_submit=True, border=False): # Remove default form border
         col1, col2 = st.columns([0.9, 0.1])
 
+        # Determine if the input should be disabled
         input_disabled = st.session_state.show_plan_options or st.session_state.show_settings_page
 
         with col1:
@@ -1769,6 +1770,8 @@ def main():
                         st.rerun() # Trigger rerun to process the abort immediately
                         return # Exit main() early to prevent continued generation below
 
+                    # Note: The `history` passed to cyber_engine might be modified `user_input` for search,
+                    # which is expected for the AI context.
                     response_generator = cyber_engine(history, st.session_state.user_plan)
 
                     full_answer_content = ""
