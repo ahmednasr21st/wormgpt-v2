@@ -19,7 +19,7 @@ import time # For rate limiting
 
 # --- USER-SPECIFIED API KEY LOADING ---
 try:
-    GEMINI_API_KEYS = st.secrets["GENAI_KEYS"].split(",")
+    GEMINI_API_KEYS = st.secrets["GENAI_KEYS"]
     if not GEMINI_API_KEYS or not any(key.strip() for key in GEMINI_API_KEYS):
         raise ValueError("GENAI_KEYS is empty or contains only whitespace.")
 except KeyError:
