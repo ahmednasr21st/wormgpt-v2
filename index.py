@@ -16,7 +16,7 @@ import time # For rate limiting
 # GOOGLE_CSE_ID="YOUR_CUSTOM_SEARCH_ENGINE_ID"
 # TELEGRAM_SUPPORT_LINK="https://t.me/WormGPT_Support_Channel"
 # TELEGRAM_VIP_LINK="https://t.me/WormGPT_VIP_Support"
-# BOT_LOGO_URL="path/to/your/bot_logo.png" # OR "https://raw.githubusercontent.com/YourUser/YourRepo/main/your_logo.png"
+# BOT_LOGO_URL="https://raw.githubusercontent.com/username/repo/main/your_logo.png" # OR local path like "assets/your_logo.png"
 
 # --- USER-SPECIFIED API KEY LOADING ---
 try:
@@ -232,12 +232,12 @@ PLANS = {
 }
 
 VALID_SERIAL_KEYS = {
-    "FREE-WORM-TRIAL": "FREE-TRIAL", # Prominently displayed free key
+    "FREE-WORM-TRIAL": "FREE-TRIAL", # Prominently displayed free key (will be replaced by unique ID for free users)
     "WORM-MONTH-2025": "HACKER-PRO",
     "VIP-HACKER-99": "ELITE-ASSASSIN",
     "WORM999": "ELITE-ASSASSIN"
 }
-FREE_TRIAL_KEY = "FREE-WORM-TRIAL"
+FREE_TRIAL_KEY_PREFIX = "FREE-TRIAL-DEVICE-" # Prefix for unique free user IDs
 
 # --- 6. Session State Initialization and Authentication Logic ---
 
@@ -283,6 +283,7 @@ def _initialize_session_state():
     persisted_serial_from_url = query_params.get('serial', [None])[0]
     persisted_chat_id_from_url = query_params.get('chat_id', [None])[0]
 
+    # Attempt to re-authenticate if a serial is found in the URL and not already authenticated
     if not st.session_state.authenticated and persisted_serial_from_url:
         db_data = load_data(DB_FILE)
         user_info = db_data.get(persisted_serial_from_url)
@@ -292,10 +293,10 @@ def _initialize_session_state():
             expiry = datetime.strptime(user_info["expiry"], "%Y-%m-%d %H:%M:%S")
             if now < expiry: # Check if not expired
                 # For paid serials, enforce device_id check
-                if user_info["plan"] != FREE_TRIAL_KEY and user_info["device_id"] != st.session_state.device_id:
+                if not persisted_serial_from_url.startswith(FREE_TRIAL_KEY_PREFIX) and user_info["device_id"] != st.session_state.device_id:
                     _log_user_action(f"AUTO-AUTH_FAIL: Device mismatch for persisted serial {persisted_serial_from_url[:5]}....")
-                    st.warning("SESSION WARNING: Your session token is tied to another device. Please log in again.")
-                    st.experimental_set_query_params(serial=None, chat_id=None)
+                    st.warning("SESSION WARNING: Your login is tied to another device. Please log in again if this is a new device.")
+                    st.experimental_set_query_params(serial=None, chat_id=None) # Clear bad serial from URL
                 else:
                     st.session_state.authenticated = True
                     st.session_state.user_serial = persisted_serial_from_url
@@ -303,19 +304,20 @@ def _initialize_session_state():
                     _log_user_action(f"AUTO-AUTH_SUCCESS: User {persisted_serial_from_url[:5]}... re-authenticated from URL.")
 
                     # Attempt to load the specific chat if provided in URL and belongs to user
-                    if persisted_chat_id_from_url and persisted_chat_id_from_url in load_data(CHATS_FILE).get(st.session_state.user_serial, {}):
+                    user_chats_from_vault = load_data(CHATS_FILE).get(st.session_state.user_serial, {})
+                    if persisted_chat_id_from_url and persisted_chat_id_from_url in user_chats_from_vault:
                         st.session_state.current_chat_id = persisted_chat_id_from_url
                         _log_user_action(f"Loaded chat from URL: {persisted_chat_id_from_url}")
                     else:
-                        st.experimental_set_query_params(chat_id=None) # Clear invalid chat_id
+                        st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None) # Clear invalid chat_id
 
             else:
                 _log_user_action(f"AUTO-AUTH_FAIL: Expired persisted serial {persisted_serial_from_url[:5]}....")
                 st.error("SESSION EXPIRED: Your login session has expired. Please log in again.")
-                st.experimental_set_query_params(serial=None, chat_id=None)
+                st.experimental_set_query_params(serial=None, chat_id=None) # Clear expired serial from URL
         else:
             _log_user_action(f"AUTO-AUTH_FAIL: Invalid persisted serial {persisted_serial_from_url[:5]}... (not found in DB).")
-            st.experimental_set_query_params(serial=None, chat_id=None)
+            st.experimental_set_query_params(serial=None, chat_id=None) # Clear non-existent serial from URL
 
 
 def _authenticate_user():
@@ -324,7 +326,7 @@ def _authenticate_user():
     with st.container():
         st.markdown('<div style="padding: 30px; border: 1px solid #ff0000; border-radius: 10px; background: #161b22; text-align: center; max-width: 400px; margin: auto;">', unsafe_allow_html=True)
         serial_input = st.text_input("ENTER SERIAL:", type="password", key="auth_serial_input")
-        st.info(f"FREE TRIAL KEY (7 days, 20 msgs/day): `{FREE_TRIAL_KEY}`")
+        st.info(f"FREE TRIAL KEY (7 days, 20 msgs/day): `{VALID_SERIAL_KEYS[FREE_TRIAL_KEY_PREFIX.strip('-')]}`") # Display the generic FREE-TRIAL key
         st.info("Your chat history is permanently linked to your serial key and will be restored upon re-authentication, even if your plan expires.")
 
 
@@ -332,11 +334,11 @@ def _authenticate_user():
             db_data = load_data(DB_FILE)
             now = datetime.now()
 
-            if serial_input == FREE_TRIAL_KEY:
+            if serial_input == VALID_SERIAL_KEYS[FREE_TRIAL_KEY_PREFIX.strip('-')]: # If generic free trial key is entered
                 # --- Free Trial Specific Logic: Each device_id gets its own free trial instance ---
-                unique_free_user_id = f"{FREE_TRIAL_KEY}-{st.session_state.device_id}"
+                unique_free_user_id = f"{FREE_TRIAL_KEY_PREFIX}{st.session_state.device_id}"
                 user_info = db_data.get(unique_free_user_id)
-                plan_name = FREE_TRIAL_KEY
+                plan_name = "FREE-TRIAL" # Ensure plan name matches PLANS dict
                 plan_details = PLANS[plan_name]
 
                 if not user_info or datetime.strptime(user_info["expiry"], "%Y-%m-%d %H:%M:%S") <= now:
@@ -721,7 +723,7 @@ def _render_sidebar_content():
 
         if st.button("NEW MISSION", use_container_width=True, key="new_chat_button"):
             st.session_state.current_chat_id = None
-            st.experimental_set_query_params(chat_id=None) # Clear chat_id from URL
+            st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None) # Update URL to clear chat_id
             st.session_state.show_plan_options = False
             st.session_state.show_settings_page = False
             st.session_state.show_utilities_page = False
@@ -744,7 +746,7 @@ def _render_sidebar_content():
                     # Update URL when chat is selected
                     if st.button(f"**{chat_privacy_status}** {chat_title}", key=f"btn_chat_{chat_id}"):
                         st.session_state.current_chat_id = chat_id
-                        st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=chat_id) # Update URL
+                        st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=chat_id) # Set chat_id in URL
                         st.session_state.show_plan_options = False
                         st.session_state.show_settings_page = False
                         st.session_state.show_utilities_page = False
@@ -1129,4 +1131,4 @@ def main():
 
 # --- Entry Point ---
 if __name__ == "__main__":
-    main()
+    main()      
