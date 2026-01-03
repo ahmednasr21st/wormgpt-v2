@@ -984,24 +984,26 @@ def _set_page_config_and_css():
         flex-shrink: 0; /* Prevent icon from shrinking */
     }
 
-    .plan-status-modal .close-button {
+    /* Styling for the close button in the modal using its generated ID */
+    button[id="close_plan_modal-top"] { /* Streamlit typically appends -top to button keys for their IDs */
         background-color: #dc3545 !important;
         color: white !important;
-        margin-top: 20px; /* More space below plans */
+        margin-top: 20px !important;
         padding: 8px 15px !important;
         border-radius: 5px !important;
-        font-weight: normal;
-        display: block; /* Make it a block button */
-        margin-left: auto;
-        margin-right: auto;
-        width: 100%; /* Full width button */
+        font-weight: normal !important;
+        display: block !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        width: 100% !important;
+        text-align: center !important; /* Ensure text is centered for this button */
     }
-    .plan-status-modal .close-button:hover {
+    button[id="close_plan_modal-top"]:hover {
         background-color: #c82333 !important;
     }
 
-    /* Settings Sub-navigation styles */
-    .settings-nav-button {
+    /* Settings Sub-navigation styles - Targeted by ID prefix */
+    button[id^="settings_nav_"] { /* Targets buttons whose ID starts with "settings_nav_" */
         background-color: #2a3035 !important;
         color: #e0e0e0 !important;
         border: 1px solid #454d55 !important;
@@ -1011,17 +1013,13 @@ def _set_page_config_and_css():
         font-size: 0.9em;
         transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     }
-    .settings-nav-button:hover {
+    button[id^="settings_nav_"]:hover {
         background-color: #3c444d !important;
         color: #007bff !important;
         border-color: #007bff !important;
     }
-    .settings-nav-button.active {
-        background-color: #007bff !important;
-        color: white !important;
-        border-color: #007bff !important;
-        font-weight: bold;
-    }
+    /* The 'active' state for settings nav buttons will be handled by dynamic JS injection below */
+
 
     /* API Keys details link styling */
     .api-details-link {
@@ -1588,49 +1586,38 @@ def _render_settings_page():
 
     # Sub-navigation for settings - Using st.columns for horizontal layout
     cols = st.columns(7) # Increased to 7 for logs
-    with cols[0]:
-        if st.button("Dashboard", key="settings_nav_dashboard", use_container_width=True, 
-                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "dashboard" else "")):
-            st.session_state.settings_sub_page = "dashboard"
-            _log_user_action("Accessed Dashboard from Settings nav.")
-            st.rerun()
-    with cols[1]:
-        if st.button("General", key="settings_nav_general", use_container_width=True, 
-                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "general" else "")):
-            st.session_state.settings_sub_page = "general"
-            _log_user_action("Accessed General Settings from Settings nav.")
-            st.rerun()
-    with cols[2]:
-        if st.button("Utilities", key="settings_nav_utilities", use_container_width=True, 
-                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "utilities" else "")):
-            st.session_state.settings_sub_page = "utilities"
-            _log_user_action("Accessed Utilities from Settings nav.")
-            st.rerun()
-    with cols[3]:
-        if st.button("API Keys", key="settings_nav_api_keys", use_container_width=True, 
-                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "api_keys" else "")):
-            st.session_state.settings_sub_page = "api_keys"
-            _log_user_action("Accessed API Keys from Settings nav.")
-            st.rerun()
-    with cols[4]:
-        if st.button("Help", key="settings_nav_help", use_container_width=True, 
-                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "help" else "")):
-            st.session_state.settings_sub_page = "help"
-            _log_user_action("Accessed Help & Tutorials from Settings nav.")
-            st.rerun()
-    with cols[5]:
-        if st.button("Feedback", key="settings_nav_feedback", use_container_width=True, 
-                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "feedback" else "")):
-            st.session_state.settings_sub_page = "feedback"
-            _log_user_action("Accessed Feedback page from Settings nav.")
-            st.rerun()
-    with cols[6]:
-        if st.button("Logs", key="settings_nav_logs", use_container_width=True, 
-                     class_name="settings-nav-button" + (" active" if st.session_state.settings_sub_page == "logs" else "")):
-            st.session_state.settings_sub_page = "logs"
-            _log_user_action("Accessed Logs page from Settings nav.")
-            st.rerun()
+    buttons_config = [
+        ("Dashboard", "dashboard"),
+        ("General", "general"),
+        ("Utilities", "utilities"),
+        ("API Keys", "api_keys"),
+        ("Help", "help"),
+        ("Feedback", "feedback"),
+        ("Logs", "logs")
+    ]
 
+    for i, (label, sub_page_name) in enumerate(buttons_config):
+        with cols[i]:
+            # Removed class_name. Styling will be handled by CSS selectors and dynamic injection.
+            if st.button(label, key=f"settings_nav_{sub_page_name}", use_container_width=True):
+                st.session_state.settings_sub_page = sub_page_name
+                _log_user_action(f"Accessed {label} from Settings nav.")
+                st.rerun()
+
+    # Dynamic CSS injection for active state of settings navigation buttons
+    if st.session_state.settings_sub_page:
+        # Streamlit button IDs are typically generated as 'key-top'
+        active_button_id = f"settings_nav_{st.session_state.settings_sub_page}-top"
+        st.markdown(f"""
+            <style>
+            button[id="{active_button_id}"] {{
+                background-color: #007bff !important;
+                color: white !important;
+                border-color: #007bff !important;
+                font-weight: bold;
+            }}
+            </style>
+            """, unsafe_allow_html=True)
 
     st.markdown("<hr style='margin-top:10px; margin-bottom:30px; border-top: 1px solid #454d55;'>", unsafe_allow_html=True) # Separator
 
@@ -1714,6 +1701,8 @@ def _render_plan_status_modal():
         plan_data = PLANS[plan_key]
         is_current_plan = (plan_key == st.session_state.user_plan)
 
+        # Use JavaScript to trigger a hidden Streamlit button click when the div is clicked
+        # This allows styling the div, but getting Streamlit's state management
         button_key = f"modal_plan_click_{plan_key}"
 
         if is_current_plan:
@@ -1728,7 +1717,7 @@ def _render_plan_status_modal():
             # For locked plans, the entire div becomes clickable and redirects
             st.markdown(
                 f'<div class="plan-option-item locked-plan" '
-                f'onclick="document.getElementById(\'hidden_modal_plan_button_{plan_key}\').click();">' # JS click target
+                f'onclick="document.getElementById(\'hidden_modal_plan_button_{plan_key}-top\').click();">' # JS click target
                 f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>'
                 f'<span class="plan-status-icon">{status_icon} LOCKED</span>'
                 f'</div>', unsafe_allow_html=True
@@ -1740,7 +1729,8 @@ def _render_plan_status_modal():
                 _log_user_action(f"Redirected to Upgrade Plan for {plan_key} from modal.")
                 st.rerun()
 
-    if st.button("Close", key="close_plan_modal", use_container_width=True, help="Close this window", class_name="close-button"):
+    # The close button styling is handled by its CSS selector `button[id="close_plan_modal-top"]`
+    if st.button("Close", key="close_plan_modal", use_container_width=True, help="Close this window"):
         st.session_state.show_plan_status_modal = False
         st.rerun()
 
