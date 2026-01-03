@@ -16,7 +16,6 @@ import time # For rate limiting
 # GOOGLE_CSE_ID="YOUR_CUSTOM_SEARCH_ENGINE_ID"
 # TELEGRAM_SUPPORT_LINK="https://t.me/WormGPT_Support_Channel"
 # TELEGRAM_VIP_LINK="https://t.me/WormGPT_VIP_Support"
-# BOT_LOGO_URL="https://raw.githubusercontent.com/username/repo/main/your_logo.png" # OR local path like "assets/your_logo.png"
 
 # --- USER-SPECIFIED API KEY LOADING ---
 try:
@@ -33,7 +32,12 @@ GOOGLE_SEARCH_API_KEY = st.secrets.get("GOOGLE_SEARCH_API_KEY", "YOUR_GOOGLE_SEA
 GOOGLE_CSE_ID = st.secrets.get("GOOGLE_CSE_ID", "YOUR_CUSTOM_SEARCH_ENGINE_ID_NOT_SET")
 TELEGRAM_SUPPORT_LINK = st.secrets.get("TELEGRAM_SUPPORT_LINK", "https://t.me/WormGPT_Support_Placeholder")
 TELEGRAM_VIP_LINK = st.secrets.get("TELEGRAM_VIP_LINK", "https://t.me/WormGPT_VIP_Placeholder")
-BOT_LOGO_URL = st.secrets.get("BOT_LOGO_URL", None) # Custom bot logo URL or path
+
+# Define a default bot avatar. Place 'wormgpt_avatar.png' in an 'assets' folder next to your script.
+ASSISTANT_AVATAR = "assets/wormgpt_avatar.png" 
+if not os.path.exists(ASSISTANT_AVATAR):
+    ASSISTANT_AVATAR = "🤖" # Fallback to emoji if image file doesn't exist
+
 
 # --- 1. Global State Management & File Paths ---
 CHATS_FILE = "worm_chats_vault.json"
@@ -498,6 +502,13 @@ def _set_page_config_and_css():
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+    html, body, [data-testid="stAppViewBlockContainer"] {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        /* overflow: hidden; */ /* Removing overflow hidden from html/body */
+    }
+
     .stApp { 
         background-color: #212529; /* Darker charcoal */
         color: #e0e0e0; /* Off-white text */
@@ -509,7 +520,8 @@ def _set_page_config_and_css():
         display: flex; 
         align-items: center; 
         margin-bottom: 20px; 
-        padding: 20px 0 10px 15px; /* Adjust padding here */
+        padding: 0px 0 10px 15px; /* Adjusted padding to push to top */
+        margin-top: -15px; /* Negative margin to push it further up */
         border-bottom: 1px solid #343a40; /* Darker border */
     }
     .sidebar-logo-box {
@@ -536,11 +548,13 @@ def _set_page_config_and_css():
 
     /* Main chat area padding */
     .main .block-container { 
-        padding-bottom: 120px !important; 
+        padding-bottom: 120px !important; /* Space for fixed input + plan button */
         padding-top: 20px !important; 
         max-width: 900px; /* Constrain chat width */
         margin-left: auto;
         margin-right: auto;
+        overflow-y: auto; /* Enable scrolling for chat messages */
+        height: calc(100vh - 140px); /* Adjust height to fill screen minus input/header area */
     }
 
     /* Chat Messages */
@@ -550,12 +564,14 @@ def _set_page_config_and_css():
         border: none !important; 
         margin-bottom: 10px; 
         max-width: 80%; /* Limit bubble width */
+        display: flex; /* Enable flex for avatar */
+        align-items: flex-start; /* Align avatar and text at top */
     }
 
     /* Assistant Message (left-aligned) */
     .stChatMessage[data-testid="stChatMessageAssistant"] { 
         background-color: #343a40 !important; /* Darker blue-gray */
-        color: #e0e0e0 !important;
+        color: #f0f0f0 !important; /* Lighter text for assistant */
         align-self: flex-start; 
         margin-right: auto;
     }
@@ -565,6 +581,13 @@ def _set_page_config_and_css():
         color: #ffffff !important; 
         align-self: flex-end; 
         margin-left: auto;
+        flex-direction: row-reverse; /* Put avatar on right for user */
+    }
+
+    /* Chat Message content (markdown container) */
+    .stChatMessage [data-testid="stMarkdownContainer"] {
+        padding: 0; /* Remove default padding inside message */
+        flex-grow: 1; /* Allow content to take available space */
     }
 
     .stChatMessage [data-testid="stMarkdownContainer"] p {
@@ -573,13 +596,23 @@ def _set_page_config_and_css():
         color: inherit !important; /* Inherit color from parent bubble */
         text-align: left; 
         direction: ltr; 
+        margin-bottom: 0; /* No extra margin for paragraphs */
     }
 
-    /* Remove avatars */
-    [data-testid="stChatMessageAvatarUser"], 
-    [data-testid="stChatMessageAvatarAssistant"] { 
-        display: none !important; 
+    /* Avatars */
+    .stChatMessage [data-testid="stChatMessageAvatar"] {
+        width: 32px; /* Standard avatar size */
+        height: 32px;
+        border-radius: 50%; /* Circular avatar */
+        object-fit: cover;
+        margin: 0 10px; /* Spacing for avatar */
+        flex-shrink: 0; /* Prevent avatar from shrinking */
     }
+    .stChatMessage[data-testid="stChatMessageUser"] [data-testid="stChatMessageAvatar"] {
+        margin-left: 10px;
+        margin-right: 0;
+    }
+
 
     /* Code blocks within chat */
     .stChatMessage pre {
@@ -593,6 +626,7 @@ def _set_page_config_and_css():
         position: relative;
         direction: ltr; 
         text-align: left;
+        margin-top: 10px; /* Space between text and code block */
     }
     .stChatMessage code {
         color: #f8f8f2 !important; /* Light inline code text */
@@ -624,6 +658,7 @@ def _set_page_config_and_css():
     [data-testid="stSidebar"] { 
         background-color: #343a40 !important; /* Darker sidebar */
         border-right: 1px solid #454d55; /* Darker border */
+        overflow-y: auto; /* Allow sidebar to scroll if content overflows */
     }
     [data-testid="stSidebar"] h1 { /* Streamlit title in sidebar */
         color: #ffffff; 
@@ -666,8 +701,8 @@ def _set_page_config_and_css():
         color: #ffffff !important;
     }
 
-    /* Active chat button in sidebar */
-    [data-testid="stSidebar"] .stButton>button[key^="btn_chat_"][style*="background-color: rgb(0, 123, 255)"] { /* Matches active blue color */
+    /* Active chat button in sidebar (the one with the blue text and grey background) */
+    [data-testid="stSidebar"] .stButton>button.active-chat-button { 
         background-color: #454d55 !important; /* Light background for active chat */
         color: #007bff !important; /* Blue text for active chat */
         font-weight: 600;
@@ -724,7 +759,7 @@ def _set_page_config_and_css():
         background-color: #343a40; /* Darker background */
         border: 1px solid #454d55; /* Darker border */
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Soft shadow */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.15); /* Soft shadow */
     }
     .chat-header-toggle h4 {
         color: #e0e0e0;
@@ -811,24 +846,28 @@ def _set_page_config_and_css():
         margin-top: 10px;
     }
 
-    /* Chat input styling */
+    /* Chat input container */
     div[data-testid="stChatInputContainer"] { 
         position: fixed; 
-        bottom: 20px; 
+        bottom: 0px; /* Align to the very bottom */
+        left: 0;
+        right: 0;
         z-index: 1000; 
         width: 100%;
         display: flex;
         justify-content: center;
         background-color: #212529; /* Match app background to hide scroll */
         padding-top: 10px; /* Some padding above input */
+        padding-bottom: 10px; /* Some padding below input */
     }
-    div[data-testid="stChatInputContainer"] > div {
+    div[data-testid="stChatInputContainer"] > div { /* The inner block container */
         max-width: 900px; /* Match chat width */
         width: 100%;
-        display: flex; /* Allow button next to input */
+        display: flex; /* Ensure button and input are side-by-side */
         align-items: center;
         gap: 10px; /* Space between input and button */
     }
+    /* Specific styling for the actual text input field */
     .stTextInput > div > div > input {
         border-radius: 20px; /* Rounded corners */
         border: 1px solid #495057; /* Darker gray border */
@@ -836,12 +875,15 @@ def _set_page_config_and_css():
         color: #e0e0e0;
         padding: 10px 15px;
         transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        flex-grow: 1; /* Allow input to take most space */
+        min-height: 40px; /* Ensure a minimum height for input */
     }
     .stTextInput > div > div > input:focus {
         border-color: #007bff; /* Blue border on focus */
         box-shadow: 0 0 0 0.2rem rgba(0,123,255,0.25); /* Standard focus ring */
         outline: none;
     }
+    /* Submit button for chat input */
     .stTextInput > div > div > div[data-testid="stFormSubmitButton"] button {
         border-radius: 20px !important; /* Make submit button rounded too */
         background-color: #007bff !important;
@@ -853,6 +895,7 @@ def _set_page_config_and_css():
         display: flex;
         align-items: center;
         justify-content: center;
+        flex-shrink: 0; /* Prevent button from shrinking */
     }
     .stTextInput > div > div > div[data-testid="stFormSubmitButton"] button:hover {
         background-color: #0056b3 !important;
@@ -904,7 +947,7 @@ def _set_page_config_and_css():
         background-color: #343a40;
         border: 1px solid #454d55;
         border-radius: 10px;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.5); /* Stronger shadow for pop-up */
         padding: 20px;
         z-index: 1001;
         color: #e0e0e0;
@@ -945,6 +988,48 @@ def _set_page_config_and_css():
         font-weight: normal;
         float: right;
     }
+
+    /* Custom styles for the "View Plan" button placed above input */
+    .view-plan-button-container {
+        position: fixed;
+        bottom: 60px; /* Above the input container */
+        left: 50%;
+        transform: translateX(-50%); /* Center it initially */
+        max-width: 900px; /* Match chat width */
+        width: 100%;
+        z-index: 1000; /* Ensure it's above other elements but below modal */
+        display: flex;
+        justify-content: flex-start; /* Align to the left within its max-width */
+        padding-left: 20px; /* Padding from the left edge of its max-width */
+        box-sizing: border-box; /* Include padding in width */
+    }
+    .view-plan-button-container button {
+        background-color: #454d55 !important;
+        color: #e0e0e0 !important;
+        border: 1px solid #5a6268 !important;
+        border-radius: 8px !important;
+        padding: 8px 15px !important;
+        font-size: 14px;
+        height: auto; /* Allow button height to adjust */
+        width: auto; /* Allow button width to adjust */
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .view-plan-button-container button:hover {
+        background-color: #5a6268 !important;
+        color: #ffffff !important;
+    }
+
+    /* Streamlit's div for the chat input and its buttons */
+    div[data-testid="stForm"] {
+        width: 100%;
+    }
+    /* Ensure the actual input area is aligned correctly */
+    div[data-testid="stForm"] > div > div {
+        align-items: center;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -953,12 +1038,13 @@ def _set_page_config_and_css():
         """
         <script>
             function scroll_to_bottom() {
-                var mainDiv = document.querySelector('.main');
+                var mainDiv = document.querySelector('.main .block-container');
                 if (mainDiv) {
                     mainDiv.scrollTop = mainDiv.scrollHeight;
                 }
             }
-            setTimeout(scroll_to_bottom, 500); // Small delay for rendering
+            // Use a slight delay to ensure all content has rendered
+            setTimeout(scroll_to_bottom, 300); 
         </script>
         """,
         unsafe_allow_html=True
@@ -969,7 +1055,7 @@ def _set_page_config_and_css():
 def _render_sidebar_content():
     """Renders all elements within the Streamlit sidebar."""
     with st.sidebar:
-        # Custom WormGPT logo
+        # Custom WormGPT logo - Adjusted to be highest
         st.markdown(
             '<div class="sidebar-logo-container">'
             '<div class="sidebar-logo-box"><span class="sidebar-logo-text">W</span></div>'
@@ -984,6 +1070,7 @@ def _render_sidebar_content():
             st.session_state.show_plan_options = False
             st.session_state.show_settings_page = False
             st.session_state.settings_sub_page = "general" # Reset sub-page
+            st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("New chat initiated.")
             st.rerun()
 
@@ -996,29 +1083,27 @@ def _render_sidebar_content():
             for chat_id in sorted_chat_ids:
                 chat_title = st.session_state.user_chats[chat_id].get('title', chat_id.split(' - ')[0])
 
-                # Check if this is the current active chat to style it
                 is_active_chat = (chat_id == st.session_state.current_chat_id)
-                # Apply dynamic styling via markdown for active button
-                button_html = f'<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 5px; padding-right: 15px;">' \
-                              f'<button class="stButton" style="width: 85%; {"background-color: #454d55 !important; color: #007bff !important; font-weight: 600;" if is_active_chat else ""}" ' \
-                              f'onClick="document.querySelector(\'[key=btn_chat_{chat_id}]\').click();" >{chat_title}</button>' \
-                              f'<button class="stButton" style="width: 15%; color: #dc3545 !important; padding: 5px;" onClick="document.querySelector(\'[key=del_chat_{chat_id}]\').click();" >X</button>' \
-                              f'</div>'
-                st.markdown(button_html, unsafe_allow_html=True)
+                # Streamlit button's class for active state
+                active_class = " active-chat-button" if is_active_chat else ""
 
-                # Need invisible Streamlit buttons to handle clicks
+                st.markdown(f'<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; gap: 5px; padding-right: 15px;">', unsafe_allow_html=True)
                 col1, col2 = st.columns([0.85, 0.15])
                 with col1:
-                    if st.button(chat_title, key=f"btn_chat_{chat_id}", help="Select Chat", disabled=True): # Invisible but clickable
+                    # Streamlit buttons need to be rendered even if we use JS to click them, for state management.
+                    # Setting them as `disabled=True` makes them non-interactive to direct clicks, but JS can still trigger them.
+                    # Or, more cleanly, we rely on the normal Streamlit button click, and CSS handles the styling.
+                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}", help="Select Chat", type="secondary" if not is_active_chat else "primary"): # Use type to hint primary/secondary styling
                         st.session_state.current_chat_id = chat_id
                         st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=chat_id) # Set chat_id in URL
                         st.session_state.show_plan_options = False
                         st.session_state.show_settings_page = False
                         st.session_state.settings_sub_page = "general" # Reset sub-page
+                        st.session_state.show_plan_status_modal = False # Hide modal
                         _log_user_action(f"Chat '{chat_title}' selected.")
                         st.rerun()
                 with col2:
-                    if st.button("X", key=f"del_chat_{chat_id}", help="Delete Chat", disabled=True): # Invisible but clickable
+                    if st.button("X", key=f"del_chat_{chat_id}", help="Delete Chat"):
                         _log_user_action(f"Chat '{chat_title}' deleted.")
                         del st.session_state.user_chats[chat_id]
                         _sync_user_chats_to_vault()
@@ -1026,11 +1111,11 @@ def _render_sidebar_content():
                             st.session_state.current_chat_id = None
                             st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None) # Clear chat_id from URL
                         st.rerun()
+                st.markdown(f'</div>', unsafe_allow_html=True)
 
                 # Manual rendering of a simple separator for clarity between chats
                 if chat_id != sorted_chat_ids[-1]: # Don't add separator after last chat
                     st.markdown('<div style="height: 1px; background-color: #454d55; margin: 5px 0;"></div>', unsafe_allow_html=True)
-
 
         else:
             st.markdown("<p style='padding-left: 20px; color: #888888; font-size: 0.9em;'>No saved chats yet.</p>", unsafe_allow_html=True)
@@ -1045,6 +1130,7 @@ def _render_sidebar_content():
             st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None) # Clear chat_id from URL
             st.session_state.show_plan_options = False
             st.session_state.settings_sub_page = "general" # Default to general settings
+            st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("Accessed settings page.")
             st.rerun()
         if st.button("Upgrade Plan", use_container_width=True, key="change_plan_button"):
@@ -1053,6 +1139,7 @@ def _render_sidebar_content():
             st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=None) # Clear chat_id from URL
             st.session_state.show_settings_page = False
             st.session_state.settings_sub_page = "general" # Reset sub-page
+            st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("Accessed upgrade page.")
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
@@ -1264,12 +1351,17 @@ def _render_settings_page():
 
 
 def _render_chat_message(role: str, content: str, message_id: str):
-    """Renders a single chat message."""
+    """Renders a single chat message with avatars."""
+    # Determine avatar based on role
+    # User's avatar is emoji by default, can be overridden if a user_avatar config is added.
+    avatar_image = ASSISTANT_AVATAR if role == "assistant" else "👤" 
+
+    # Improved code block formatting with simulated copy button
     formatted_content = content.replace("```python", "<pre><code class='language-python'>").replace("```bash", "<pre><code class='language-bash'>").replace("```", "</pre></code>")
     if "<pre><code" in formatted_content:
         formatted_content = formatted_content.replace("<pre><code", "<pre><button class='copy-code-button' onclick=\"navigator.clipboard.writeText(this.nextElementSibling.innerText)\">COPY</button><code", 1) # Only replace first occurrence per block
 
-    with st.chat_message(role):
+    with st.chat_message(role, avatar=avatar_image): # Pass avatar to st.chat_message
         st.markdown(f'<div style="position: relative;">{formatted_content}</div>', unsafe_allow_html=True)
 
 def _render_plan_status_modal():
@@ -1294,6 +1386,11 @@ def _render_plan_status_modal():
             st.markdown("<p class='current-plan-text'>This is your current active plan.</p>", unsafe_allow_html=True)
         else:
             st.markdown("<p class='locked-plan-text'>Upgrade to unlock this plan.</p>", unsafe_allow_html=True)
+            if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"modal_upgrade_button_{plan_key}", use_container_width=True):
+                st.session_state.show_plan_options = True # Redirect to upgrade page
+                st.session_state.show_plan_status_modal = False # Close modal
+                st.rerun()
+
         st.markdown('</div>', unsafe_allow_html=True)
 
     if st.button("Close", key="close_plan_modal", use_container_width=True, help="Close this window"):
@@ -1370,17 +1467,16 @@ def main():
     # --- Chat Input Handling ---
     # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
-        # Use st.columns to place the chat input and the "View Plan" button side-by-side
-        input_col, button_col = st.columns([0.85, 0.15])
-        with input_col:
-            p_in = st.chat_input("Type your message...", key="chat_input_main")
-        with button_col:
-            st.markdown('<div style="height: 40px; display: flex; align-items: center;">', unsafe_allow_html=True) # Align button with input
-            if st.button("View Plan", key="view_plan_status_button", help="View your current plan details", use_container_width=True):
-                st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
-                _log_user_action("View Plan Status toggled.")
-                st.rerun()
-            st.markdown('</div>', unsafe_allow_html=True)
+        # Place the "View Plan" button above and to the left of the chat input.
+        st.markdown('<div class="view-plan-button-container">', unsafe_allow_html=True)
+        if st.button("⬆️ View Plan", key="view_plan_status_button", help="View your current plan details"):
+            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
+            _log_user_action("View Plan Status toggled.")
+            st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # This will be the actual chat input.
+        p_in = st.chat_input("Type your message...", key="chat_input_main")
 
         if p_in:
             # --- RATE LIMITING ---
@@ -1480,7 +1576,7 @@ def main():
                 st.stop() # Stop further execution to prevent AI call
 
             # AI generation block
-            with st.chat_message("assistant"):
+            with st.chat_message("assistant", avatar=ASSISTANT_AVATAR): # Ensure avatar is passed here too
                 status_placeholder = st.empty() # Placeholder for the status widget
                 with status_placeholder.status("💬 Thinking...", expanded=True, state="running") as status:
                     # Button to abort AI response, only visible when AI is thinking
