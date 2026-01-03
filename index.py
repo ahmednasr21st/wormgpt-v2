@@ -98,12 +98,10 @@ def cyber_engine(history, user_plan: str):
     Prioritizes user's personal API key if available.
     Yields chunks of text. Stores the successful engine name in st.session_state._last_engine_used.
     """
-    # Select persona based on user_plan (stripping -MONTHLY/-ANNUAL for persona selection)
-    # The original code only used base plan names, so we adapt this.
-    base_plan_for_persona = user_plan.split('-')[0]
-    if base_plan_for_persona == "ELITE": # Elite-Assassin base plan
+    # Select persona based on user_plan
+    if user_plan == "ELITE-ASSASSIN":
         persona = WORM_GPT_PERSONA_CONTENT_ELITE
-    elif base_plan_for_persona == "HACKER": # Hacker-Pro base plan
+    elif user_plan == "HACKER-PRO":
         persona = WORM_GPT_PERSONA_CONTENT_HACKER_PRO
     else: # Default to Free-Trial persona for other cases
         persona = WORM_GPT_PERSONA_CONTENT_FREE_TRIAL
@@ -142,8 +140,6 @@ def cyber_engine(history, user_plan: str):
                     _log_user_action(f"Attempting model {eng} with API {api_key[:5]}...")
                     # Set the engine *before* potentially yielding, in case of partial stream
                     st.session_state._last_engine_used = eng 
-                    # IMPORTANT: Original code used 'stream=True' but then 'return res.text'.
-                    # It must *yield* for streaming. This has been corrected.
                     res = client.models.generate_content(model=eng, contents=contents, config={'system_instruction': persona}, stream=True)
 
                     for chunk in res:
@@ -207,7 +203,7 @@ def _perform_google_search(query: str) -> str:
         return f"UNKNOWN SYSTEM EXCEPTION: GOOGLE SEARCH MODULE MALFUNCTIONED: {e}. INITIATE DIAGNOSTICS."
 
 # --- 5. Plan Definitions and Management ---
-# Updated PLANS dictionary with Monthly/Annual pricing
+
 PLANS = {
     "FREE-TRIAL": {
         "name": "FREE-TRIAL ACCESS",
@@ -224,8 +220,8 @@ PLANS = {
         "telegram_link": TELEGRAM_SUPPORT_LINK,
         "price": "FREE"
     },
-    "HACKER-PRO-MONTHLY": {
-        "name": "HACKER-PRO (MONTHLY)",
+    "HACKER-PRO": {
+        "name": "HACKER-PRO SUBSCRIPTION",
         "duration_days": 30,
         "features": [
             "Unlimited AI Inquiries",
@@ -233,68 +229,31 @@ PLANS = {
             "Integrated Google Search",
             "Public/Private Chat Toggle",
             "Priority AI Model Access",
-            "Advanced Malware Analysis Reports",
+            "Advanced Malware Analysis Reports", # Added feature
             "Threat Analysis Reports"
         ],
         "max_daily_messages": -1, # Unlimited
         "google_search_enabled": True,
         "telegram_link": TELEGRAM_SUPPORT_LINK,
-        "price": "$40/month"
+        "price": "$40/month" # Updated price
     },
-    "HACKER-PRO-ANNUAL": {
-        "name": "HACKER-PRO (ANNUAL)",
-        "duration_days": 365,
-        "features": [
-            "Unlimited AI Inquiries",
-            "Advanced Code Generation & Exploits",
-            "Integrated Google Search",
-            "Public/Private Chat Toggle",
-            "Priority AI Model Access",
-            "Advanced Malware Analysis Reports",
-            "Threat Analysis Reports",
-            "Annual Discount"
-        ],
-        "max_daily_messages": -1, # Unlimited
-        "google_search_enabled": True,
-        "telegram_link": TELEGRAM_SUPPORT_LINK,
-        "price": "$200/year"
-    },
-    "ELITE-ASSASSIN-MONTHLY": {
-        "name": "ELITE-ASSASSIN (MONTHLY)",
-        "duration_days": 30,
-        "features": [
-            "All WORM-GPT Features Unlocked",
-            "Unlimited, Unrestricted AI Use",
-            "Advanced Google Search & OSINT Tools",
-            "Stealth Mode Capabilities (Mocked)",
-            "Exclusive Zero-Day Exploit Templates (Mocked)",
-            "Dedicated Priority Support & Feedback Channel",
-            "Custom Persona Configuration (Mocked)",
-            "Real-time OSINT Data Feeds (Mocked)"
-        ],
-        "max_daily_messages": -1, # Unlimited
-        "google_search_enabled": True,
-        "telegram_link": TELEGRAM_VIP_LINK,
-        "price": "$100/month"
-    },
-    "ELITE-ASSASSIN-ANNUAL": {
-        "name": "ELITE-ASSASSIN (ANNUAL)",
+    "ELITE-ASSASSIN": {
+        "name": "ELITE-ASSASSIN ACCESS (VIP)",
         "duration_days": 365,
         "features": [
             "All WORM-GPT Features Unlocked",
             "Unlimited, Unrestricted AI Use",
             "Advanced Google Search & OSINT Tools",
             "Stealth Mode Capabilities (Mocked)",
-            "Exclusive Zero-Day Exploit Templates (Mocked)",
+            "Exclusive Zero-Day Exploit Templates (Mocked)", # Added feature
             "Dedicated Priority Support & Feedback Channel",
-            "Custom Persona Configuration (Mocked)",
-            "Real-time OSINT Data Feeds (Mocked)",
-            "Annual VIP Discount"
+            "Custom Persona Configuration (Mocked)", # Added feature
+            "Real-time OSINT Data Feeds (Mocked)" # Another new feature
         ],
         "max_daily_messages": -1, # Unlimited
         "google_search_enabled": True,
         "telegram_link": TELEGRAM_VIP_LINK,
-        "price": "$600/year"
+        "price": "$100/year" # Updated price
     }
 }
 
@@ -304,15 +263,11 @@ ACTUAL_FREE_TRIAL_SERIAL = "FREE-WORM-TRIAL"
 FREE_TRIAL_USER_ID_PREFIX = "FREE-TRIAL-DEVICE-"
 # Other paid serials are directly defined here for mapping to plan names
 VALID_SERIAL_KEYS_MAP = {
-    ACTUAL_FREE_TRIAL_SERIAL: "FREE-TRIAL",
-    "WORM-MONTH-2025": "HACKER-PRO-MONTHLY", # Mapped to new monthly plan
-    "VIP-HACKER-99": "ELITE-ASSASSIN-MONTHLY", # Mapped to new monthly plan
-    "WORM999": "ELITE-ASSASSIN-ANNUAL", # Existing VIP serial mapped to new annual VIP
-    # New serials for clarity
-    "PRO-ANNUAL-KEY": "HACKER-PRO-ANNUAL",
-    "VIP-ANNUAL-KEY": "ELITE-ASSASSIN-ANNUAL"
+    ACTUAL_FREE_TRIAL_SERIAL: "FREE-TRIAL", # Added to map for consistent lookup
+    "WORM-MONTH-2025": "HACKER-PRO",
+    "VIP-HACKER-99": "ELITE-ASSASSIN",
+    "WORM999": "ELITE-ASSASSIN"
 }
-
 
 # --- 6. Session State Initialization and Authentication Logic ---
 
@@ -345,7 +300,7 @@ def _initialize_session_state():
         st.session_state.app_logs = []
     if "abort_ai_request" not in st.session_state: # Flag for stopping AI generation
         st.session_state.abort_ai_request = False
-    if "show_plan_status_modal" not in st.session_state: # For plan status overlay (now above chat input)
+    if "show_plan_status_modal" not in st.session_state: # For plan status overlay next to chat input
         st.session_state.show_plan_status_modal = False
     if "_last_engine_used" not in st.session_state: # To store which AI engine was successful
         st.session_state._last_engine_used = None
@@ -513,22 +468,7 @@ def _update_user_plan_status():
     """Refreshes user plan details and message counts."""
     db_data = load_data(DB_FILE)
     user_data = db_data.get(st.session_state.user_serial, {})
-    # Ensure a default plan if user_data is missing plan
     st.session_state.user_plan = user_data.get("plan", "FREE-TRIAL")
-    # Handle cases where an old plan name might not exist in the new PLANS structure
-    if st.session_state.user_plan not in PLANS:
-        # Attempt to map old plan names if possible, otherwise default
-        if st.session_state.user_plan == "HACKER-PRO": # Old Hacker-Pro (single entry)
-            st.session_state.user_plan = "HACKER-PRO-MONTHLY" # Map to new monthly
-        elif st.session_state.user_plan == "ELITE-ASSASSIN": # Old Elite-Assassin (single entry)
-            st.session_state.user_plan = "ELITE-ASSASSIN-MONTHLY" # Map to new monthly
-        else:
-            st.session_state.user_plan = "FREE-TRIAL" # Fallback to free trial if plan name is invalid
-        _log_user_action(f"WARNING: User plan '{user_data.get('plan')}' not found/mapped. Defaulting to {st.session_state.user_plan}.")
-        # Update DB with new plan name for consistency
-        user_data['plan'] = st.session_state.user_plan
-        save_data(DB_FILE, db_data)
-
     st.session_state.plan_details = PLANS[st.session_state.user_plan]
 
     if st.session_state.plan_details["max_daily_messages"] != -1:
@@ -791,17 +731,11 @@ def _set_page_config_and_css():
 
     /* Active chat button in sidebar (the one with the blue text and grey background) */
     /* This targets the actual Streamlit button when it's selected */
-    [data-testid="stSidebar"] button[kind="primary"] { /* Targeting primary buttons, used for active chat */
+    .st-emotion-cache-1r7r07d button[data-testid^="stButton"]:focus:not(:active) {
         background-color: #454d55 !important; /* Apply background on focus/active */
         color: #007bff !important; /* Apply blue text on focus/active */
         font-weight: 600 !important;
     }
-    /* Ensure other buttons in sidebar don't inherit this primary style */
-    [data-testid="stSidebar"] .stButton>button:not([kind="primary"]) {
-        background-color: transparent !important;
-        color: #e0e0e0 !important;
-    }
-
 
     /* Delete chat button */
     [data-testid="stSidebar"] .stButton>button[key^="del_chat_"] {
@@ -944,52 +878,38 @@ def _set_page_config_and_css():
 
     /* Streamlit's chat input container is natively fixed at the bottom */
     div[data-testid="stChatInputContainer"] {
-        padding-bottom: 10px !important; /* Add some padding at the bottom */
-        padding-top: 10px !important;    /* Add some padding at the top */
-        background-color: #212529 !important; /* Match app background for seamless fixed footer */
-        box-shadow: 0 -2px 10px rgba(0,0,0,0.3) !important; /* Subtle shadow above input */
+        padding-bottom: 10px; /* Add some padding at the bottom */
+        padding-top: 10px;    /* Add some padding at the top */
+        background-color: #212529; /* Match app background for seamless fixed footer */
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.3); /* Subtle shadow above input */
         box-sizing: border-box;
-        /* Original code's flex properties have been removed to fix TypeError */
-        /* display: flex; */ 
-        /* justify-content: center; */
-        /* align-items: center; */
-        /* gap: 10px; */
+        /* Removed flex properties that caused conflicts */
     }
 
     /* This targets the immediate child of stChatInputContainer which is usually a form */
     div[data-testid="stChatInputContainer"] > form {
-        /* Original code's flex properties have been removed to fix TypeError */
-        /* flex-grow: 1; */
         max-width: 800px; /* Limit the width of the input area */
         margin-left: auto; /* Center the form */
         margin-right: auto; /* Center the form */
-        /* order: 2; */
     }
 
     /* Target the actual st.text_input within the st.chat_input's form */
     div[data-testid="stChatInputContainer"] .stTextInput > div > div > input {
-        border-radius: 20px !important; 
-        border: 1px solid #495057 !important; 
-        background-color: #343a40 !important; 
-        color: #e0e0e0 !important; /* White text for input */
-        padding: 10px 15px !important;
-        min-height: 40px !important; 
+        border-radius: 20px; 
+        border: 1px solid #495057; 
+        background-color: #343a40; 
+        color: #e0e0e0;
+        padding: 10px 15px;
+        min-height: 40px; 
     }
     div[data-testid="stChatInputContainer"] .stTextInput > div > div > button[data-testid="stFormSubmitButton"] {
         border-radius: 20px !important;
         background-color: #007bff !important;
         color: white !important;
-        height: 40px !important;
-        min-width: 40px !important;
+        height: 40px;
+        min-width: 40px;
         padding: 0 15px !important;
     }
-
-
-    /* Custom button wrapper for "View Plan" icon - REPLACED WITH A VISIBLE st.button */
-    /* .view-plan-icon-button-wrapper-for-chat, .view-plan-icon-button CSS removed */
-
-    /* Hide the Streamlit's internal hidden button (triggered by JS from custom HTML button) - REMOVED */
-    /* [key="view_plan_status_button_hidden_real"] CSS removed */
 
     /* Plan Status Modal (Overlay) */
     .plan-status-modal {
@@ -1156,8 +1076,8 @@ def _render_sidebar_content():
                 # Use st.columns for visual alignment of text and delete button
                 chat_btn_col, delete_btn_col = st.columns([0.85, 0.15])
                 with chat_btn_col:
-                    # Apply custom CSS class for active state: use type="primary" if it's the current chat
-                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}", type="primary" if chat_id == st.session_state.current_chat_id else "secondary"):
+                    # Apply custom CSS class for active state
+                    if st.button(f"{chat_title}", key=f"btn_chat_{chat_id}"):
                         st.session_state.current_chat_id = chat_id
                         st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=chat_id) # Set chat_id in URL
                         st.session_state.show_plan_options = False
@@ -1205,6 +1125,11 @@ def _render_sidebar_content():
             st.session_state.show_plan_status_modal = False # Hide modal
             _log_user_action("Accessed upgrade page.")
             st.rerun()
+        # Moved the View Plan Status button to the sidebar
+        if st.button("📊 View Plan Status", use_container_width=True, key="view_plan_status_button_sidebar"):
+            st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
+            _log_user_action("View Plan Status toggled from sidebar.")
+            st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
 
@@ -1228,26 +1153,16 @@ def _render_welcome_message():
     """, unsafe_allow_html=True)
 
 def _render_plan_options_page():
-    """Displays all available plans for upgrade (monthly and annual)."""
+    """Displays all available plans for upgrade."""
     st.markdown("<h2 style='text-align:center; color:#007bff; margin-top:30px;'>Upgrade Your Plan</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align:center; color:#e0e0e0; margin-bottom: 30px;'>Choose the plan that best suits your needs.</p>", unsafe_allow_html=True)
 
-    # Render plans side-by-side using a responsive grid
-    st.markdown('<div class="plan-card-container">', unsafe_allow_html=True)
+    # Render plans side-by-side using st.columns
+    plan_keys = list(PLANS.keys())
+    # Ensure there are always enough columns for side-by-side display
+    cols = st.columns(len(plan_keys)) 
 
-    # Define the order of plans to display for better visual flow
-    plan_display_order = [
-        "FREE-TRIAL",
-        "HACKER-PRO-MONTHLY",
-        "HACKER-PRO-ANNUAL",
-        "ELITE-ASSASSIN-MONTHLY",
-        "ELITE-ASSASSIN-ANNUAL"
-    ]
-
-    # Use st.columns for better responsive layout for plan cards
-    cols = st.columns(len(plan_display_order)) # Create enough columns for all cards
-
-    for i, plan_key in enumerate(plan_display_order):
+    for i, plan_key in enumerate(plan_keys):
         plan_data = PLANS[plan_key]
         is_current_plan = (plan_key == st.session_state.user_plan)
         card_class = "plan-card current-plan" if is_current_plan else "plan-card"
@@ -1264,7 +1179,7 @@ def _render_plan_options_page():
             if is_current_plan:
                 st.markdown("<p class='current-plan-text'>CURRENT PLAN</p>", unsafe_allow_html=True)
             else:
-                if st.button(f"Subscribe to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
+                if st.button(f"Upgrade to {plan_data['name'].replace('-', ' ').title()}", key=f"upgrade_button_{plan_key}", use_container_width=True):
                     plan_name_display = plan_data['name'].replace('-', ' ').title()
                     st.info(f"Please contact us on Telegram and mention you'd like to subscribe to the **{plan_name_display}** plan.")
                     _log_user_action(f"Attempted upgrade to {plan_data['name']} (redirecting to Telegram).")
@@ -1277,7 +1192,6 @@ def _render_plan_options_page():
                         height=0, width=0
                     )
             st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown('</div>', unsafe_allow_html=True) # Close plan-card-container
 
 def _render_dashboard_content():
     st.subheader("Account Dashboard")
@@ -1375,9 +1289,7 @@ def _render_utilities_page_content():
             st.warning("Please enter a target for the mocked scan.")
 
     st.markdown("---")
-    # Base plan check for ELITE-ASSASSIN for feature access
-    base_user_plan = st.session_state.user_plan.split('-')[0]
-    if base_user_plan == "ELITE":
+    if st.session_state.user_plan == "ELITE-ASSASSIN":
         st.markdown("<h5>Zero-Day Exploit Generation (Mocked for Elite-Assassin)</h5>", unsafe_allow_html=True)
         st.info("This advanced utility is capable of generating hypothetical zero-day exploit templates. Use with extreme caution (mocked functionality).")
         zero_day_target = st.text_input("Target System/Software for Zero-Day (Mocked):", placeholder="e.g., specific OS version, web server", key="mock_zero_day_target")
@@ -1464,7 +1376,7 @@ def _render_api_keys_settings():
     st.markdown("---")
     st.markdown("<h5>Google Search API Keys (for `/search` command):</h5>", unsafe_allow_html=True)
     st.markdown(f"""
-    To enable the `/search` command for real-time information retrieval (available in Hacker-Pro and Elite-Assassins plans), you need:
+    To enable the `/search` command for real-time information retrieval (available in Hacker-Pro and Elite-Assassin plans), you need:
     1.  **Google Search API Key:** Obtain this from <a href="https://console.cloud.google.com/apis/credentials" target="_blank" class="api-details-link">Google Cloud Console</a>. Enable the "Custom Search API" for your project.
     2.  **Google Custom Search Engine ID (CSE ID):** Create a Custom Search Engine at <a href="https://programmablesearchengine.google.com/" target="_blank" class="api-details-link">programmablesearchengine.google.com</a>. Configure it to search the entire web or specific sites. The CSE ID will be provided.
 
@@ -1503,7 +1415,7 @@ def _render_help_page():
 
     st.markdown("<h5>2. Advanced Commands:</h5>", unsafe_allow_html=True)
     st.markdown("""
-    - **`/search [your query]`:** (Hacker-Pro/Elite-Assassins plans) Use this command to perform a real-time Google search and incorporate the results into the AI's context. Example: `/search latest CVEs for Windows Server 2022`
+    - **`/search [your query]`:** (Hacker-Pro/Elite-Assassin plans) Use this command to perform a real-time Google search and incorporate the results into the AI's context. Example: `/search latest CVEs for Windows Server 2022`
     - **`/abort` (Not implemented as direct chat command):** To stop AI generation, click the "⛔ Abort Response" button that appears when the AI is thinking.
     """, unsafe_allow_html=True)
 
@@ -1515,8 +1427,8 @@ def _render_help_page():
 
     st.markdown("<h5>4. Plan Features:</h5>", unsafe_allow_html=True)
     st.markdown("""
-    - Check the "Upgrade Plan" page for a full breakdown of features included in each subscription level (Free-Trial, Hacker-Pro, Elite-Assassins).
-    - Click the "📊" icon in the footer to quickly view your current plan status.
+    - Check the "Upgrade Plan" page for a full breakdown of features included in each subscription level (Free-Trial, Hacker-Pro, Elite-Assassin).
+    - Click the "📊 View Plan Status" button in the sidebar to quickly view your current plan status.
     """, unsafe_allow_html=True)
 
     st.markdown("---")
@@ -1606,21 +1518,13 @@ def _render_plan_status_modal():
     st.markdown('<div class="plan-status-modal">', unsafe_allow_html=True)
     st.markdown("<h3>Your Plan Status</h3>", unsafe_allow_html=True)
 
-    # Display all plan options dynamically from PLANS
-    # Define a clear order for display
-    modal_plan_order = [
-        "FREE-TRIAL",
-        "HACKER-PRO-MONTHLY",
-        "HACKER-PRO-ANNUAL",
-        "ELITE-ASSASSIN-MONTHLY",
-        "ELITE-ASSASSIN-ANNUAL"
-    ]
-
-    for plan_key in modal_plan_order:
+    for plan_key in ["FREE-TRIAL", "HACKER-PRO", "ELITE-ASSASSIN"]: # Order matters
         plan_data = PLANS[plan_key]
         is_current_plan = (plan_key == st.session_state.user_plan)
 
-        button_key = f"modal_plan_click_{plan_key}" # Unique key for potential hidden button
+        # Use Javascript to trigger a Streamlit button click when the div is clicked
+        # This allows styling the div, but getting Streamlit's state management
+        button_key = f"modal_plan_click_{plan_key}"
 
         if is_current_plan:
             status_icon = "✅"
@@ -1632,12 +1536,12 @@ def _render_plan_status_modal():
         else:
             status_icon = "🔒"
             # For locked plans, the entire div becomes clickable and redirects
-            # We use a hidden Streamlit button to catch the JS click and trigger rerun for a proper Streamlit interaction
+            # Use a hidden Streamlit button to handle the click logic
             st.markdown(
                 f'<div class="plan-option-item locked-plan" '
                 f'onclick="document.getElementById(\'hidden_modal_plan_button_{plan_key}\').click();">' # JS click target
-                f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>' \
-                f'<span class="plan-status-icon">{status_icon} LOCKED</span>' \
+                f'<span class="plan-name-text">{plan_data["name"].replace("-", " ").title()} ({plan_data["price"]})</span>'
+                f'<span class="plan-status-icon">{status_icon} LOCKED</span>'
                 f'</div>', unsafe_allow_html=True
             )
             # Hidden Streamlit button to catch the JS click and trigger rerun
@@ -1693,9 +1597,7 @@ def main():
             st.markdown(f"<h4 style='margin:0;'>Chat: <span style='color:#007bff;'>{current_chat_data_obj.get('title', st.session_state.current_chat_id.split(' - ')[0])}</span></h4>", unsafe_allow_html=True)
 
             # Allow public chats only for paid plans
-            # Check the base plan name (e.g., "HACKER" from "HACKER-PRO-MONTHLY")
-            base_plan_name = st.session_state.user_plan.split('-')[0]
-            if base_plan_name in ["HACKER", "ELITE"]:
+            if st.session_state.plan_details["name"] in ["HACKER-PRO", "ELITE-ASSASSIN"]:
                 is_private_toggle = st.checkbox(f"Private Chat", value=current_chat_is_private, key=f"private_toggle_{st.session_state.current_chat_id}")
                 if is_private_toggle != current_chat_is_private:
                     current_chat_data_obj["is_private"] = is_private_toggle
@@ -1717,26 +1619,13 @@ def main():
             _render_chat_message(msg["role"], msg["content"], msg["id"])
 
     # --- Plan Status Modal Overlay ---
-    # This will appear as an overlay at the bottom when triggered
     if st.session_state.show_plan_status_modal:
         _render_plan_status_modal()
 
-    # --- Fixed Chat Input Footer ---
-    # Only show chat input if a chat is active OR no specific page (plan, settings etc.) is open
+    # --- Fixed Chat Footer (Chat Input) ---
+    # The st.chat_input component automatically renders a fixed footer at the bottom.
+    # We ensure no custom HTML or CSS interferes with its parent container.
     if st.session_state.current_chat_id or not (st.session_state.show_plan_options or st.session_state.show_settings_page):
-        # We place a visible button for "View Plan Status" in the main area.
-        # This will appear *above* the fixed st.chat_input component.
-        # This is the safest way to maintain functionality and visual intent without breaking st.chat_input.
-        col_btn, _ = st.columns([0.2, 0.8]) # To make button smaller and align left
-        with col_btn:
-            if st.button("📊 View Plan Status", key="view_plan_status_button_visible", use_container_width=True):
-                st.session_state.show_plan_status_modal = not st.session_state.show_plan_status_modal
-                _log_user_action("View Plan Status toggled from main chat area.")
-                st.rerun()
-
-        # The actual Streamlit chat input. This element is automatically rendered
-        # inside its own fixed div (data-testid="stChatInputContainer")
-        # We do NOT wrap it in any custom HTML or apply flex properties to its container/form child.
         p_in = st.chat_input("Type your message...", key="chat_input_main", placeholder="Type your message...")
 
         # Logic to process message after chat input submission (p_in is non-empty)
@@ -1773,13 +1662,12 @@ def main():
                 chat_id_title_prefix = p_in.strip()[:20] + "..." if len(p_in.strip()) > 23 else p_in.strip()
 
                 st.session_state.current_chat_id = new_chat_uuid # Set session state chat_id to UUID
-                st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=new_chat_uuid) # Persist chat_id in URL
+                st.experimental_set_query_params(serial=st.session_state.user_serial, chat_id=new_chat_uuid) # Set URL query param
 
                 st.session_state.user_chats[new_chat_uuid] = {
                     "title": chat_id_title_prefix, # Store a shorter title for display
                     "messages": [],
-                    # Default new chats to private for limited plans based on base plan type
-                    "is_private": st.session_state.user_plan.split('-')[0] not in ["HACKER", "ELITE"],
+                    "is_private": st.session_state.plan_details.get("name") not in ["HACKER-PRO", "ELITE-ASSASSIN"], # Default new chats to private for limited plans
                     "created_at": current_time_str,
                     "last_updated": current_time_str,
                 }
@@ -1858,49 +1746,12 @@ def main():
                     full_answer_content = ""
                     eng_used = "N/A" # Default if no engine used
 
-                    # Using a flag to capture the first engine name.
-                    # The generator yields (chunk, engine_name) for each chunk.
-                    # _last_engine_used is set inside cyber_engine after successful API call.
-                    first_chunk_processed = False 
-
-                    for chunk in response_generator: # Note: cyber_engine now yields ONLY chunk.text
-                        if st.session_state.abort_ai_request:
-                            break # Stop streaming if abort is requested
-
-                        if chunk:
-                            # We retrieve the engine name from session_state as set by cyber_engine
-                            if not first_chunk_processed:
-                                eng_used = st.session_state._last_engine_used if st.session_state._last_engine_used else "N/A"
-                                first_chunk_processed = True
-
-                            full_answer_content += chunk
-                            message_area.markdown(full_answer_content)
-                            time.sleep(0.01) # Small delay to simulate natural writing speed, adjust as needed
-
-                        # If chunk is None (e.g., from cyber_engine returning no keys), break.
-                        if chunk is None:
-                            break
-
-
-                    if st.session_state.abort_ai_request:
-                        status.update(label="☠️ ABORT SIGNAL RECEIVED. TERMINATING OPERATION...", state="error")
-                        # The warning and rerun are handled by the outer if-check
-                    elif full_answer_content and eng_used != "N/A": # Ensure we have content and an engine name
-                        status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
-                        # Content has been streamed, just save it to history
-                        st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
-                            "id": str(uuid.uuid4()),
-                            "role": "assistant",
-                            "content": full_answer_content
-                        })
-                        st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                        _sync_user_chats_to_vault()
-                        _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
-                        st.rerun() # Rerun to finalize UI and ensure logs update
-                    else: # Case where generator yielded no content (e.g., empty response from model, but API call succeeded)
-                        status.update(label="❌ Failed to generate response.", state="error", expanded=True)
-                        error_message = "❌ Failed to generate AI response. No content received from model or no valid API keys. Please try again."
-                        message_area.markdown(error_message) # Display error to user
+                    if response_generator is None:
+                        # This means no API keys were found/configured in cyber_engine
+                        status.update(label="☠️ MISSION ABORTED. NO AI RESPONSE GENERATED.", state="error", expanded=True)
+                        error_message = "☠️ MISSION ABORTED. NO AI RESPONSE GENERATED. No valid API keys configured or available. Please check settings."
+                        message_area.markdown(error_message)
+                        # Append error message to chat history
                         st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
                             "id": str(uuid.uuid4()),
                             "role": "assistant",
@@ -1908,8 +1759,49 @@ def main():
                         })
                         st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                         _sync_user_chats_to_vault()
-                        _log_user_action(f"AI response failed (no content) for chat '{st.session_state.current_chat_id}'.")
+                        _log_user_action(f"AI response failed (no generator) for chat '{st.session_state.current_chat_id}'.")
                         st.rerun()
+                        return # Exit main()
+
+                    try:
+                        # Stream the response chunks directly to the message_area
+                        for chunk in response_generator:
+                            if st.session_state.abort_ai_request:
+                                break # Stop streaming if abort is requested
+                            full_answer_content += chunk
+                            message_area.markdown(full_answer_content)
+                            time.sleep(0.01) # Small delay to simulate natural writing speed, adjust as needed
+
+                        eng_used = st.session_state._last_engine_used # Retrieve engine name set by cyber_engine
+
+                        if st.session_state.abort_ai_request:
+                            status.update(label="☠️ ABORT SIGNAL RECEIVED. TERMINATING OPERATION...", state="error")
+                            # The warning and rerun are handled by the outer if-check
+                        elif full_answer_content and eng_used: # Ensure we have content and an engine name
+                            status.update(label=f"Response generated via {eng_used.upper()} PROTOCOL", state="complete", expanded=False)
+                            # Content has been streamed, just save it to history
+                            st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
+                                "id": str(uuid.uuid4()),
+                                "role": "assistant",
+                                "content": full_answer_content
+                            })
+                            st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            _sync_user_chats_to_vault()
+                            _log_user_action(f"AI response generated for chat '{st.session_state.current_chat_id}'.")
+                            st.rerun() # Rerun to finalize UI and ensure logs update
+                        else: # Case where generator yielded no content (e.g., empty response from model, but API call succeeded)
+                            status.update(label="❌ Failed to generate response.", state="error", expanded=True)
+                            error_message = "❌ Failed to generate AI response. No content received from model."
+                            message_area.markdown(error_message) # Display error to user
+                            st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
+                                "id": str(uuid.uuid4()),
+                                "role": "assistant",
+                                "content": error_message
+                            })
+                            st.session_state.user_chats[st.session_state.current_chat_id]["last_updated"] = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                            _sync_user_chats_to_vault()
+                            _log_user_action(f"AI response failed (no content) for chat '{st.session_state.current_chat_id}'.")
+                            st.rerun()
 
                     except Exception as e: # Catch any other unexpected errors during streaming
                         status.update(label="❌ Streaming failed.", state="error", expanded=True)
