@@ -16,7 +16,7 @@ import uuid # For generating unique chat IDs
 # TELEGRAM_SUPPORT_LINK="https://t.me/WormGPT_Support_Channel"
 # TELEGRAM_VIP_LINK="https://t.me/WormGPT_VIP_Support"
 
-GEMINI_API_KEYS = st.secrets.get["GENAI_KEYS"].split(",")
+GEMINI_API_KEYS = st.secrets.get["GENAI_KEYS"]
 GOOGLE_SEARCH_API_KEY = st.secrets.get("GOOGLE_SEARCH_API_KEY", "YOUR_GOOGLE_SEARCH_API_KEY_NOT_SET")
 GOOGLE_CSE_ID = st.secrets.get("GOOGLE_CSE_ID", "YOUR_CUSTOM_SEARCH_ENGINE_ID_NOT_SET")
 TELEGRAM_SUPPORT_LINK = st.secrets.get("TELEGRAM_SUPPORT_LINK", "https://t.me/WormGPT_Support_Placeholder") 
