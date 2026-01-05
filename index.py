@@ -35,7 +35,7 @@ class ConfigManager:
         self.DEFAULT_LAYOUT = "wide"
         self.DEFAULT_ENCODING = "utf-8"
         self.JSON_INDENT = 4
-        self.DB_VERSION = "2.0.2" # Updated version for database schema management
+        self.DB_VERSION = "2.0.3" # Updated version for database schema management
 
         # --- File Paths ---
         # Centralized file paths for persistent storage. These files store user data,
@@ -94,7 +94,7 @@ class ConfigManager:
                 "plan_free_feature_2": "50 Messages/Day Limit",
                 "plan_free_feature_3": "Standard Response Times",
                 "plan_free_feature_4": "Chat History Retention (Max 10 chats)",
-                "no_chats_yet": "No missions started yet. Click 'New Chat' to begin.", # Changed from new_mission
+                "no_chats_yet": "No chats started yet. Click 'New Chat' to begin.", # Changed from new_mission
 
                 "plan_monthly_standard_feature_1": "Unlimited WORM-GPT Model Access (Enhanced Models)",
                 "plan_monthly_standard_feature_2": "Unlimited Messages",
@@ -1168,37 +1168,8 @@ class StylingManager:
                 text-decoration: none !important;
             }}
 
-            /* Styling for radio buttons on upgrade page */
-            [data-testid="stRadio"] label {{
-                background-color: #F0F0F0;
-                border: 1px solid #E0E0E0;
-                border-radius: 10px;
-                padding: 10px 20px;
-                margin: 5px;
-                cursor: pointer;
-                transition: background-color 0.3s ease, border-color 0.3s ease;
-            }}
-            [data-testid="stRadio"] label:hover {{
-                background-color: #E0E0E0;
-                border-color: #B0B0B0;
-            }}
-            /* Selector for selected radio button */
-            [data-testid="stRadio"] label.st-dg.st-dd.st-de.st-df.st-dg.st-dh.st-di.st-dj.st-dk.st-dl.st-dm.st-dn.st-do.st-dp.st-dq.st-dr.st-ds {{ 
-                background-color: #333333 !important; /* Dark gray for selected radio */
-                color: white;
-                border-color: #333333 !important;
-            }}
-            [data-testid="stRadio"] label.st-dg.st-dd.st-de.st-df.st-dg.st-dh.st-di.st-dj.st-dk.st-dl.st-dm.st-dn.st-do.st-dp.st-dq.st-dr.st-ds span {{
-                 color: white !important; /* Ensure text color is white when selected */
-            }}
-
-            /* Icon styling for sidebar buttons */
-            .sidebar-button-icon {{
-                display: inline-block;
-                width: 20px; /* Adjust size of icon container */
-                text-align: center;
-                margin-right: 5px; /* Space between icon and text */
-            }}
+            /* Icon styling for sidebar buttons (Streamlit's native icon positioning) */
+            /* .stButton>button has built-in icon styling, no specific CSS needed unless custom positioning */
         </style>
         """, unsafe_allow_html=True)
         app_logger.info("StylingManager: Base CSS styles applied.")
@@ -1260,7 +1231,7 @@ class UIRenderer:
             content (str): The text content of the message.
         """
         with st.chat_message(role):
-            # Applying RTL if content is primarily Arabic
+            # Applying RTL if content is primarily Arabic (though app is English)
             if any("\u0600" <= c <= "\u06FF" for c in content): # Check for Arabic characters
                 st.markdown(f'<p lang="ar" style="text-align: right; direction: rtl;">{content}</p>', unsafe_allow_html=True)
             else:
@@ -1277,21 +1248,21 @@ class UIRenderer:
         st.markdown(f"<p class='serial-info'>{self.config.get_text('serial_display')} {serial}</p>", unsafe_allow_html=True)
         app_logger.debug(f"UIRenderer: Serial info rendered for {serial[:8]}...")
 
-    def render_sidebar_menu_item(self, label: str, key: str, icon_html: Optional[str] = None) -> bool:
+    def render_sidebar_menu_item(self, label: str, key: str, icon: Optional[str] = None) -> bool: # Changed from icon_html to icon
         """
         Renders a clickable menu item in the sidebar with an optional icon.
         Args:
             label (str): The text label for the menu item.
             key (str): A unique key for the Streamlit button widget.
-            icon_html (Optional[str]): HTML string for an icon (e.g., '⚙️' for settings).
+            icon (Optional[str]): An emoji string or icon identifier for the button.
         Returns:
             bool: True if the button was clicked, False otherwise.
         """
         # Determine if this menu item corresponds to the currently active page
         is_active_page = (st.session_state.page == key.replace("sidebar_", "").replace("_button", ""))
 
-        button_label_html = f"<span class='sidebar-button-icon'>{icon_html}</span> {label}" if icon_html else label
-        button_clicked = st.button(button_label_html, use_container_width=True, key=key, unsafe_allow_html=True)
+        # Use Streamlit's native `icon` parameter for cleaner integration
+        button_clicked = st.button(label, use_container_width=True, key=key, icon=icon) 
 
         # Inject CSS if this button should appear as 'active'
         if is_active_page and not button_clicked:
@@ -1313,7 +1284,8 @@ class UIRenderer:
         # This button makes the 'chat' page active and also clears current chat id
         is_active_new_chat = (st.session_state.page == "chat" and st.session_state.current_chat_id is None)
 
-        clicked = st.button(self.config.get_text("new_chat"), use_container_width=True, key="new_chat_button")
+        # Use Streamlit's native `icon` parameter
+        clicked = st.button(self.config.get_text("new_chat"), use_container_width=True, key="new_chat_button", icon="💬")
 
         if is_active_new_chat and not clicked:
             st.markdown(f"""
@@ -1456,16 +1428,16 @@ class SidebarNavigation:
         Renders the navigation links (Settings, Upgrade, Logout) at the bottom of the sidebar.
         """
         # Using icons for menu items for better UI
-        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("settings"), "sidebar_settings_button", icon_html="⚙️"):
+        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("settings"), "sidebar_settings_button", icon="⚙️"): # Fixed icon_html to icon
             st.session_state.page = "settings"
             app_logger.info("SidebarNavigation: Navigated to Settings page.")
             st.rerun()
-        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("upgrade"), "sidebar_upgrade_button", icon_html="⬆️"):
+        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("upgrade"), "sidebar_upgrade_button", icon="⬆️"): # Fixed icon_html to icon
             st.session_state.page = "upgrade"
             app_logger.info("SidebarNavigation: Navigated to Upgrade page.")
             st.rerun()
         # Add a logout button
-        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("logout"), "sidebar_logout_button", icon_html="🚪"):
+        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("logout"), "sidebar_logout_button", icon="🚪"): # Fixed icon_html to icon
             self._handle_logout()
             app_logger.info("SidebarNavigation: User logged out.")
             st.rerun()
@@ -1621,36 +1593,22 @@ class UpgradePage:
 
         # Display plans in a responsive grid layout.
         # Max 3 columns for better presentation on wider screens.
-        # If fewer than 3 plans, it will adjust.
-        num_plans_to_render = len(plans_to_display)
 
-        # Use a consistent number of columns, e.g., 3. Streamlit will wrap if more items.
-        # For a clean 3-column layout, we'll manually split and display.
+        num_plans = len(plans_to_display)
 
-        # First row: Free, Monthly Standard, Monthly Premium (or fewer if not all exist)
-        # Second row: Annual Standard, Annual Premium (if they exist)
+        # Determine number of columns for the grid. Max 3 per row for readability.
+        # This will create rows of 3 columns.
+        rows = []
+        for i in range(0, num_plans, 3):
+            rows.append(st.columns(min(3, num_plans - i))) # Create 3 columns, or fewer for the last row
 
-        col_configs = []
-        if num_plans_to_render >= 3:
-            col_configs.append(st.columns(3)) # For first 3 plans
-            if num_plans_to_render > 3:
-                col_configs.append(st.columns(num_plans_to_render - 3)) # For remaining plans
-        else:
-            col_configs.append(st.columns(num_plans_to_render)) # If 1 or 2 plans
-
-
-        current_col_idx = 0
-        current_row_idx = 0
-
-        for i, plan in enumerate(plans_to_display):
-            # Move to next row if current row is full (e.g., 3 columns used)
-            if i > 0 and i % 3 == 0 and len(col_configs) > current_row_idx + 1:
-                current_row_idx += 1
-                current_col_idx = 0
-
-            with col_configs[current_row_idx][current_col_idx]:
-                self._render_plan_card(plan)
-            current_col_idx += 1
+        plan_idx = 0
+        for row_cols in rows:
+            for col in row_cols:
+                if plan_idx < num_plans:
+                    with col:
+                        self._render_plan_card(plans_to_display[plan_idx])
+                    plan_idx += 1
 
         st.markdown("---")
         st.info(self.config.get_text("telegram_redirect_msg"))
