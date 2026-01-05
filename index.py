@@ -35,7 +35,7 @@ class ConfigManager:
         self.DEFAULT_LAYOUT = "wide"
         self.DEFAULT_ENCODING = "utf-8"
         self.JSON_INDENT = 4
-        self.DB_VERSION = "2.0.0" # Updated version for database schema management
+        self.DB_VERSION = "2.0.1" # Updated version for database schema management
 
         # --- File Paths ---
         # Centralized file paths for persistent storage. These files store user data,
@@ -547,11 +547,31 @@ class SubscriptionService:
                     continue # Skip unknown annual types
                 plans_info.append(plan_display)
 
-        # Ensure Free plan is always first, then sort by price/type
-        sorted_plans = sorted(plans_info, key=lambda x: (x["type"] != "Free", x["price"].replace('$', '').replace('/', '').strip().split(' ')[0] if 'price' in x else '0'))
+        # Sort plans for consistent display: Free first, then by price/type
+        # Filter out the "Free" plan from the sort if it's explicitly for monthly/annual comparison
+        if plan_type_filter:
+            plans_for_sort = [p for p in plans_info if p["type"] != "Free"]
+        else:
+            plans_for_sort = plans_info # If no filter, all plans are considered
 
-        app_logger.debug(f"SubscriptionService: Retrieved {len(sorted_plans)} plans for display with filter '{plan_type_filter}'.")
-        return sorted_plans
+        # Sort the filtered plans
+        sorted_filtered_plans = sorted(plans_for_sort, key=lambda x: (x["type"] != "Free", float(x["price"].replace('$', '').replace('/ Month', '').replace('/ Year', '').strip().split(' ')[0]) if 'price' in x else 0.0))
+
+        # Re-insert the Free plan at the beginning if no filter or monthly filter
+        final_plans = []
+        if not plan_type_filter or plan_type_filter == "Monthly": # Display free plan for general or monthly view
+            free_plan_obj = next((p for p in plans_info if p["type"] == "Free"), None)
+            if free_plan_obj:
+                final_plans.append(free_plan_obj)
+
+        # Add the sorted filtered plans, ensuring no duplicates with the free plan
+        for p in sorted_filtered_plans:
+            if p["type"] != "Free":
+                final_plans.append(p)
+
+        app_logger.debug(f"SubscriptionService: Retrieved {len(final_plans)} plans for display with filter '{plan_type_filter}'.")
+        return final_plans
+
 
     def get_user_entitlements(self, serial_key: str) -> Dict[str, Any]:
         """
@@ -787,22 +807,20 @@ class StylingManager:
                 font-family: 'Segoe UI', 'Roboto', sans-serif; /* Modern, clean font */
             }}
 
-            /* Logo Container Styling - Now top-left */
-            .wormgpt-header-left {{
+            /* WormGPT Logo and Title in Sidebar (New Placement) */
+            .sidebar-logo-container {{
                 display: flex;
                 align-items: center;
-                position: absolute; /* Position absolutely to top-left */
-                top: 15px; /* Adjust as needed */
-                left: 20px; /* Adjust as needed */
-                z-index: 1001; /* Ensure it's above other elements */
-                padding-bottom: 20px;
-                padding-right: 20px;
-                border-bottom: 1px solid #E0E0E0; /* Subtle separator line below entire header */
-                width: 100%; /* Spanning width for the border */
-                box-sizing: border-box; /* Include padding in width */
-                transform: translateX(-20px); /* Adjust for left padding */
+                justify-content: flex-start; /* Align to the left of the sidebar */
+                padding: 15px 20px; /* Padding inside the sidebar */
+                margin-bottom: 20px;
+                border-bottom: 1px solid #E0E0E0; /* Subtle separator line below */
+                position: sticky; /* Keep it at the top of the scrollable sidebar */
+                top: 0;
+                background-color: #F8F8F8; /* Match sidebar background */
+                z-index: 100; /* Ensure it stays above other sidebar elements */
             }}
-            .wormgpt-icon {{
+            .sidebar-logo-icon {{
                 background-color: #000000; /* Black square */
                 color: #FFFFFF; /* White 'W' */
                 font-size: 20px;
@@ -814,34 +832,31 @@ class StylingManager:
                 align-items: center;
                 border-radius: 5px; /* Slightly rounded corners for the square */
                 margin-right: 10px; /* Space between icon and text */
-                flex-shrink: 0; /* Prevent shrinking on smaller screens */
+                flex-shrink: 0;
             }}
-            .wormgpt-title-text {{
-                font-size: 28px; /* Slightly smaller for top-left, but prominent */
+            .sidebar-logo-text {{
+                font-size: 20px; /* Smaller font for sidebar title */
                 font-weight: bold;
-                color: #333333; /* Darker text for the logo */
+                color: #333333;
                 letter-spacing: 1px;
-                white-space: nowrap; /* Prevent wrapping */
-            }}
-
-            /* Adjust main content padding to account for fixed header */
-            .main .block-container {{
-                padding-bottom: 120px !important;
-                padding-top: 80px !important; /* Increased top padding to clear fixed header */
-                padding-left: 50px !important; /* More padding on sides */
-                padding-right: 50px !important;
+                white-space: nowrap;
             }}
 
             /* Remove default Streamlit header elements */
-            .st-emotion-cache-18ni7ap.ezrtsby2 {{ /* Adjust this selector as Streamlit versions change */
-                display: none;
-            }}
-            header[data-testid="stHeader"] {{
+            .st-emotion-cache-18ni7ap.ezrtsby2, header[data-testid="stHeader"] {{ /* Adjust this selector as Streamlit versions change */
                 display: none !important;
             }}
 
             /* Removed full-neon-line as per natural UI request */
             .full-neon-line {{ display: none; }} /* Ensure neon line is hidden */
+
+            /* Main Content Area Adjustment */
+            .main .block-container {{
+                padding-bottom: 120px !important;
+                padding-top: 20px !important; /* Adjusted top padding */
+                padding-left: 50px !important; /* More padding on sides */
+                padding-right: 50px !important;
+            }}
 
             /* Chat Input Container Styling */
             div[data-testid="stChatInputContainer"] {{
@@ -869,8 +884,8 @@ class StylingManager:
                 max-height: 200px;
             }}
             textarea[data-testid="stChatInput_textarea"]:focus {{
-                border-color: #007bff; /* Blue border on focus */
-                box-shadow: 0 0 0 0.1rem rgba(0,123,255,.25);
+                border-color: #A0A0A0; /* Gray border on focus */
+                box-shadow: 0 0 0 0.1rem rgba(160,160,160,.25);
             }}
 
             /* Chat Message Styling */
@@ -918,11 +933,12 @@ class StylingManager:
             [data-testid="stSidebar"] {{
                 background-color: #F8F8F8 !important; /* Light gray sidebar */
                 border-right: 1px solid #E0E0E0; /* Subtle right border */
-                padding-top: 20px;
+                padding-top: 0px; /* Remove top padding for the logo */
             }}
             [data-testid="stSidebar"] h3 {{
                 color: #333333 !important; /* Darker heading */
                 text-align: center;
+                margin-top: 20px;
                 margin-bottom: 20px;
             }}
             [data-testid="stSidebar"] p {{
@@ -930,33 +946,34 @@ class StylingManager:
                 font-size: 13px !important;
             }}
 
-            /* Sidebar Button Styling (Systemic Colors) */
-            .stButton>button {{
+            /* Sidebar Button Styling (Systemic Colors - Black/White) */
+            div[data-testid="stSidebar"] .stButton>button {{
                 width: 100%;
                 text-align: left !important;
                 border: none !important;
                 background-color: transparent !important;
-                color: #333333 !important; /* Dark text for buttons */
+                color: #1A1A1A !important; /* Black text for buttons */
                 font-size: 16px !important;
                 padding: 10px 15px;
                 margin-bottom: 5px;
                 border-radius: 8px; /* Slightly rounded buttons */
                 transition: background-color 0.2s ease, color 0.2s ease; /* Smooth transitions */
             }}
-            .stButton>button:hover {{
-                background-color: #E8E8E8 !important; /* Subtle light gray on hover */
-                color: #1A1A1A !important; /* Keep dark text, maybe slightly darker */
+            div[data-testid="stSidebar"] .stButton>button:hover {{
+                background-color: #E0E0E0 !important; /* Light gray on hover */
+                color: #1A1A1A !important; /* Keep dark text */
             }}
-            /* Active button style */
-            .stButton>button[data-selected="true"] {{
-                background-color: #E0E0E0 !important; /* Slightly darker gray for active */
+            div[data-testid="stSidebar"] .stButton>button[data-selected="true"],
+            div[data-testid="stSidebar"] .stButton>button.active-sidebar-button {{ /* Custom class for active state */
+                background-color: #D0D0D0 !important; /* Darker gray for active */
                 font-weight: bold !important;
+                color: #1A1A1A !important;
             }}
-            .stButton>button:focus {{
+            div[data-testid="stSidebar"] .stButton>button:focus {{
                 box-shadow: none !important; /* Remove focus outline */
             }}
             /* Specific style for delete button 'x' */
-            .stButton>button[key^="del_"] {{
+            div[data-testid="stSidebar"] .stButton>button[key^="del_"] {{
                 text-align: center !important;
                 width: 35px;
                 padding: 8px;
@@ -964,7 +981,7 @@ class StylingManager:
                 color: #888888 !important; /* Gray text */
                 border-radius: 50%;
             }}
-            .stButton>button[key^="del_"]:hover {{
+            div[data-testid="stSidebar"] .stButton>button[key^="del_"]:hover {{
                 background-color: #E0E0E0 !important; /* Slightly darker gray on hover */
                 color: #555555 !important;
             }}
@@ -1013,13 +1030,13 @@ class StylingManager:
                 background-color: #FFFFFF;
             }}
             .stTextInput>div>div>input:focus {{
-                border-color: #007bff;
-                box-shadow: 0 0 0 0.1rem rgba(0,123,255,.25);
+                border-color: #A0A0A0;
+                box-shadow: 0 0 0 0.1rem rgba(160,160,160,.25);
             }}
 
             /* General button styling */
-            .stButton>button:not([key^="del_"]):not([key="unlock_system_button"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]) {{
-                background-color: #007bff !important; /* Blue for primary buttons */
+            .stButton>button:not([key^="del_"]):not([key="unlock_system_button_main"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):not([key^="sidebar_"]) {{
+                background-color: #333333 !important; /* Dark gray for primary buttons */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1027,12 +1044,12 @@ class StylingManager:
                 border: none !important;
                 transition: background-color 0.3s ease;
             }}
-            .stButton>button:not([key^="del_"]):not([key="unlock_system_button"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):hover {{
-                background-color: #0056b3 !important; /* Darker blue on hover */
+            .stButton>button:not([key^="del_"]):not([key="unlock_system_button_main"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):not([key^="sidebar_"]):hover {{
+                background-color: #555555 !important; /* Lighter gray on hover */
             }}
 
             /* Specific Unlock System button styling */
-            [key="unlock_system_button"] > button {{
+            [key="unlock_system_button_main"] > button {{
                 background-color: #28a745 !important; /* Green for unlock */
                 color: white !important;
                 border-radius: 10px !important;
@@ -1042,7 +1059,7 @@ class StylingManager:
                 margin-top: 20px;
                 transition: background-color 0.3s ease;
             }}
-            [key="unlock_system_button"] > button:hover {{
+            [key="unlock_system_button_main"] > button:hover {{
                 background-color: #218838 !important; /* Darker green on hover */
             }}
 
@@ -1087,7 +1104,7 @@ class StylingManager:
                 box-shadow: 0 2px 8px rgba(0,0,0,0.05);
                 text-align: center;
                 transition: all 0.3s ease;
-                min-height: 400px; /* Ensure cards have consistent height */
+                min-height: 450px; /* Ensure cards have consistent height */
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
@@ -1097,7 +1114,7 @@ class StylingManager:
                 box-shadow: 0 6px 20px rgba(0,0,0,0.1);
             }}
             .plan-card h3 {{
-                color: #007bff;
+                color: #333333; /* Darker header for plans */
                 font-size: 28px;
                 margin-bottom: 15px;
             }}
@@ -1131,12 +1148,13 @@ class StylingManager:
             }}
 
             /* Adjust padding for columns in plans page */
-            .st-emotion-cache-1uj4tfl {{ padding: 0 !important; }} /* Streamlit column parent */
-            .st-emotion-cache-1jmveo0 {{ padding: 1rem !important; }} /* Streamlit column child */
+            /* Streamlit specific classes, may change across versions. Using current known ones. */
+            .st-emotion-cache-1uj4tfl, .st-emotion-cache-1jmveo0, .st-emotion-cache-vk33n5 {{ padding: 1rem 0.5rem !important; }}
+
 
             /* Specific styling for learn more / subscribe buttons */
             .plan-card .stButton > button {{
-                background-color: #007bff !important;
+                background-color: #333333 !important; /* Dark gray for plan buttons */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1148,7 +1166,27 @@ class StylingManager:
                 text-align: center !important;
             }}
             .plan-card .stButton > button:hover {{
-                background-color: #0056b3 !important;
+                background-color: #555555 !important; /* Lighter gray on hover */
+            }}
+            /* Specific style for st.link_button if it's used inside plan card */
+            .plan-card a.st-emotion-cache-1m742y9 {{ /* This is the anchor tag that Streamlit's link_button renders */
+                background-color: #333333 !important; /* Dark gray for plan buttons */
+                color: white !important;
+                border-radius: 10px !important;
+                padding: 10px 20px !important;
+                font-weight: bold;
+                border: none !important; /* Override default border */
+                text-decoration: none !important; /* Remove underline */
+                transition: background-color 0.3s ease;
+                display: block; /* Make it block level to occupy full width */
+                width: 100%; /* Take full width of parent column */
+                box-sizing: border-box; /* Include padding in width */
+                text-align: center;
+                margin-top: auto; /* Push to bottom of flex container */
+            }}
+            .plan-card a.st-emotion-cache-1m742y9:hover {{
+                background-color: #555555 !important; /* Lighter gray on hover */
+                text-decoration: none !important;
             }}
 
             /* Styling for radio buttons on upgrade page */
@@ -1165,13 +1203,14 @@ class StylingManager:
                 background-color: #E0E0E0;
                 border-color: #B0B0B0;
             }}
-            [data-testid="stRadio"] label.st-dg.st-dd.st-de.st-df.st-dg.st-dh.st-di.st-dj.st-dk.st-dl.st-dm.st-dn.st-do.st-dp.st-dq.st-dr.st-ds {{ /* Selector for selected radio button */
-                background-color: #007bff;
+            /* Selector for selected radio button */
+            [data-testid="stRadio"] label.st-dg.st-dd.st-de.st-df.st-dg.st-dh.st-di.st-dj.st-dk.st-dl.st-dm.st-dn.st-do.st-dp.st-dq.st-dr.st-ds {{ 
+                background-color: #333333 !important; /* Dark gray for selected radio */
                 color: white;
-                border-color: #007bff;
+                border-color: #333333 !important;
             }}
             [data-testid="stRadio"] label.st-dg.st-dd.st-de.st-df.st-dg.st-dh.st-di.st-dj.st-dk.st-dl.st-dm.st-dn.st-do.st-dp.st-dq.st-dr.st-ds span {{
-                 color: white; /* Ensure text color is white when selected */
+                 color: white !important; /* Ensure text color is white when selected */
             }}
 
         </style>
@@ -1196,16 +1235,16 @@ class UIRenderer:
         self.config = config_manager
         app_logger.debug("UIRenderer: Initializing UI component renderer.")
 
-    def render_app_logo(self) -> None:
-        """Renders the main application logo and title on the top-left."""
+    def render_sidebar_logo(self) -> None:
+        """Renders the WormGPT logo and title at the top of the sidebar."""
         st.markdown(
-            f'<div class="wormgpt-header-left">'
-            f'<div class="wormgpt-icon">W</div>'
-            f'<div class="wormgpt-title-text">{self.config.get_text("title")}</div>'
+            f'<div class="sidebar-logo-container">'
+            f'<div class="sidebar-logo-icon">W</div>'
+            f'<div class="sidebar-logo-text">{self.config.get_text("title")}</div>'
             f'</div>',
             unsafe_allow_html=True
         )
-        app_logger.debug("UIRenderer: Application logo rendered on top-left.")
+        app_logger.debug("UIRenderer: Sidebar logo rendered.")
 
     def render_auth_screen(self, serial_input_value: str, error_message: Optional[str]) -> str:
         """
@@ -1220,10 +1259,6 @@ class UIRenderer:
         with st.container():
             st.markdown('<div class="auth-container">', unsafe_allow_html=True)
             serial_input = st.text_input(self.config.get_text("enter_serial"), value=serial_input_value, type="password", help="Enter your WORM-GPT serial key here.", key="auth_serial_input_widget")
-
-            # The actual button click is handled in MainApplicationRunner._handle_authentication()
-            # This ensures that the button state is captured correctly when it's part of a form-like interaction.
-            # We return the serial_input value regardless of button press to keep it in session_state.
 
             if error_message:
                 st.error(error_message)
@@ -1265,21 +1300,46 @@ class UIRenderer:
         Returns:
             bool: True if the button was clicked, False otherwise.
         """
-        is_selected = (st.session_state.page == key.replace("sidebar_", "").replace("_button", ""))
-        clicked = st.button(label, use_container_width=True, key=key)
-        # Manually add data-selected attribute for custom CSS if Streamlit doesn't natively support it on buttons
-        if is_selected and not clicked: # Avoid overwriting actual click
-             st.markdown(f"<style>div[data-testid='stSidebar'] .stButton>button[key='{key}'] {{ background-color: #E0E0E0 !important; font-weight: bold !important; }}</style>", unsafe_allow_html=True)
-        app_logger.debug(f"UIRenderer: Sidebar menu item '{label}' rendered. Clicked: {clicked}")
-        return clicked
+        # Determine if this menu item corresponds to the currently active page
+        is_active_page = (st.session_state.page == key.replace("sidebar_", "").replace("_button", ""))
+
+        # Streamlit buttons don't have a native 'selected' state like radio buttons.
+        # We simulate it with a CSS class.
+        button_clicked = st.button(label, use_container_width=True, key=key)
+
+        # Inject CSS if this button should appear as 'active'
+        if is_active_page and not button_clicked:
+            st.markdown(f"""
+            <style>
+                div[data-testid="stSidebar"] .stButton>button[key='{key}'] {{ 
+                    background-color: #D0D0D0 !important; 
+                    font-weight: bold !important; 
+                    color: #1A1A1A !important;
+                }}
+            </style>
+            """, unsafe_allow_html=True)
+
+        app_logger.debug(f"UIRenderer: Sidebar menu item '{label}' rendered. Clicked: {button_clicked}")
+        return button_clicked
 
     def render_new_chat_button(self) -> bool:
         """Renders the 'New Mission' button in the sidebar."""
-        # Check if the 'New Mission' button corresponds to the active chat state
-        is_active = (st.session_state.current_chat_id is None) and (st.session_state.page == "chat")
+        # This button makes the 'chat' page active and also clears current chat id
+        is_active_new_mission = (st.session_state.page == "chat" and st.session_state.current_chat_id is None)
+
         clicked = st.button(self.config.get_text("new_mission"), use_container_width=True, key="new_mission_button")
-        if is_active and not clicked: # If it's the active state, highlight it
-             st.markdown(f"<style>div[data-testid='stSidebar'] .stButton>button[key='new_mission_button'] {{ background-color: #E0E0E0 !important; font-weight: bold !important; }}</style>", unsafe_allow_html=True)
+
+        if is_active_new_mission and not clicked:
+            st.markdown(f"""
+            <style>
+                div[data-testid="stSidebar"] .stButton>button[key='new_mission_button'] {{ 
+                    background-color: #D0D0D0 !important; 
+                    font-weight: bold !important; 
+                    color: #1A1A1A !important;
+                }}
+            </style>
+            """, unsafe_allow_html=True)
+
         app_logger.debug(f"UIRenderer: New mission button rendered. Clicked: {clicked}")
         return clicked
 
@@ -1299,14 +1359,20 @@ class UIRenderer:
         delete_clicked = False
 
         with col1:
-            # Use a primary button style for the active chat, handled via custom CSS
             button_html = f"<span style='color: #1A1A1A;'>{chat_id}</span>"
             if st.button(button_html, key=select_key, use_container_width=True, unsafe_allow_html=True):
                 select_clicked = True
                 app_logger.debug(f"UIRenderer: Chat '{chat_id}' selected.")
             if is_active and not select_clicked:
-                # Apply active style to the button via CSS if it's the current chat
-                st.markdown(f"<style>div[data-testid='stSidebar'] .stButton>button[key='{select_key}'] {{ background-color: #E0E0E0 !important; font-weight: bold !important; }}</style>", unsafe_allow_html=True)
+                st.markdown(f"""
+                <style>
+                    div[data-testid="stSidebar"] .stButton>button[key='{select_key}'] {{ 
+                        background-color: #D0D0D0 !important; 
+                        font-weight: bold !important; 
+                        color: #1A1A1A !important;
+                    }}
+                </style>
+                """, unsafe_allow_html=True)
         with col2:
             if st.button("×", key=delete_key, help=f"Delete '{chat_id}'"):
                 delete_clicked = True
@@ -1349,6 +1415,8 @@ class SidebarNavigation:
         chat list, and navigation links.
         """
         with st.sidebar:
+            self.ui_renderer.render_sidebar_logo() # Render logo at the very top of the sidebar
+
             self.ui_renderer.render_serial_info(st.session_state.user_serial)
             st.markdown("---") # Visual separator
 
@@ -1428,6 +1496,9 @@ class SidebarNavigation:
         # Clear specific session_device_seed to force new fingerprint on next login
         if "session_device_seed" in st.session_state:
             del st.session_state.session_device_seed
+        # Also clear auth_serial_input and auth_error_message
+        st.session_state.auth_serial_input = ""
+        st.session_state.auth_error_message = None
         app_logger.info("SidebarNavigation: Session state cleared for logout.")
 
 # Instantiate the sidebar navigation manager
@@ -1559,7 +1630,7 @@ class UpgradePage:
         st.header(self.config.get_text("choose_plan"))
 
         # Add a radio button to select between Monthly and Annual plans
-        plan_selection = st.radio(
+        plan_selection_option = st.radio(
             "Select Plan Type:",
             [self.config.get_text("monthly_plans"), self.config.get_text("annual_plans")],
             key="plan_type_selector",
@@ -1567,30 +1638,37 @@ class UpgradePage:
         )
 
         display_filter = None
-        if plan_selection == self.config.get_text("monthly_plans"):
+        if plan_selection_option == self.config.get_text("monthly_plans"):
             display_filter = "Monthly"
-        elif plan_selection == self.config.get_text("annual_plans"):
+        elif plan_selection_option == self.config.get_text("annual_plans"):
             display_filter = "Annual"
 
-        # Always include the Free plan in the list, then add filtered plans
-        plans_to_display = self.subscription_service.get_all_plans_display_info(plan_type_filter=display_filter)
+        # Get plans based on the selected filter
+        plans_to_render_raw = self.subscription_service.get_all_plans_display_info(plan_type_filter=display_filter)
 
-        # Ensure free plan is always present and first if no filter or monthly filter
-        # It's already handled in get_all_plans_display_info, but let's confirm logic here
-        free_plan = next((p for p in plans_to_display if p["type"] == "Free"), None)
-        if free_plan and free_plan != plans_to_display[0]:
-            plans_to_display.remove(free_plan)
-            plans_to_display.insert(0, free_plan)
+        # Ensure free plan is always present if showing monthly or no filter selected
+        final_plans_for_display = []
+        if display_filter == "Monthly" or display_filter is None:
+            free_plan_obj = next((p for p in plans_to_render_raw if p["type"] == "Free"), None)
+            if free_plan_obj:
+                final_plans_for_display.append(free_plan_obj)
 
-        # Display plans in a grid layout. Limit columns for better presentation if too many plans.
-        num_plans_to_render = len(plans_to_display)
+        # Add filtered paid plans, removing duplicates if free plan was already added.
+        for plan in plans_to_render_raw:
+            if plan["type"] != "Free": # Only add paid plans here
+                final_plans_for_display.append(plan)
 
-        # Ensure we have at least 1, max 3 columns for better layout.
+        # Display plans in a grid layout. Limit columns for better presentation.
+        num_plans_to_render = len(final_plans_for_display)
+
+        # We need at least 1 column, max 3 for good design.
         num_columns = min(3, max(1, num_plans_to_render)) 
-        cols = st.columns(num_columns) # Create columns dynamically
 
-        for i, plan in enumerate(plans_to_display):
-            with cols[i % num_columns]: # Cycle through columns
+        # Create columns dynamically
+        cols = st.columns(num_columns) 
+
+        for i, plan in enumerate(final_plans_for_display):
+            with cols[i % num_columns]: # Cycle through columns if more plans than columns
                 self._render_plan_card(plan)
 
         st.markdown("---")
@@ -1620,7 +1698,7 @@ class UpgradePage:
             st.markdown(f"<li>{feature}</li>", unsafe_allow_html=True)
         st.markdown("</ul>", unsafe_allow_html=True)
 
-        # Spacer for consistent button alignment
+        # Spacer for consistent button alignment at the bottom
         st.markdown('<div style="flex-grow: 1;"></div>', unsafe_allow_html=True) 
 
         if plan_info["type"] == "Free":
@@ -1628,13 +1706,12 @@ class UpgradePage:
             st.markdown("<p style='font-size: 12px; color: #777;'>*This is the plan you are likely on now.</p>", unsafe_allow_html=True)
             app_logger.debug(f"UpgradePage: Free plan card rendered.")
         else:
-            # For paid plans, redirect to Telegram
+            # For paid plans, redirect to Telegram using st.link_button without use_container_width
             st.link_button(
                 label=self.config.get_text("subscribe_now"),
                 url=self.config.TELEGRAM_SUBSCRIPTION_LINK,
                 help=self.config.get_text("telegram_redirect_msg"),
-                key=f"subscribe_btn_{plan_info['type']}",
-                use_container_width=True
+                key=f"subscribe_btn_{plan_info['type']}"
             )
             app_logger.info(f"UpgradePage: Paid plan '{plan_info['type']}' card rendered, Telegram link generated.")
 
@@ -1821,10 +1898,7 @@ class MainApplicationRunner:
         """
         app_logger.info(f"MainApplicationRunner: Running authenticated app for user {st.session_state.user_serial[:8]}...")
 
-        # Render the custom logo on top-left, this needs to be before sidebar and main content
-        self.ui_renderer.render_app_logo()
-
-        # Render the sidebar navigation
+        # Render the sidebar navigation, which now includes the logo
         self.sidebar_manager.render_sidebar()
 
         # Routing logic based on session_state.page
@@ -1850,7 +1924,7 @@ class MainApplicationRunner:
             chat_id_to_render = sorted(st.session_state.user_chats.keys())[0]
             st.session_state.current_chat_id = chat_id_to_render
             app_logger.info(f"ChatInterface: Auto-selected first chat: {chat_id_to_render}.")
-            # st.rerun() # No rerun needed, just update and proceed
+            # No rerun needed here, just update the state and continue rendering
 
         # Display current chat history if available
         if chat_id_to_render and chat_id_to_render in st.session_state.user_chats:
@@ -1872,7 +1946,10 @@ class MainApplicationRunner:
             if not self.subscription_service.check_message_limit(st.session_state.user_serial):
                 st.error("You have reached your daily message limit. Please upgrade your plan or try again tomorrow.")
                 app_logger.warning(f"ChatInterface: User {st.session_state.user_serial[:8]}... hit daily message limit.")
-                st.rerun() # Rerun to clear input and show error
+                # We don't rerun immediately here, so the user can see the error.
+                # The input will clear on next interaction or successful submission.
+                # If we want to clear input, we need st.form, or advanced js, but Streamlit usually handles it.
+                return # Stop processing this input further
 
             # Create a new chat if none is selected
             if not st.session_state.current_chat_id:
@@ -1885,7 +1962,7 @@ class MainApplicationRunner:
             self.chat_manager.save_user_chats(st.session_state.user_serial, st.session_state.user_chats)
             self.subscription_service.increment_message_count(st.session_state.user_serial) # Increment message count
             app_logger.debug(f"ChatInterface: User message added to chat '{st.session_state.current_chat_id}'.")
-            st.rerun() # Rerun to display user's message
+            st.rerun() # Rerun to display user's message and trigger AI response
 
         # After user message, if the last message is from user, get AI response
         if st.session_state.current_chat_id:
@@ -1914,8 +1991,7 @@ class MainApplicationRunner:
                             # current_chat_history.pop() 
                             self.chat_manager.save_user_chats(st.session_state.user_serial, st.session_state.user_chats)
                             app_logger.error(f"ChatInterface: AI response generation failed for chat '{st.session_state.current_chat_id}'.")
-                            st.rerun() # Rerun to update chat display with error
-
+                            # No explicit rerun here, error shown, user can retry.
 
 # --- Entry Point of the Application ---
 if __name__ == "__main__":
