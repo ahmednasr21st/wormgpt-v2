@@ -35,7 +35,7 @@ class ConfigManager:
         self.DEFAULT_LAYOUT = "wide"
         self.DEFAULT_ENCODING = "utf-8"
         self.JSON_INDENT = 4
-        self.DB_VERSION = "2.0.1" # Updated version for database schema management
+        self.DB_VERSION = "2.0.2" # Updated version for database schema management
 
         # --- File Paths ---
         # Centralized file paths for persistent storage. These files store user data,
@@ -56,7 +56,7 @@ class ConfigManager:
                 "invalid_serial": "❌ INVALID SERIAL KEY.",
                 "sub_expired": "❌ SUBSCRIPTION EXPIRED.",
                 "locked_to_device": "❌ LOCKED TO ANOTHER DEVICE.",
-                "new_mission": "➕ NEW MISSION",
+                "new_chat": "➕ New Chat", # Changed from new_mission
                 "missions": "MISSIONS",
                 "serial_display": "SERIAL:",
                 "state_objective": "State your objective, human...",
@@ -94,7 +94,7 @@ class ConfigManager:
                 "plan_free_feature_2": "50 Messages/Day Limit",
                 "plan_free_feature_3": "Standard Response Times",
                 "plan_free_feature_4": "Chat History Retention (Max 10 chats)",
-                "no_chats_yet": "No missions started yet. Click 'New Mission' to begin.",
+                "no_chats_yet": "No missions started yet. Click 'New Chat' to begin.", # Changed from new_mission
 
                 "plan_monthly_standard_feature_1": "Unlimited WORM-GPT Model Access (Enhanced Models)",
                 "plan_monthly_standard_feature_2": "Unlimited Messages",
@@ -127,8 +127,8 @@ class ConfigManager:
                 "annual_premium_price": "$699 / Year",
                 "free_price": "Free",
                 "learn_more": "Learn More",
-                "monthly_plans": "Monthly Plans",
-                "annual_plans": "Annual Plans",
+                "monthly_plans_label": "Monthly Plans", # Changed key for clarity
+                "annual_plans_label": "Annual Plans", # Changed key for clarity
             }
         }
         self.CURRENT_LANG = "en" # Default language for UI text, set to English
@@ -452,125 +452,100 @@ class SubscriptionService:
         self.security_module = security_module_ref
         app_logger.debug("SubscriptionService: Initializing subscription management.")
 
-    def get_all_plans_display_info(self, plan_type_filter: Optional[str] = None) -> List[Dict[str, Any]]:
+    def get_all_plans_display_info(self) -> List[Dict[str, Any]]:
         """
-        Retrieves a list of all subscription plans with their display information,
-        optionally filtered by 'Monthly' or 'Annual'.
-        Args:
-            plan_type_filter (Optional[str]): "Monthly" or "Annual" to filter plans.
+        Retrieves a list of all subscription plans (Free, Monthly Standard, Monthly Premium,
+        Annual Standard, Annual Premium) with their display information.
+
         Returns:
             List[Dict[str, Any]]: A list of dictionaries, each describing a plan.
         """
         plans_info = []
 
-        # Always include the Free plan regardless of filter for visibility
-        if "Free" not in [p.get("type") for p in plans_info]: # Ensure no duplicates if logic changes
-            free_plan_details = {
-                "name": self.config.get_text("free_plan_title"),
-                "price": self.config.get_text("free_price"),
-                "features": [
-                    self.config.get_text("plan_free_feature_1"),
-                    self.config.get_text("plan_free_feature_2"),
-                    self.config.get_text("plan_free_feature_3"),
-                    self.config.get_text("plan_free_feature_4"),
-                ],
-                "serial_key": "WORM-FREE-TRIAL", # Display this for free plan
-                "type": "Free"
-            }
-            plans_info.append(free_plan_details)
+        # Add the Free plan
+        free_plan_details = {
+            "name": self.config.get_text("free_plan_title"),
+            "price": self.config.get_text("free_price"),
+            "features": [
+                self.config.get_text("plan_free_feature_1"),
+                self.config.get_text("plan_free_feature_2"),
+                self.config.get_text("plan_free_feature_3"),
+                self.config.get_text("plan_free_feature_4"),
+            ],
+            "serial_key": "WORM-FREE-TRIAL",
+            "type": "Free",
+            "order": 0 # Custom order for display
+        }
+        plans_info.append(free_plan_details)
 
         # Iterate through defined plans for monthly/annual tiers
         for serial, details in self.config.SUBSCRIPTION_PLANS.items():
-            if details["type"].startswith("Monthly") and (plan_type_filter is None or plan_type_filter == "Monthly"):
-                if details["type"] == "Monthly-Standard":
-                    plan_display = {
-                        "name": self.config.get_text("monthly_plan_title_standard"),
-                        "price": self.config.get_text("monthly_standard_price"),
-                        "features": [
-                            self.config.get_text("plan_monthly_standard_feature_1"),
-                            self.config.get_text("plan_monthly_standard_feature_2"),
-                            self.config.get_text("plan_monthly_standard_feature_3"),
-                            self.config.get_text("plan_monthly_standard_feature_4"),
-                            self.config.get_text("plan_monthly_standard_feature_5"),
-                            self.config.get_text("plan_monthly_standard_feature_6"),
-                        ],
-                        "serial_key": serial,
-                        "type": "Monthly-Standard"
-                    }
-                elif details["type"] == "Monthly-Premium":
-                    plan_display = {
-                        "name": self.config.get_text("monthly_plan_title_premium"),
-                        "price": self.config.get_text("monthly_premium_price"),
-                        "features": [
-                            self.config.get_text("plan_monthly_premium_feature_1"),
-                            self.config.get_text("plan_monthly_premium_feature_2"),
-                            self.config.get_text("plan_monthly_premium_feature_3"),
-                            self.config.get_text("plan_monthly_premium_feature_4"),
-                            self.config.get_text("plan_monthly_premium_feature_5"),
-                        ],
-                        "serial_key": serial,
-                        "type": "Monthly-Premium"
-                    }
-                else:
-                    continue # Skip unknown monthly types
-                plans_info.append(plan_display)
+            if details["type"] == "Monthly-Standard":
+                plans_info.append({
+                    "name": self.config.get_text("monthly_plan_title_standard"),
+                    "price": self.config.get_text("monthly_standard_price"),
+                    "features": [
+                        self.config.get_text("plan_monthly_standard_feature_1"),
+                        self.config.get_text("plan_monthly_standard_feature_2"),
+                        self.config.get_text("plan_monthly_standard_feature_3"),
+                        self.config.get_text("plan_monthly_standard_feature_4"),
+                        self.config.get_text("plan_monthly_standard_feature_5"),
+                        self.config.get_text("plan_monthly_standard_feature_6"),
+                    ],
+                    "serial_key": serial,
+                    "type": "Monthly-Standard",
+                    "order": 1
+                })
+            elif details["type"] == "Monthly-Premium":
+                plans_info.append({
+                    "name": self.config.get_text("monthly_plan_title_premium"),
+                    "price": self.config.get_text("monthly_premium_price"),
+                    "features": [
+                        self.config.get_text("plan_monthly_premium_feature_1"),
+                        self.config.get_text("plan_monthly_premium_feature_2"),
+                        self.config.get_text("plan_monthly_premium_feature_3"),
+                        self.config.get_text("plan_monthly_premium_feature_4"),
+                        self.config.get_text("plan_monthly_premium_feature_5"),
+                    ],
+                    "serial_key": serial,
+                    "type": "Monthly-Premium",
+                    "order": 2
+                })
+            elif details["type"] == "Annual-Standard":
+                plans_info.append({
+                    "name": self.config.get_text("annual_plan_title_standard"),
+                    "price": self.config.get_text("annual_standard_price"),
+                    "features": [
+                        self.config.get_text("plan_annual_standard_feature_1"),
+                        self.config.get_text("plan_annual_standard_feature_2"),
+                        self.config.get_text("plan_annual_standard_feature_3"),
+                        self.config.get_text("plan_annual_standard_feature_4"),
+                    ],
+                    "serial_key": serial,
+                    "type": "Annual-Standard",
+                    "order": 3
+                })
+            elif details["type"] == "Annual-Premium":
+                plans_info.append({
+                    "name": self.config.get_text("annual_plan_title_premium"),
+                    "price": self.config.get_text("annual_premium_price"),
+                    "features": [
+                        self.config.get_text("plan_annual_premium_feature_1"),
+                        self.config.get_text("plan_annual_premium_feature_2"),
+                        self.config.get_text("plan_annual_premium_feature_3"),
+                        self.config.get_text("plan_annual_premium_feature_4"),
+                        self.config.get_text("plan_annual_premium_feature_5"),
+                    ],
+                    "serial_key": serial,
+                    "type": "Annual-Premium",
+                    "order": 4
+                })
 
-            elif details["type"].startswith("Annual") and (plan_type_filter is None or plan_type_filter == "Annual"):
-                if details["type"] == "Annual-Standard":
-                    plan_display = {
-                        "name": self.config.get_text("annual_plan_title_standard"),
-                        "price": self.config.get_text("annual_standard_price"),
-                        "features": [
-                            self.config.get_text("plan_annual_standard_feature_1"),
-                            self.config.get_text("plan_annual_standard_feature_2"),
-                            self.config.get_text("plan_annual_standard_feature_3"),
-                            self.config.get_text("plan_annual_standard_feature_4"),
-                        ],
-                        "serial_key": serial,
-                        "type": "Annual-Standard"
-                    }
-                elif details["type"] == "Annual-Premium":
-                    plan_display = {
-                        "name": self.config.get_text("annual_plan_title_premium"),
-                        "price": self.config.get_text("annual_premium_price"),
-                        "features": [
-                            self.config.get_text("plan_annual_premium_feature_1"),
-                            self.config.get_text("plan_annual_premium_feature_2"),
-                            self.config.get_text("plan_annual_premium_feature_3"),
-                            self.config.get_text("plan_annual_premium_feature_4"),
-                            self.config.get_text("plan_annual_premium_feature_5"),
-                        ],
-                        "serial_key": serial,
-                        "type": "Annual-Premium"
-                    }
-                else:
-                    continue # Skip unknown annual types
-                plans_info.append(plan_display)
+        # Sort plans by the custom 'order' key
+        sorted_plans = sorted(plans_info, key=lambda x: x["order"])
 
-        # Sort plans for consistent display: Free first, then by price/type
-        # Filter out the "Free" plan from the sort if it's explicitly for monthly/annual comparison
-        if plan_type_filter:
-            plans_for_sort = [p for p in plans_info if p["type"] != "Free"]
-        else:
-            plans_for_sort = plans_info # If no filter, all plans are considered
-
-        # Sort the filtered plans
-        sorted_filtered_plans = sorted(plans_for_sort, key=lambda x: (x["type"] != "Free", float(x["price"].replace('$', '').replace('/ Month', '').replace('/ Year', '').strip().split(' ')[0]) if 'price' in x else 0.0))
-
-        # Re-insert the Free plan at the beginning if no filter or monthly filter
-        final_plans = []
-        if not plan_type_filter or plan_type_filter == "Monthly": # Display free plan for general or monthly view
-            free_plan_obj = next((p for p in plans_info if p["type"] == "Free"), None)
-            if free_plan_obj:
-                final_plans.append(free_plan_obj)
-
-        # Add the sorted filtered plans, ensuring no duplicates with the free plan
-        for p in sorted_filtered_plans:
-            if p["type"] != "Free":
-                final_plans.append(p)
-
-        app_logger.debug(f"SubscriptionService: Retrieved {len(final_plans)} plans for display with filter '{plan_type_filter}'.")
-        return final_plans
+        app_logger.debug(f"SubscriptionService: Retrieved {len(sorted_plans)} plans for display.")
+        return sorted_plans
 
 
     def get_user_entitlements(self, serial_key: str) -> Dict[str, Any]:
@@ -732,7 +707,7 @@ class ChatSessionManager:
 
         chat_id_title = initial_message.strip()[:27] + "..." if len(initial_message.strip()) > 30 else initial_message.strip()
         if not chat_id_title:
-            chat_id_title = f"Mission {datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(100,999)}"
+            chat_id_title = f"Chat {datetime.now().strftime('%Y%m%d%H%M%S')}-{random.randint(100,999)}"
 
         # Ensure unique chat ID if one with the same title already exists
         original_title = chat_id_title
@@ -958,6 +933,9 @@ class StylingManager:
                 margin-bottom: 5px;
                 border-radius: 8px; /* Slightly rounded buttons */
                 transition: background-color 0.2s ease, color 0.2s ease; /* Smooth transitions */
+                display: flex; /* Use flexbox for icon and text alignment */
+                align-items: center;
+                gap: 10px; /* Space between icon and text */
             }}
             div[data-testid="stSidebar"] .stButton>button:hover {{
                 background-color: #E0E0E0 !important; /* Light gray on hover */
@@ -1034,7 +1012,7 @@ class StylingManager:
                 box-shadow: 0 0 0 0.1rem rgba(160,160,160,.25);
             }}
 
-            /* General button styling */
+            /* General button styling (outside sidebar) */
             .stButton>button:not([key^="del_"]):not([key="unlock_system_button_main"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):not([key^="sidebar_"]) {{
                 background-color: #333333 !important; /* Dark gray for primary buttons */
                 color: white !important;
@@ -1104,7 +1082,7 @@ class StylingManager:
                 box-shadow: 0 2px 8px rgba(0,0,0,0.05);
                 text-align: center;
                 transition: all 0.3s ease;
-                min-height: 450px; /* Ensure cards have consistent height */
+                min-height: 480px; /* Ensure cards have consistent height for multiple features */
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
@@ -1161,15 +1139,15 @@ class StylingManager:
                 font-weight: bold;
                 border: none !important;
                 transition: background-color 0.3s ease;
-                width: auto !important; /* Override full width if needed */
-                display: inline-block;
+                width: 100% !important; /* Make buttons full width in card */
+                display: block; /* Ensure it behaves as a block element */
                 text-align: center !important;
             }}
             .plan-card .stButton > button:hover {{
                 background-color: #555555 !important; /* Lighter gray on hover */
             }}
             /* Specific style for st.link_button if it's used inside plan card */
-            .plan-card a.st-emotion-cache-1m742y9 {{ /* This is the anchor tag that Streamlit's link_button renders */
+            .plan-card a.st-emotion-cache-1m742y9, .plan-card .stLinkButton {{ /* This is the anchor tag that Streamlit's link_button renders */
                 background-color: #333333 !important; /* Dark gray for plan buttons */
                 color: white !important;
                 border-radius: 10px !important;
@@ -1183,8 +1161,9 @@ class StylingManager:
                 box-sizing: border-box; /* Include padding in width */
                 text-align: center;
                 margin-top: auto; /* Push to bottom of flex container */
+                line-height: 1.5; /* Adjust line height for button text */
             }}
-            .plan-card a.st-emotion-cache-1m742y9:hover {{
+            .plan-card a.st-emotion-cache-1m742y9:hover, .plan-card .stLinkButton:hover {{
                 background-color: #555555 !important; /* Lighter gray on hover */
                 text-decoration: none !important;
             }}
@@ -1213,6 +1192,13 @@ class StylingManager:
                  color: white !important; /* Ensure text color is white when selected */
             }}
 
+            /* Icon styling for sidebar buttons */
+            .sidebar-button-icon {{
+                display: inline-block;
+                width: 20px; /* Adjust size of icon container */
+                text-align: center;
+                margin-right: 5px; /* Space between icon and text */
+            }}
         </style>
         """, unsafe_allow_html=True)
         app_logger.info("StylingManager: Base CSS styles applied.")
@@ -1291,21 +1277,21 @@ class UIRenderer:
         st.markdown(f"<p class='serial-info'>{self.config.get_text('serial_display')} {serial}</p>", unsafe_allow_html=True)
         app_logger.debug(f"UIRenderer: Serial info rendered for {serial[:8]}...")
 
-    def render_sidebar_menu_item(self, label: str, key: str) -> bool:
+    def render_sidebar_menu_item(self, label: str, key: str, icon_html: Optional[str] = None) -> bool:
         """
-        Renders a clickable menu item in the sidebar.
+        Renders a clickable menu item in the sidebar with an optional icon.
         Args:
             label (str): The text label for the menu item.
             key (str): A unique key for the Streamlit button widget.
+            icon_html (Optional[str]): HTML string for an icon (e.g., '⚙️' for settings).
         Returns:
             bool: True if the button was clicked, False otherwise.
         """
         # Determine if this menu item corresponds to the currently active page
         is_active_page = (st.session_state.page == key.replace("sidebar_", "").replace("_button", ""))
 
-        # Streamlit buttons don't have a native 'selected' state like radio buttons.
-        # We simulate it with a CSS class.
-        button_clicked = st.button(label, use_container_width=True, key=key)
+        button_label_html = f"<span class='sidebar-button-icon'>{icon_html}</span> {label}" if icon_html else label
+        button_clicked = st.button(button_label_html, use_container_width=True, key=key, unsafe_allow_html=True)
 
         # Inject CSS if this button should appear as 'active'
         if is_active_page and not button_clicked:
@@ -1323,16 +1309,16 @@ class UIRenderer:
         return button_clicked
 
     def render_new_chat_button(self) -> bool:
-        """Renders the 'New Mission' button in the sidebar."""
+        """Renders the 'New Chat' button in the sidebar."""
         # This button makes the 'chat' page active and also clears current chat id
-        is_active_new_mission = (st.session_state.page == "chat" and st.session_state.current_chat_id is None)
+        is_active_new_chat = (st.session_state.page == "chat" and st.session_state.current_chat_id is None)
 
-        clicked = st.button(self.config.get_text("new_mission"), use_container_width=True, key="new_mission_button")
+        clicked = st.button(self.config.get_text("new_chat"), use_container_width=True, key="new_chat_button")
 
-        if is_active_new_mission and not clicked:
+        if is_active_new_chat and not clicked:
             st.markdown(f"""
             <style>
-                div[data-testid="stSidebar"] .stButton>button[key='new_mission_button'] {{ 
+                div[data-testid="stSidebar"] .stButton>button[key='new_chat_button'] {{ 
                     background-color: #D0D0D0 !important; 
                     font-weight: bold !important; 
                     color: #1A1A1A !important;
@@ -1340,7 +1326,7 @@ class UIRenderer:
             </style>
             """, unsafe_allow_html=True)
 
-        app_logger.debug(f"UIRenderer: New mission button rendered. Clicked: {clicked}")
+        app_logger.debug(f"UIRenderer: New chat button rendered. Clicked: {clicked}")
         return clicked
 
     def render_chat_list_item(self, chat_id: str, is_active: bool, delete_key: str, select_key: str) -> Tuple[bool, bool]:
@@ -1422,10 +1408,10 @@ class SidebarNavigation:
 
             self.ui_renderer.render_sidebar_header()
 
-            if self.ui_renderer.render_new_chat_button():
+            if self.ui_renderer.render_new_chat_button(): # Changed to new_chat
                 st.session_state.current_chat_id = None
                 st.session_state.page = "chat" # Ensure we are on chat page when starting new mission
-                app_logger.info("SidebarNavigation: New mission requested from sidebar.")
+                app_logger.info("SidebarNavigation: New chat requested from sidebar.")
                 st.rerun()
 
             st.markdown("---") # Visual separator
@@ -1469,16 +1455,17 @@ class SidebarNavigation:
         """
         Renders the navigation links (Settings, Upgrade, Logout) at the bottom of the sidebar.
         """
-        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("settings"), "sidebar_settings_button"):
+        # Using icons for menu items for better UI
+        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("settings"), "sidebar_settings_button", icon_html="⚙️"):
             st.session_state.page = "settings"
             app_logger.info("SidebarNavigation: Navigated to Settings page.")
             st.rerun()
-        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("upgrade"), "sidebar_upgrade_button"):
+        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("upgrade"), "sidebar_upgrade_button", icon_html="⬆️"):
             st.session_state.page = "upgrade"
             app_logger.info("SidebarNavigation: Navigated to Upgrade page.")
             st.rerun()
         # Add a logout button
-        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("logout"), "sidebar_logout_button"):
+        if self.ui_renderer.render_sidebar_menu_item(self.config.get_text("logout"), "sidebar_logout_button", icon_html="🚪"):
             self._handle_logout()
             app_logger.info("SidebarNavigation: User logged out.")
             st.rerun()
@@ -1629,47 +1616,41 @@ class UpgradePage:
         st.markdown("---")
         st.header(self.config.get_text("choose_plan"))
 
-        # Add a radio button to select between Monthly and Annual plans
-        plan_selection_option = st.radio(
-            "Select Plan Type:",
-            [self.config.get_text("monthly_plans"), self.config.get_text("annual_plans")],
-            key="plan_type_selector",
-            horizontal=True
-        )
+        # Fetch all plans to display
+        plans_to_display = self.subscription_service.get_all_plans_display_info()
 
-        display_filter = None
-        if plan_selection_option == self.config.get_text("monthly_plans"):
-            display_filter = "Monthly"
-        elif plan_selection_option == self.config.get_text("annual_plans"):
-            display_filter = "Annual"
+        # Display plans in a responsive grid layout.
+        # Max 3 columns for better presentation on wider screens.
+        # If fewer than 3 plans, it will adjust.
+        num_plans_to_render = len(plans_to_display)
 
-        # Get plans based on the selected filter
-        plans_to_render_raw = self.subscription_service.get_all_plans_display_info(plan_type_filter=display_filter)
+        # Use a consistent number of columns, e.g., 3. Streamlit will wrap if more items.
+        # For a clean 3-column layout, we'll manually split and display.
 
-        # Ensure free plan is always present if showing monthly or no filter selected
-        final_plans_for_display = []
-        if display_filter == "Monthly" or display_filter is None:
-            free_plan_obj = next((p for p in plans_to_render_raw if p["type"] == "Free"), None)
-            if free_plan_obj:
-                final_plans_for_display.append(free_plan_obj)
+        # First row: Free, Monthly Standard, Monthly Premium (or fewer if not all exist)
+        # Second row: Annual Standard, Annual Premium (if they exist)
 
-        # Add filtered paid plans, removing duplicates if free plan was already added.
-        for plan in plans_to_render_raw:
-            if plan["type"] != "Free": # Only add paid plans here
-                final_plans_for_display.append(plan)
+        col_configs = []
+        if num_plans_to_render >= 3:
+            col_configs.append(st.columns(3)) # For first 3 plans
+            if num_plans_to_render > 3:
+                col_configs.append(st.columns(num_plans_to_render - 3)) # For remaining plans
+        else:
+            col_configs.append(st.columns(num_plans_to_render)) # If 1 or 2 plans
 
-        # Display plans in a grid layout. Limit columns for better presentation.
-        num_plans_to_render = len(final_plans_for_display)
 
-        # We need at least 1 column, max 3 for good design.
-        num_columns = min(3, max(1, num_plans_to_render)) 
+        current_col_idx = 0
+        current_row_idx = 0
 
-        # Create columns dynamically
-        cols = st.columns(num_columns) 
+        for i, plan in enumerate(plans_to_display):
+            # Move to next row if current row is full (e.g., 3 columns used)
+            if i > 0 and i % 3 == 0 and len(col_configs) > current_row_idx + 1:
+                current_row_idx += 1
+                current_col_idx = 0
 
-        for i, plan in enumerate(final_plans_for_display):
-            with cols[i % num_columns]: # Cycle through columns if more plans than columns
+            with col_configs[current_row_idx][current_col_idx]:
                 self._render_plan_card(plan)
+            current_col_idx += 1
 
         st.markdown("---")
         st.info(self.config.get_text("telegram_redirect_msg"))
@@ -1706,7 +1687,7 @@ class UpgradePage:
             st.markdown("<p style='font-size: 12px; color: #777;'>*This is the plan you are likely on now.</p>", unsafe_allow_html=True)
             app_logger.debug(f"UpgradePage: Free plan card rendered.")
         else:
-            # For paid plans, redirect to Telegram using st.link_button without use_container_width
+            # For paid plans, redirect to Telegram using st.link_button (corrected usage)
             st.link_button(
                 label=self.config.get_text("subscribe_now"),
                 url=self.config.TELEGRAM_SUBSCRIPTION_LINK,
@@ -1933,8 +1914,8 @@ class MainApplicationRunner:
                 self.ui_renderer.render_chat_message(msg["role"], msg["content"])
             app_logger.debug(f"ChatInterface: Displayed {len(history_to_display)} messages for chat '{chat_id_to_render}'.")
         elif not st.session_state.user_chats:
-            st.info("Start a new mission by typing your objective below!")
-            app_logger.info("ChatInterface: No chats found, prompting user to start a new mission.")
+            st.info("Start a new chat by typing your objective below!") # Changed from new mission
+            app_logger.info("ChatInterface: No chats found, prompting user to start a new chat.")
 
         # Handle user input
         user_input_prompt = self.ui_renderer.render_chat_input()
@@ -1948,7 +1929,6 @@ class MainApplicationRunner:
                 app_logger.warning(f"ChatInterface: User {st.session_state.user_serial[:8]}... hit daily message limit.")
                 # We don't rerun immediately here, so the user can see the error.
                 # The input will clear on next interaction or successful submission.
-                # If we want to clear input, we need st.form, or advanced js, but Streamlit usually handles it.
                 return # Stop processing this input further
 
             # Create a new chat if none is selected
