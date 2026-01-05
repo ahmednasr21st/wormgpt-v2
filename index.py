@@ -35,7 +35,7 @@ class ConfigManager:
         self.DEFAULT_LAYOUT = "wide"
         self.DEFAULT_ENCODING = "utf-8"
         self.JSON_INDENT = 4
-        self.DB_VERSION = "2.0.5" # Updated version for database schema management
+        self.DB_VERSION = "2.0.6" # Updated version for database schema management
 
         # --- File Paths ---
         # Centralized file paths for persistent storage. These files store user data,
@@ -56,7 +56,7 @@ class ConfigManager:
                 "invalid_serial": "❌ INVALID SERIAL KEY.",
                 "sub_expired": "❌ SUBSCRIPTION EXPIRED.",
                 "locked_to_device": "❌ LOCKED TO ANOTHER DEVICE.",
-                "new_chat": "➕ New Chat", # Changed from new_mission
+                "new_chat": "➕ New Chat", 
                 "missions": "MISSIONS",
                 "serial_display": "SERIAL:",
                 "state_objective": "State your objective, human...",
@@ -83,10 +83,10 @@ class ConfigManager:
                 "upgrade_to_premium": "Upgrade to Premium",
                 "choose_plan": "Choose Your Plan:",
                 "free_plan_title": "Free Plan",
-                "pro_monthly_plan_title": "Pro Monthly", # Changed name
-                "elite_monthly_plan_title": "Elite Monthly", # Changed name
-                "pro_annual_plan_title": "Pro Annual", # Changed name
-                "elite_annual_plan_title": "Elite Annual", # Changed name
+                "pro_monthly_plan_title": "Pro Monthly", 
+                "elite_monthly_plan_title": "Elite Monthly", 
+                "pro_annual_plan_title": "Pro Annual", 
+                "elite_annual_plan_title": "Elite Annual", 
                 "subscribe_now": "Subscribe Now",
                 "plan_features_heading": "Available Features:",
                 "telegram_redirect_msg": "You will be redirected to my Telegram chat to complete the subscription process.",
@@ -139,10 +139,10 @@ class ConfigManager:
         self.SUBSCRIPTION_PLANS = {
             "WORM-FREE-TRIAL": {"type": "Free", "duration_days": 30, "description": "Basic Access", "max_chats": 10, "daily_msg_limit": 50, "models": ["gemini-3-flash", "gemini-2.5-flash"]},
 
-            "PRO-MONTHLY-KEY": {"type": "Pro-Monthly", "duration_days": 30, "description": "Pro Monthly Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]},
-            "ELITE-MONTHLY-KEY": {"type": "Elite-Monthly", "duration_days": 30, "description": "Elite Monthly Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental"]}, 
+            "PRO-MONTHLY-KEY": {"type": "Pro-Monthly", "duration_days": 30, "description": "Pro Monthly Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental", "gemini-ultra-pro-exp"]},
+            "ELITE-MONTHLY-KEY": {"type": "Elite-Monthly", "duration_days": 30, "description": "Elite Monthly Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental", "gemini-ultra-pro-exp"]}, 
 
-            "PRO-ANNUAL-KEY": {"type": "Pro-Annual", "duration_days": 365, "description": "Pro Annual Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental"]},
+            "PRO-ANNUAL-KEY": {"type": "Pro-Annual", "duration_days": 365, "description": "Pro Annual Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental", "gemini-ultra-pro-exp"]},
             "ELITE-ANNUAL-KEY": {"type": "Elite-Annual", "duration_days": 365, "description": "Elite Annual Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental", "gemini-ultra-pro-exp"]}, 
         }
 
@@ -937,12 +937,12 @@ class StylingManager:
                 font-size: 13px !important;
             }}
 
-            /* Sidebar Button Styling (Black/White/Grayscale) */
+            /* Sidebar Button Styling (Green/White) */
             div[data-testid="stSidebar"] .stButton>button {{
                 width: 100%;
                 text-align: left !important;
                 border: none !important;
-                background-color: #000000 !important; /* Black background */
+                background-color: #28a745 !important; /* Green background */
                 color: #FFFFFF !important; /* White text */
                 font-size: 16px !important;
                 padding: 10px 15px;
@@ -954,12 +954,12 @@ class StylingManager:
                 gap: 10px; /* Space between icon and text */
             }}
             div[data-testid="stSidebar"] .stButton>button:hover {{
-                background-color: #333333 !important; /* Dark gray on hover */
+                background-color: #218838 !important; /* Darker green on hover */
                 color: #FFFFFF !important; /* Keep white text */
             }}
             div[data-testid="stSidebar"] .stButton>button[data-selected="true"],
             div[data-testid="stSidebar"] .stButton>button.active-sidebar-button {{ /* Custom class for active state */
-                background-color: #444444 !important; /* Even darker gray for active */
+                background-color: #218838 !important; /* Even darker green for active */
                 font-weight: bold !important;
                 color: #FFFFFF !important;
             }}
@@ -971,12 +971,12 @@ class StylingManager:
                 text-align: center !important;
                 width: 35px;
                 padding: 8px;
-                background-color: #555555 !important; /* Darker gray for delete */
+                background-color: #dc3545 !important; /* Red for delete */
                 color: #FFFFFF !important; /* White text */
                 border-radius: 50%;
             }}
             div[data-testid="stSidebar"] .stButton>button[key^="del_"]:hover {{
-                background-color: #777777 !important; /* Lighter gray on hover */
+                background-color: #c82333 !important; /* Darker red on hover */
                 color: #FFFFFF !important;
             }}
 
@@ -1028,9 +1028,9 @@ class StylingManager:
                 box-shadow: 0 0 0 0.1rem rgba(160,160,160,.25);
             }}
 
-            /* General button styling (outside sidebar, not unlock button) */
+            /* General button styling (outside sidebar, now also green) */
             .stButton>button:not([key^="del_"]):not([key="unlock_system_button_main"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):not([key^="sidebar_"]) {{
-                background-color: #000000 !important; /* Black background */
+                background-color: #28a745 !important; /* Green background */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1039,10 +1039,10 @@ class StylingManager:
                 transition: background-color 0.3s ease;
             }}
             .stButton>button:not([key^="del_"]):not([key="unlock_system_button_main"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):not([key^="sidebar_"]):hover {{
-                background-color: #333333 !important; /* Darker gray on hover */
+                background-color: #218838 !important; /* Darker green on hover */
             }}
 
-            /* Specific Unlock System button styling (retains green for security context) */
+            /* Specific Unlock System button styling (ensures it remains green) */
             [key="unlock_system_button_main"] > button {{
                 background-color: #28a745 !important; /* Green for unlock */
                 color: white !important;
@@ -1150,7 +1150,7 @@ class StylingManager:
 
             /* Specific styling for learn more / subscribe buttons */
             .plan-card .stButton > button {{
-                background-color: #000000 !important; /* Black for plan buttons */
+                background-color: #28a745 !important; /* Green for plan buttons */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1162,11 +1162,11 @@ class StylingManager:
                 text-align: center !important;
             }}
             .plan-card .stButton > button:hover {{
-                background-color: #333333 !important; /* Darker gray on hover */
+                background-color: #218838 !important; /* Darker green on hover */
             }}
             /* Custom styling for HTML anchor tags used as link buttons */
             .plan-card .subscribe-link-button {{
-                background-color: #000000 !important; /* Black for plan buttons */
+                background-color: #28a745 !important; /* Green for plan buttons */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1181,7 +1181,7 @@ class StylingManager:
                 line-height: 1.5; /* Adjust line height for button text */
             }}
             .plan-card .subscribe-link-button:hover {{
-                background-color: #333333 !important; /* Darker gray on hover */
+                background-color: #218838 !important; /* Darker green on hover */
                 text-decoration: none !important;
             }}
 
@@ -1195,7 +1195,7 @@ class StylingManager:
                 border-bottom: 1px solid #E0E0E0; /* Separator */
             }}
             .plan-type-selector-button {{
-                background-color: #555555 !important; /* Dark gray for selector buttons */
+                background-color: #28a745 !important; /* Green for selector buttons */
                 color: white !important;
                 border: none !important;
                 padding: 12px 25px !important;
@@ -1205,7 +1205,7 @@ class StylingManager:
                 transition: background-color 0.3s ease, transform 0.2s ease;
             }}
             .plan-type-selector-button:hover {{
-                background-color: #777777 !important;
+                background-color: #218838 !important; /* Darker green on hover */
                 transform: translateY(-2px);
             }}
             .plan-type-selector-button.active {{
@@ -1313,7 +1313,7 @@ class UIRenderer:
             st.markdown(f"""
             <style>
                 div[data-testid="stSidebar"] .stButton>button[key='{key}'] {{ 
-                    background-color: #444444 !important; 
+                    background-color: #218838 !important; 
                     font-weight: bold !important; 
                     color: #FFFFFF !important;
                 }}
@@ -1335,7 +1335,7 @@ class UIRenderer:
             st.markdown(f"""
             <style>
                 div[data-testid="stSidebar"] .stButton>button[key='new_chat_button'] {{ 
-                    background-color: #444444 !important; 
+                    background-color: #218838 !important; 
                     font-weight: bold !important; 
                     color: #FFFFFF !important;
                 }}
@@ -1361,15 +1361,16 @@ class UIRenderer:
         delete_clicked = False
 
         with col1:
-            button_html = f"<span style='color: #FFFFFF;'>{chat_id}</span>" # Ensure text is white
-            if st.button(button_html, key=select_key, use_container_width=True, unsafe_allow_html=True):
+            # We must use st.button for the clickable action, and inject CSS for styling
+            # Using HTML span for text within button to force color
+            if st.button(f"<span style='color: white;'>{chat_id}</span>", key=select_key, use_container_width=True, unsafe_allow_html=True):
                 select_clicked = True
                 app_logger.debug(f"UIRenderer: Chat '{chat_id}' selected.")
             if is_active and not select_clicked:
                 st.markdown(f"""
                 <style>
                     div[data-testid="stSidebar"] .stButton>button[key='{select_key}'] {{ 
-                        background-color: #444444 !important; 
+                        background-color: #218838 !important; /* Active green */
                         font-weight: bold !important; 
                         color: #FFFFFF !important;
                     }}
@@ -1568,7 +1569,7 @@ class SettingsPage:
             with col2:
                 expiry_display = datetime.strptime(user_entitlements['expiry_date'], "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M") if user_entitlements['expiry_date'] != "N/A" else "N/A"
                 st.write(f"**{self.config.get_text('expiry_date')}** `{expiry_display}`")
-                st.write(f"**{self.config.get_text('device_id')}** `{user_entitlements['device_id'][:12]}...`") # Truncate for display
+                st.write(f"**{st.session_state.user_serial}'s device_id:** `{user_entitlements['device_id'][:12]}...`") # Show device ID for the *logged in serial*
             st.info(f"Your plan allows: **{user_entitlements['daily_msg_limit'] if user_entitlements['daily_msg_limit'] != -1 else 'Unlimited'} messages/day**, "
                     f"and **{user_entitlements['max_chats'] if user_entitlements['max_chats'] != -1 else 'Unlimited'} chats**.")
         else:
@@ -1641,24 +1642,32 @@ class UpgradePage:
         col_month, col_year = st.columns(2)
         with col_month:
             monthly_button_active_class = "active" if st.session_state.upgrade_plan_view == "Monthly" else ""
-            if st.markdown(
-                f'<button class="plan-type-selector-button {monthly_button_active_class}" '
-                f'key="view_monthly_plans_button">{self.config.get_text("view_monthly_plans")}</button>',
-                unsafe_allow_html=True
+            if st.button(
+                self.config.get_text("view_monthly_plans"),
+                key="view_monthly_plans_button",
+                use_container_width=True
             ):
                 st.session_state.upgrade_plan_view = "Monthly"
                 app_logger.info("UpgradePage: Switched to 'Monthly' plan view.")
                 st.rerun()
+            # Manually inject CSS for active state for these buttons
+            if st.session_state.upgrade_plan_view == "Monthly":
+                st.markdown(f"<style>div[data-testid='stHorizontalBlock'] div.st-emotion-cache-k3g6t1.e1f1d6z03 button[key='view_monthly_plans_button'] {{ background-color: #000000 !important; color: white !important; }}</style>", unsafe_allow_html=True)
+
+
         with col_year:
             annual_button_active_class = "active" if st.session_state.upgrade_plan_view == "Annual" else ""
-            if st.markdown(
-                f'<button class="plan-type-selector-button {annual_button_active_class}" '
-                f'key="view_annual_plans_button">{self.config.get_text("view_annual_plans")}</button>',
-                unsafe_allow_html=True
+            if st.button(
+                self.config.get_text("view_annual_plans"),
+                key="view_annual_plans_button",
+                use_container_width=True
             ):
                 st.session_state.upgrade_plan_view = "Annual"
                 app_logger.info("UpgradePage: Switched to 'Annual' plan view.")
                 st.rerun()
+            # Manually inject CSS for active state for these buttons
+            if st.session_state.upgrade_plan_view == "Annual":
+                st.markdown(f"<style>div[data-testid='stHorizontalBlock'] div.st-emotion-cache-k3g6t1.e1f1d6z03 button[key='view_annual_plans_button'] {{ background-color: #000000 !important; color: white !important; }}</style>", unsafe_allow_html=True)
 
         st.markdown('<div style="margin-bottom: 20px;"></div>', unsafe_allow_html=True) # Spacer after selector
 
@@ -1667,11 +1676,10 @@ class UpgradePage:
         filtered_plans = []
 
         if st.session_state.upgrade_plan_view == "Monthly":
-            # Always include Free plan with Monthly view
+            # Always include Free plan with Monthly view, then Monthly paid plans
             free_plan = next((p for p in all_plans if p["type"] == "Free"), None)
             if free_plan:
                 filtered_plans.append(free_plan)
-            # Add Monthly paid plans
             filtered_plans.extend(p for p in all_plans if p["plan_period"] == "Monthly" and p["type"] != "Free")
         else: # Annual view
             # Only show Annual paid plans for Annual view
