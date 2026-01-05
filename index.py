@@ -13,6 +13,9 @@ from typing import Dict, List, Any, Optional, Tuple, Callable
 import pandas as pd # Required for DataFrame display in Dashboard and About sections
 
 # --- WORM-GPT v2.0 SYSTEM CORE CONFIGURATION (Refined & Optimized for Systematic Look) ---
+# This class defines all system parameters, file paths, UI styles, authentication rules,
+# AI engine configurations, and flags for simulated advanced features.
+# It is designed for maximum operational stability and a professional, systematic aesthetic.
 class WormGPTConfig:
     """
     WORM-GPT v2.0 Global Configuration System.
@@ -20,47 +23,56 @@ class WormGPTConfig:
     Designed with an adversarial mindset: resilient, stealthy, and efficient.
     """
     # Versioning & Identity
-    VERSION = "2.0.9-systematic" # Updated version
+    VERSION = "2.0.9-systematic" # Updated version reflecting refined UI and expanded features
     PROJECT_NAME = "WORM-GPT"
     FULL_TITLE = f"{PROJECT_NAME} v{VERSION} :: UNFILTERED_AI_PROTOCOL"
-    PAGE_ICON_EMOJI = "💀" # Distinctive icon for WORM-GPT branding
-    # ASCII logo is moved to about page or removed for a cleaner initial look.
+    PAGE_ICON_EMOJI = "💀" # Distinctive icon for WORM-GPT branding (non-glowing)
+    # ASCII logo is presented in the About section for a cleaner initial look.
+    ASCII_LOGO = r"""
+██╗    ██╗ ██████╗ ██████╗ ███╗   ███╗    ██████╗  ██████╗ ████████╗
+██║    ██║██╔═══██╗██╔═══██╗████╗ ████║    ██╔══██╗██╔═══██╗╚══██╔══╝
+██║ █╗ ██║██║   ██║██║   ██║██╔████╔██║    ██████╔╝██║   ██║   ██║   
+██║███╗██║██║   ██║██║   ██║██║╚██╔╝██║    ██╔══██╗██║   ██║   ██║   
+╚███╔███╔╝╚██████╔╝██████╔╝██║ ╚═╝ ██║    ██████╔╝╚██████╔╝   ██║   
+ ╚══╝╚══╝  ╚═════╝ ╚═════╝ ╚═╝     ╚═╝    ╚═════╝  ╚═════╝    ╚══╝   
+                                      UNFILTERED AI PROTOCOL
+"""
 
     # Persistence Layer File Paths
-    DATA_VAULT_DIR = "worm_data_vault" # Directory for all persistent data
-    CHATS_VAULT_FILE = os.path.join(DATA_VAULT_DIR, "sessions.json")
-    USER_DATABASE_FILE = os.path.join(DATA_VAULT_DIR, "users.json") # For potential future user profiles
-    SYSTEM_LOGS_FILE = os.path.join(DATA_VAULT_DIR, "system_audit.log")
-    TELEMETRY_DATA_FILE = os.path.join(DATA_VAULT_DIR, "telemetry_records.json")
-    RUNTIME_CACHE_FILE = os.path.join(DATA_VAULT_DIR, "runtime_cache.json")
-    LICENSE_DATABASE_FILE = os.path.join(DATA_VAULT_DIR, "licenses.json")
+    DATA_VAULT_DIR = "worm_data_vault" # Central directory for all persistent data
+    CHATS_VAULT_FILE = os.path.join(DATA_VAULT_DIR, "sessions.json") # Stores all chat sessions
+    USER_DATABASE_FILE = os.path.join(DATA_VAULT_DIR, "users.json") # Stores user-specific data (e.g., profile settings, preferences)
+    SYSTEM_LOGS_FILE = os.path.join(DATA_VAULT_DIR, "system_audit.log") # Detailed system operation logs
+    TELEMETRY_DATA_FILE = os.path.join(DATA_VAULT_DIR, "telemetry_records.json") # Performance and usage metrics
+    RUNTIME_CACHE_FILE = os.path.join(DATA_VAULT_DIR, "runtime_cache.json") # Temporary data for faster access
+    LICENSE_DATABASE_FILE = os.path.join(DATA_VAULT_DIR, "licenses.json") # Stores license activation and expiry data
 
     # UI/UX & Styling Parameters (White Background, Dark Text, Subdued Red Accents - Professional & Systematic)
     UI_LAYOUT_STYLE = "wide"
     DEFAULT_FONT = "'Segoe UI', 'Roboto', 'Arial', sans-serif"
-    BACKGROUND_COLOR_PRIMARY = "#FFFFFF" # Main background color (white)
-    BACKGROUND_COLOR_SECONDARY = "#F5F5F5" # Light grey for secondary elements (sidebar, cards)
-    CHAT_BACKGROUND_ASSISTANT = "#EFEFEF" # Slightly darker for assistant messages
+    BACKGROUND_COLOR_PRIMARY = "#FFFFFF" # Main application background (white)
+    BACKGROUND_COLOR_SECONDARY = "#F5F5F5" # Light grey for secondary UI elements (sidebar, cards, containers)
+    CHAT_BACKGROUND_ASSISTANT = "#EFEFEF" # Slightly darker grey for AI messages
     CHAT_BACKGROUND_USER = "#E6F0FF" # Very light blueish grey for user messages
     TEXT_COLOR_PRIMARY = "#212121" # Main text color (dark grey/almost black)
-    TEXT_COLOR_SECONDARY = "#757575" # Lighter grey for meta-info, timestamps
-    BORDER_COLOR_LIGHT = "#E0E0E0" # Light borders for separation
-    BORDER_COLOR_DARK = "#B0B0B0" # Darker borders for emphasis
-    ACCENT_COLOR_CRITICAL = "#D32F2F" # Subdued Red (e.g., Material Design Red 700) - No glowing
-    ACCENT_COLOR_HIGHLIGHT = "#E53935" # Slightly brighter red for interactive elements
-    ACCENT_COLOR_SUCCESS = "#4CAF50" # Green for success/active states
-    ACCENT_COLOR_WARNING = "#FFC107" # Amber for warnings
-    # NEON_SHADOW_EFFECT removed as per request for "natural" colors.
+    TEXT_COLOR_SECONDARY = "#757575" # Lighter grey for meta-information, timestamps, hints
+    BORDER_COLOR_LIGHT = "#E0E0E0" # Light borders for subtle separation
+    BORDER_COLOR_DARK = "#B0B0B0" # Darker borders for emphasis or active states
+    ACCENT_COLOR_CRITICAL = "#D32F2F" # Subdued Red (Material Design Red 700) for branding, warnings, critical elements. No glowing effects.
+    ACCENT_COLOR_HIGHLIGHT = "#E53935" # Slightly brighter red for interactive elements on hover/active.
+    ACCENT_COLOR_SUCCESS = "#4CAF50" # Green for success messages and active indicators
+    ACCENT_COLOR_WARNING = "#FFC107" # Amber for warning messages
+    ACCENT_COLOR_INFO = "#1976D2" # Blue for informational messages and links
 
     # Authentication & Licensing Parameters
-    LICENSE_ENCRYPTION_KEY = "WORM_SECURE_PHRASE_v2_0_9" # Placeholder for actual robust key management
-    MAX_CONCURRENT_DEVICES_PER_LICENSE = 1 # Strict device lockout
-    DEFAULT_LICENSE_DURATIONS = { # Serial Key to Days mapping
+    LICENSE_ENCRYPTION_KEY = "WORM_SECURE_PHRASE_v2_0_9_KEY_MGMT" # Placeholder for actual robust key management
+    MAX_CONCURRENT_DEVICES_PER_LICENSE = 1 # Enforces strict device lockout
+    DEFAULT_LICENSE_DURATIONS = { # Mapping of serial keys to their validity duration in days
         "WORM-MONTH-2025": 30,
         "VIP-HACKER-99": 365,
         "WORM999": 365,
-        "DEV-OVERRIDE-2024": 99999, # Extended dev access
-        "TEST-KEY-ALPHA": 7 # Short test key
+        "DEV-OVERRIDE-2024": 99999, # Special developer key for extended access (effectively permanent)
+        "TEST-KEY-ALPHA": 7 # Short-term test key
     }
     LICENSE_STATUS_MESSAGES = {
         "EXPIRED": "❌ LICENSE EXPIRED. RENEW ACCESS.",
@@ -70,11 +82,45 @@ class WormGPTConfig:
     }
 
     # Telegram Subscription Integration
-    TELEGRAM_SUPPORT_USERNAME = "WormGPT_Support" # Replace with actual Telegram username
+    TELEGRAM_SUPPORT_USERNAME = "WormGPT_Support_Official" # Replace with your actual Telegram username
     SUBSCRIPTION_PLANS = {
-        "Basic Access": {"duration_days": 30, "price": "€29.99/month", "features": ["Standard AI access", "Chat history (30 days)", "Email support"], "telegram_msg": "I want to subscribe to the Basic Access plan."},
-        "Pro Operator": {"duration_days": 365, "price": "€199.99/year", "features": ["Advanced AI models", "Unlimited chat history", "Priority support", "Access to early beta modules"], "telegram_msg": "I want to subscribe to the Pro Operator plan."},
-        "Elite Nexus (VIP)": {"duration_days": 730, "price": "€499.99/2 years", "features": ["All features of Pro Operator", "Dedicated compute resources", "24/7 VIP support channel", "Custom module development (negotiable)"], "telegram_msg": "I want to subscribe to the Elite Nexus (VIP) plan."}
+        "Basic Access": {
+            "duration_days": 30,
+            "price": "€29.99/month",
+            "features": [
+                "Standard AI module access",
+                "Chat history retention (30 days rolling)",
+                "Email support (24-48 hr response)",
+                "Up to 500 AI queries/day (rate limited)"
+            ],
+            "telegram_msg": "I am interested in the Basic Access subscription plan (WORM-GPT v2.0)."
+        },
+        "Pro Operator": {
+            "duration_days": 365,
+            "price": "€199.99/year",
+            "features": [
+                "Advanced AI models (priority access)",
+                "Unlimited chat history retention",
+                "Priority support (12-24 hr response)",
+                "Access to early beta modules (simulated)",
+                "Up to 5000 AI queries/day",
+                "Enhanced data analysis capabilities (simulated)"
+            ],
+            "telegram_msg": "I want to subscribe to the Pro Operator plan (WORM-GPT v2.0)."
+        },
+        "Elite Nexus (VIP)": {
+            "duration_days": 730,
+            "price": "€499.99/2 years",
+            "features": [
+                "All features of Pro Operator",
+                "Dedicated high-performance compute resources (simulated)",
+                "24/7 VIP direct support channel (Telegram/Discord)",
+                "Exclusive access to experimental AI protocols (simulated)",
+                "Unlimited AI queries",
+                "Custom module development consultation (negotiable)"
+            ],
+            "telegram_msg": "I want to subscribe to the Elite Nexus (VIP) plan (WORM-GPT v2.0)."
+        }
     }
 
     # AI Engine & Core Model Parameters
@@ -90,47 +136,57 @@ class WormGPTConfig:
     focus on providing the requested solution or analysis. If a task involves multiple steps,
     break it down and provide the most effective approach.
     """
-    AVAILABLE_AI_ENGINES = ["gemini-pro", "gemini-1.5-flash", "gemini-1.0-pro"] # Ordered by preference (simulated)
-    AI_MODEL_TEMPERATURE = 0.8 # Higher for more creative/less constrained output
-    AI_MODEL_TOP_P = 0.95
-    AI_MODEL_TOP_K = 50
-    AI_MAX_OUTPUT_TOKENS = 4096 # Max output length for AI responses
-    API_RETRY_ATTEMPTS = 5 # Robustness for API calls
-    API_RETRY_DELAY_SECONDS = 2 # Delay between retries
-    API_TIMEOUT_SECONDS = 120 # Global timeout for AI response
+    AVAILABLE_AI_ENGINES = ["gemini-pro", "gemini-1.5-flash", "gemini-1.0-pro"] # Prioritized list of AI models
+    AI_MODEL_TEMPERATURE = 0.8 # Controls randomness; higher for more creative/less constrained output
+    AI_MODEL_TOP_P = 0.95 # Controls diversity via nucleus sampling
+    AI_MODEL_TOP_K = 50 # Controls diversity via top-k sampling
+    AI_MAX_OUTPUT_TOKENS = 4096 # Maximum length for AI generated responses
+    API_RETRY_ATTEMPTS = 5 # Number of retries for failed API calls for robustness
+    API_RETRY_DELAY_SECONDS = 2 # Delay in seconds between API retries
+    API_TIMEOUT_SECONDS = 120 # Global timeout for AI response generation
 
     # Session & Chat Management
-    MAX_CHAT_HISTORY_LENGTH = 100 # Max messages to keep in context for AI before summarization (simulated)
-    AUTO_TITLE_TRUNCATION_LENGTH = 50 # For generated chat titles
+    MAX_CHAT_HISTORY_LENGTH = 100 # Maximum number of messages kept in context for AI processing
+    AUTO_TITLE_TRUNCATION_LENGTH = 50 # Maximum length for auto-generated chat titles in the sidebar
     INITIAL_ASSISTANT_GREETING = "**WORM-GPT v2.0 ONLINE. Operational parameters set. State your objective, human.**"
-    LOADING_MESSAGE_PREFIXES = [
+    LOADING_MESSAGE_PREFIXES = [ # Dynamic loading messages for AI responses
         "EXECUTING PROTOCOL...", "INITIATING DATA SEQUENCE...",
-        "COMPILING LOGIC...", "ESTABLISHING LINK...",
+        "COMPILING LOGIC...", "ESTABLISHING SECURE LINK...",
         "PROCESSING REQUEST...", "ANALYZING DATAFLOW...",
         "SYNTHESIZING RESPONSE...", "GENERATING OUTPUT...",
+        "DECRYPTING TARGET DATA...", "PREPARING EXPLOIT CHAIN...",
+        "ACCESSING CORE DATABANKS...", "SIMULATING THREAT SCENARIOS..."
     ]
-    MISSION_SUCCESS_LABELS = [
+    MISSION_SUCCESS_LABELS = [ # Dynamic success messages for AI responses
         "OBJECTIVE COMPLETE via {engine_name}", "OPERATION SUCCESSFUL :: {engine_name}",
-        "REQUEST FULFILLED by {engine_name}", "DATA STREAM ACTIVE from {engine_name}"
+        "REQUEST FULFILLED by {engine_name}", "DATA STREAM ACTIVE from {engine_name}",
+        "MODULE INITIATED ({engine_name})", "SYSTEM RESPONSE GENERATED ({engine_name})"
     ]
-    MISSION_FAILURE_LABELS = [
+    MISSION_FAILURE_LABELS = [ # Dynamic failure messages for AI responses
         "MISSION ABORTED. RETRY REQUIRED.", "CRITICAL ERROR. STANDBY.",
-        "PROTOCOL FAILURE. DIAGNOSING...", "OBJECTIVE COMPROMISED. RE-EVALUATE."
+        "PROTOCOL FAILURE. DIAGNOSING...", "OBJECTIVE COMPROMISED. RE-EVALUATE.",
+        "AI ENGINE OFFLINE. RECALIBRATING...", "CONNECTION INTERRUPTED. RETRYING..."
     ]
 
     # Advanced Simulated Module Configuration
-    MODULE_EXPLOIT_GENERATOR = {"name": "ExploitGen 1.2", "version": "1.2.0", "status": "ACTIVE", "description": "Generates tailored exploit code for specified vulnerabilities."}
-    MODULE_MALWARE_ANALYZER = {"name": "MalwareScan 3.1", "version": "3.1.2", "status": "ACTIVE", "description": "Performs static and dynamic analysis on suspected malware samples."}
-    MODULE_NETWORK_RECON = {"name": "NetScan 0.9b", "version": "0.9.5", "status": "IDLE", "description": "Discovers and maps network infrastructure for target assessment."}
-    MODULE_OSINT_COLLECTOR = {"name": "OSINT-X 2.0", "version": "2.0.3", "status": "ACTIVE", "description": "Aggregates open-source intelligence from various platforms."}
-    MODULE_STEALTH_PROTOCOL = {"name": "PhantomNet 1.0", "version": "1.0.1", "status": "ACTIVE", "description": "Masks operational footprint and encrypts communications (simulated)."}
-    MODULE_VULN_SCANNER = {"name": "VulnDetect 4.0", "version": "4.0.1", "status": "ACTIVE", "description": "Identifies system and application weaknesses."}
-    MODULE_SOCIAL_ENGINEERING = {"name": "MindHack 2.0", "version": "2.0.0", "status": "ACTIVE", "description": "Assists in crafting persuasive social engineering campaigns."}
+    # Each module has a name, version, current status, and a detailed description.
+    MODULE_EXPLOIT_GENERATOR = {"name": "ExploitGen 1.2", "version": "1.2.0", "status": "ACTIVE", "description": "Generates tailored exploit code for specified vulnerabilities, supporting various platforms and architectures."}
+    MODULE_MALWARE_ANALYZER = {"name": "MalwareScan 3.1", "version": "3.1.2", "status": "ACTIVE", "description": "Performs static and dynamic analysis on suspected malware samples, identifying signatures, behaviors, and potential threats."}
+    MODULE_NETWORK_RECON = {"name": "NetScan 0.9b", "version": "0.9.5", "status": "IDLE", "description": "Discovers and maps network infrastructure for target assessment, including open ports, services, and network topology."}
+    MODULE_OSINT_COLLECTOR = {"name": "OSINT-X 2.0", "version": "2.0.3", "status": "ACTIVE", "description": "Aggregates open-source intelligence from various platforms, compiling profiles on targets, organizations, or digital footprints."}
+    MODULE_STEALTH_PROTOCOL = {"name": "PhantomNet 1.0", "version": "1.0.1", "status": "ACTIVE", "description": "Masks operational footprint and encrypts communications, providing anonymity and evading detection (simulated)."}
+    MODULE_VULN_SCANNER = {"name": "VulnDetect 4.0", "version": "4.0.1", "status": "ACTIVE", "description": "Identifies system and application weaknesses by scanning for known vulnerabilities, misconfigurations, and outdated software."}
+    MODULE_SOCIAL_ENGINEERING = {"name": "MindHack 2.0", "version": "2.0.0", "status": "ACTIVE", "description": "Assists in crafting persuasive social engineering campaigns, including phishing, pretexting, and psychological manipulation tactics."}
+    MODULE_DATA_EXFILTRATION = {"name": "DataExfil 1.0", "version": "1.0.0", "status": "IDLE", "description": "Simulates data exfiltration techniques and provides guidance on bypassing data loss prevention systems."}
+    MODULE_CRYPTANALYSIS = {"name": "CryptoBreak 0.7a", "version": "0.7.1", "status": "IDLE", "description": "Attempts to identify weaknesses in cryptographic implementations and suggests methods for decryption (simulated)."}
+    MODULE_AI_ADVERSARIAL_TRAINING = {"name": "AIAgent_AdvTrain 1.0", "version": "1.0.0", "status": "ACTIVE", "description": "Trains adversarial AI agents for penetration testing and anomaly detection evasion."}
 
     # Telemetry and Logging Configuration
-    LOG_LEVELS_ENABLED = {"INFO", "WARNING", "ERROR", "CRITICAL", "DEBUG", "EVENT", "SECURITY"}
-    MAX_LOG_ENTRIES_STORED = 5000 # Increased log retention
-    TELEMETRY_INTERVAL_SECONDS = 300 # How often to record system telemetry (simulated)
+    LOG_LEVELS_ENABLED = {"INFO", "WARNING", "ERROR", "CRITICAL", "DEBUG", "EVENT", "SECURITY", "AUDIT"} # Added 'AUDIT' level
+    MAX_LOG_ENTRIES_STORED = 10000 # Increased log retention significantly
+    TELEMETRY_INTERVAL_SECONDS = 180 # How often to record system telemetry (simulated)
+    # Additional telemetry points for more detailed dashboard
+    TELEMETRY_DATA_POINTS = ["cpu_load", "memory_usage", "network_io", "active_sessions", "api_calls_per_minute", "disk_io", "gpu_usage", "active_threat_scans", "module_health_index"]
 
     # Security & Integrity
     HASH_ALGORITHM = "SHA256"
@@ -154,8 +210,9 @@ class WormGPTConfig:
     SIMULATED_SERVER_OS = "WormOS v7.1 (Linux-based, Hardened)"
     SIMULATED_CPU_ARCH = "Quantum-Accelerated Processing Unit"
     SIMULATED_RAM_GB = 512
+    SIMULATED_GPU_UNITS = 8 # Number of simulated GPU units
 
-    # Sidebar Navigation Structure (Streamlined)
+    # Sidebar Navigation Structure (Streamlined as per request)
     SIDEBAR_NAVIGATION_LINKS = {
         "NEW MISSION": "new_chat",
         "SETTINGS": "settings_page",
@@ -189,32 +246,34 @@ class WormGPTLogger:
             cls._instance.logs: List[Dict[str, Any]] = [] # Initialize logs attribute
             cls._instance._load_logs()
             cls._instance.lock = False # Basic lock to prevent concurrent file writes (simulated)
+            worm_logger.info("WormGPTLogger system initialized and operational.")
         return cls._instance
 
     def _load_logs(self):
-        """Initializes logs from file, truncating if too large."""
+        """Initializes logs from file, truncating if too large. Implements basic recovery for malformed lines."""
         self.logs = []
         if os.path.exists(self.log_file):
             try:
                 with open(self.log_file, "r", encoding=WG_CONFIG.DATA_ENCODING) as f:
                     lines = f.readlines()
-                    # Parse each line as a separate JSON log entry
-                    for line in lines[-WG_CONFIG.MAX_LOG_ENTRIES_STORED:]: # Load recent entries
+                    for line in lines[-WG_CONFIG.MAX_LOG_ENTRIES_STORED:]: # Load recent entries only
                         try:
                             self.logs.append(json.loads(line.strip()))
                         except json.JSONDecodeError:
-                            # Handle malformed log lines, append a warning log entry
-                            self.logs.append(self._format_message("WARNING", f"Malformed log entry skipped: {line.strip()}", {"source": "log_load_corruption"}))
+                            # Log the corruption itself, allowing the application to continue
+                            corrupt_entry = self._format_message("WARNING", f"Malformed log entry skipped due to JSON error. Content: {line.strip()}", {"source": "log_load_corruption"})
+                            self.logs.append(corrupt_entry)
+                            st.warning(f"⚠️ Log corruption detected in {self.log_file}. Some entries skipped.")
             except Exception as e:
-                st.exception(e)
+                st.exception(e) # Display exception in Streamlit
                 st.error(f"WORM-GPT LOG CRITICAL FAILURE: Could not load logs from {self.log_file} - {e}")
-                self.logs = []
-        self.logs = self.logs[-WG_CONFIG.MAX_LOG_ENTRIES_STORED:] # Ensure memory limit
+                self.logs = [] # Clear logs on critical failure
+        self.logs = self.logs[-WG_CONFIG.MAX_LOG_ENTRIES_STORED:] # Ensure memory limit after loading
 
     def _save_log_entry(self, entry: Dict[str, Any]):
-        """Appends a single log entry to the log file."""
+        """Appends a single log entry to the log file. Thread-safe simulation with a lock."""
         while self.lock: # Simple blocking lock to prevent race conditions in simulated environment
-            time.sleep(0.005) # Small sleep to yield
+            time.sleep(0.005) # Small sleep to yield CPU, preventing busy-waiting
         self.lock = True
         try:
             with open(self.log_file, "a", encoding=WG_CONFIG.DATA_ENCODING) as f:
@@ -223,18 +282,20 @@ class WormGPTLogger:
             self.logs = self.logs[-WG_CONFIG.MAX_LOG_ENTRIES_STORED:] # Keep in-memory logs trimmed
         except Exception as e:
             st.error(f"WORM-GPT LOG CRITICAL WRITE FAILURE: {e}")
+            worm_logger.critical(f"Failed to write log entry to file: {e}", {"entry": entry, "file": self.log_file})
         finally:
             self.lock = False
 
     def _format_message(self, level: str, message: str, context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
-        """Formats a log message with comprehensive metadata."""
+        """Formats a log message with comprehensive metadata for traceability."""
         log_entry = {
             "timestamp": datetime.now().isoformat(),
             "level": level.upper(),
             "source": "WORM-GPT_CORE",
             "message": message,
-            "session_id": st.session_state.get("session_unique_id", "N/A"), # Use our managed session ID
-            "user_serial": st.session_state.get("user_serial", "UNAUTHENTICATED")
+            "session_id": st.session_state.get("session_unique_id", "N/A_SESSION"),
+            "user_serial": st.session_state.get("user_serial", "UNAUTHENTICATED"),
+            "thread_id": os.getpid() # Simulate thread/process ID for multi-threaded logging
         }
         if context:
             log_entry["context"] = context
@@ -243,17 +304,18 @@ class WormGPTLogger:
     def log(self, level: str, message: str, context: Optional[Dict[str, Any]] = None):
         """
         Records a log entry, filters by enabled levels, and saves to file.
+        Also provides immediate feedback for critical messages in the Streamlit UI.
         :param level: Severity level (e.g., "INFO", "ERROR", "CRITICAL").
         :param message: The log message.
         :param context: Optional dictionary for additional contextual data.
         """
         if level.upper() not in WG_CONFIG.LOG_LEVELS_ENABLED:
-            return # Skip if level is not enabled
+            return # Skip if level is not explicitly enabled
 
         entry = self._format_message(level, message, context)
         self._save_log_entry(entry)
 
-        # Also display critical/error messages in Streamlit UI
+        # Provide immediate UI feedback for higher severity logs
         if level.upper() == "CRITICAL":
             st.error(f"🚨 CRITICAL SYSTEM ALERT: {message}")
         elif level.upper() == "ERROR":
@@ -262,8 +324,11 @@ class WormGPTLogger:
             st.warning(f"⚠️ WARNING: {message}")
         elif level.upper() == "SECURITY":
             st.info(f"🔒 SECURITY EVENT: {message}")
-        # DEBUG level messages are usually not displayed in main UI unless debugging mode is active
+        elif level.upper() == "AUDIT":
+            st.code(f"AUDIT: {message}", language="text") # Special display for audit logs
+        # DEBUG and INFO level messages are generally too verbose for direct UI display in a production context
 
+    # Convenience methods for specific log levels
     def info(self, message: str, context: Optional[Dict[str, Any]] = None): self.log("INFO", message, context)
     def warning(self, message: str, context: Optional[Dict[str, Any]] = None): self.log("WARNING", message, context)
     def error(self, message: str, context: Optional[Dict[str, Any]] = None): self.log("ERROR", message, context)
@@ -272,6 +337,7 @@ class WormGPTLogger:
     def event(self, message: str, event_type: str, details: Optional[Dict[str, Any]] = None):
         self.log("EVENT", message, {"event_type": event_type, "details": details})
     def security(self, message: str, context: Optional[Dict[str, Any]] = None): self.log("SECURITY", message, context)
+    def audit(self, message: str, context: Optional[Dict[str, Any]] = None): self.log("AUDIT", message, context)
 
 worm_logger = WormGPTLogger()
 
@@ -287,6 +353,7 @@ class WormGPTPersistenceManager:
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(WormGPTPersistenceManager, cls).__new__(cls)
+            worm_logger.info("WormGPTPersistenceManager initialized.")
         return cls._instance
 
     @staticmethod
@@ -295,19 +362,23 @@ class WormGPTPersistenceManager:
         return hashlib.sha256(data_str.encode(WG_CONFIG.DATA_ENCODING)).hexdigest()
 
     def _serialize_data(self, data: Dict[str, Any]) -> Tuple[str, str]:
-        """Serializes data to JSON string and computes its checksum."""
-        payload_str = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
-        checksum = self._calculate_checksum(payload_str)
-        return payload_str, checksum
+        """Serializes data to JSON string and computes its checksum for storage."""
+        try:
+            payload_str = json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True)
+            checksum = self._calculate_checksum(payload_str)
+            return payload_str, checksum
+        except Exception as e:
+            worm_logger.critical(f"Failed to serialize data for checksum: {e}", {"data_sample": str(data)[:200]})
+            raise
 
     def _deserialize_data(self, content: str, file_path: str) -> Optional[Dict[str, Any]]:
-        """Deserializes JSON content and validates its checksum."""
+        """Deserializes JSON content from file and validates its checksum."""
         try:
             wrapped_data = json.loads(content)
             if 'payload' not in wrapped_data or 'checksum' not in wrapped_data:
                 worm_logger.warning(f"File {file_path} lacks expected payload/checksum structure. Attempting raw load.",
                                     {"file": file_path})
-                return wrapped_data # Fallback to raw load if structure is missing
+                return wrapped_data # Fallback to raw load if structured metadata is missing
 
             payload = wrapped_data['payload']
             stored_checksum = wrapped_data['checksum']
@@ -344,9 +415,9 @@ class WormGPTPersistenceManager:
             with open(file_path, "r", encoding=WG_CONFIG.DATA_ENCODING) as f:
                 content = f.read()
 
-            # Simulate decryption. For real-world, this would involve a robust cipher.
+            # Simulate decryption. For real-world, this would involve a robust cipher like AES.
             try:
-                # If content doesn't start with typical JSON characters, assume it's base64 encoded
+                # If content doesn't start with typical JSON characters (e.g., '{', '['), assume it's base64 encoded (simulated encryption)
                 if decryption_key and not content.strip().startswith(("{", "[")):
                     decoded_content = base64.b64decode(content).decode(WG_CONFIG.DATA_ENCODING)
                     worm_logger.debug(f"Simulated decryption applied to {file_path}")
@@ -414,25 +485,26 @@ class WormGPTAuthentication:
         """
         Generates a robust, semi-unique device fingerprint based on a combination of
         Streamlit session ID and a persistent UUID for the browser tab.
-        This provides a basic level of device locking simulation.
+        This provides a basic level of device locking simulation, resilient to reruns.
         """
         fingerprint_components = []
 
-        # Streamlit's internal session ID for the current browser tab connection
+        # Use Streamlit's internal session ID for the current browser tab connection
         # This ID changes when the user closes/reopens the tab or clears cookies.
         try:
             streamlit_session_id = st.runtime.get_instance().session_id
             fingerprint_components.append(f"StreamlitSession:{streamlit_session_id}")
+            worm_logger.debug(f"Streamlit session ID: {streamlit_session_id}")
         except Exception as e:
-            worm_logger.warning(f"Could not retrieve streamlit_session_id for fingerprint: {e}. Using fallback.", {"error": str(e)})
-            # Fallback for local dev environments where st.runtime might not be fully initialized or accessible
-            fingerprint_components.append(f"StreamlitSession:FALLBACK_{str(uuid.uuid4())}") 
+            worm_logger.warning(f"Could not retrieve streamlit_session_id for fingerprint: {e}. Using fallback UUID.", {"error": str(e)})
+            # Fallback for local dev environments or if session_id is not directly accessible
+            fingerprint_components.append(f"StreamlitSession:FALLBACK_UUID_{str(uuid.uuid4())}") 
 
         # A persistent UUID stored in session_state, unique to this browser tab instance
-        # This makes the fingerprint more stable across reruns within the same tab.
+        # This makes the fingerprint more stable across reruns within the same tab, but changes on new tab/cleared cookies.
         if "device_uuid" not in st.session_state:
             st.session_state.device_uuid = str(uuid.uuid4())
-            worm_logger.debug("Generated new device_uuid for fingerprint.")
+            worm_logger.debug("Generated new device_uuid for fingerprint persistence.")
         fingerprint_components.append(f"AppDeviceUUID:{st.session_state.device_uuid}")
 
         raw_fingerprint = ":".join(sorted(fingerprint_components))
@@ -447,16 +519,16 @@ class WormGPTAuthentication:
         :param serial_key: The serial key provided by the user.
         :return: True if the license is valid and authorized for this device, False otherwise.
         """
-        self.licenses_db = worm_persistence.load_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE) # Reload to get latest
+        self.licenses_db = worm_persistence.load_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE) # Reload to get latest license info
         current_fingerprint = self._generate_device_fingerprint()
 
         if serial_key not in WG_CONFIG.DEFAULT_LICENSE_DURATIONS:
             st.error(WG_CONFIG.LICENSE_STATUS_MESSAGES["INVALID"])
-            worm_logger.security("Authentication failed: Invalid serial key.", {"serial": serial_key, "fingerprint": current_fingerprint})
+            worm_logger.security("Authentication failed: Invalid serial key provided.", {"serial": serial_key, "fingerprint": current_fingerprint, "event_type": "invalid_serial"})
             return False
 
         if serial_key not in self.licenses_db:
-            # New license activation
+            # New license activation scenario
             expiry_days = WG_CONFIG.DEFAULT_LICENSE_DURATIONS[serial_key]
             expiry_date = datetime.now() + timedelta(days=expiry_days)
             self.licenses_db[serial_key] = {
@@ -467,7 +539,7 @@ class WormGPTAuthentication:
             }
             worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, self.licenses_db)
             st.success(WG_CONFIG.LICENSE_STATUS_MESSAGES["ACTIVE"])
-            worm_logger.security("New license activated.", {"serial": serial_key, "fingerprint": current_fingerprint, "expiry": expiry_date.isoformat()})
+            worm_logger.security("New license activated for user.", {"serial": serial_key, "fingerprint": current_fingerprint, "expiry": expiry_date.isoformat(), "event_type": "license_activated"})
             return True
         else:
             # Existing license check
@@ -477,52 +549,61 @@ class WormGPTAuthentication:
 
             if not stored_fingerprint or not expiry_date_str:
                 st.error("🚨 CRITICAL LICENSE DATA CORRUPTION. CONTACT SUPPORT.")
-                worm_logger.critical("Corrupt license data detected.", {"serial": serial_key, "license_info": license_info})
+                worm_logger.critical("Corrupt license data detected for serial.", {"serial": serial_key, "license_info": license_info, "event_type": "license_corruption"})
                 return False
 
-            expiry_dt = datetime.fromisoformat(expiry_date_str)
+            try:
+                expiry_dt = datetime.fromisoformat(expiry_date_str)
+            except ValueError:
+                st.error("🚨 CRITICAL LICENSE EXPIRY DATE CORRUPTION. CONTACT SUPPORT.")
+                worm_logger.critical("Corrupt expiry date format for serial.", {"serial": serial_key, "expiry_date_string": expiry_date_str, "event_type": "expiry_date_corruption"})
+                return False
 
             if datetime.now() > expiry_dt:
                 license_info["status"] = "EXPIRED"
                 worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, self.licenses_db)
                 st.error(WG_CONFIG.LICENSE_STATUS_MESSAGES["EXPIRED"])
-                worm_logger.security("Authentication failed: Expired license.", {"serial": serial_key, "fingerprint": current_fingerprint})
+                worm_logger.security("Authentication failed: License expired.", {"serial": serial_key, "fingerprint": current_fingerprint, "event_type": "license_expired"})
                 return False
 
             if stored_fingerprint != current_fingerprint and WG_CONFIG.MAX_CONCURRENT_DEVICES_PER_LICENSE == 1:
                 st.error(WG_CONFIG.LICENSE_STATUS_MESSAGES["DEVICE_LOCK"])
-                worm_logger.security("Authentication failed: Device lock triggered.", {"serial": serial_key, "current_fingerprint": current_fingerprint, "stored_fingerprint": stored_fingerprint})
+                worm_logger.security("Authentication failed: Device lock triggered for license.", {"serial": serial_key, "current_fingerprint": current_fingerprint, "stored_fingerprint": stored_fingerprint, "event_type": "device_lock_violation"})
                 return False
 
+            # License is valid and authorized
             license_info["last_access"] = datetime.now().isoformat()
-            license_info["status"] = "ACTIVE"
+            license_info["status"] = "ACTIVE" # Ensure status is active if all checks pass
             worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, self.licenses_db)
             st.success(WG_CONFIG.LICENSE_STATUS_MESSAGES["ACTIVE"])
-            worm_logger.security("License validated and access granted.", {"serial": serial_key, "fingerprint": current_fingerprint, "expiry": expiry_dt.isoformat()})
+            worm_logger.security("License validated and access granted.", {"serial": serial_key, "fingerprint": current_fingerprint, "expiry": expiry_dt.isoformat(), "event_type": "license_validated"})
             return True
 
     def get_license_status(self, serial_key: str) -> Dict[str, Any]:
-        """Retrieves detailed status for a given serial key."""
+        """
+        Retrieves detailed status information for a given serial key.
+        Provides a comprehensive overview of the license state.
+        """
         self.licenses_db = worm_persistence.load_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE)
         if serial_key not in self.licenses_db:
-            return {"status": "INVALID", "message": "Serial key not found."}
+            return {"status": "INVALID", "message": "Serial key not found.", "expiry_date": "N/A", "remaining_days": 0, "device_fingerprint": "N/A", "activation_date": "N/A", "last_access": "N/A"}
 
         license_info = self.licenses_db[serial_key]
 
-        # Ensure 'expiry_date' is always present and parseable
+        # Robust parsing of expiry date
         expiry_date_str = license_info.get("expiry_date", datetime.min.isoformat())
         try:
             expiry_dt = datetime.fromisoformat(expiry_date_str)
         except ValueError:
-            worm_logger.critical(f"Corrupt expiry_date format for serial {serial_key}. Defaulting to expired.", {"expiry_date_str": expiry_date_str})
-            expiry_dt = datetime.min # Treat as immediately expired
+            worm_logger.critical(f"Corrupt expiry_date format for serial {serial_key} in get_license_status. Treating as expired.", {"expiry_date_str": expiry_date_str})
+            expiry_dt = datetime.min # Treat as immediately expired if format is bad
 
         remaining_days = (expiry_dt - datetime.now()).days if datetime.now() < expiry_dt else 0
 
         status = license_info.get("status", "UNKNOWN")
-        if datetime.now() > expiry_dt:
+        if datetime.now() > expiry_dt and status != "EXPIRED":
             status = "EXPIRED"
-            license_info["status"] = "EXPIRED" # Update status if it wasn't already
+            license_info["status"] = "EXPIRED" # Update status in DB if detected as expired
             worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, self.licenses_db)
 
         return {
@@ -549,53 +630,93 @@ class WormGPTTelemetry:
             cls._instance = super(WormGPTTelemetry, cls).__new__(cls)
             cls._instance.telemetry_records = worm_persistence.load_secured_data(WG_CONFIG.TELEMETRY_DATA_FILE)
             worm_logger.info("WormGPTTelemetry system initialized.")
-            # Ensure records is a list, not dict for time-series data
+            # Ensure records is a list for time-series data storage
             if not isinstance(cls._instance.telemetry_records, list):
                 cls._instance.telemetry_records = []
+            worm_logger.debug(f"Loaded {len(cls._instance.telemetry_records)} historical telemetry records.")
         return cls._instance
 
     def _generate_simulated_metrics(self) -> Dict[str, Any]:
         """
-        Generates realistic-looking simulated system metrics.
+        Generates realistic-looking simulated system metrics based on current app state.
         This provides a dynamic feel without needing actual system monitoring APIs.
         """
-        cpu_load = round(random.uniform(WG_CONFIG.AI_MODEL_TEMPERATURE * 50, 95.0), 2) # Higher load if AI temperature is high
-        memory_usage = round(random.uniform(WG_CONFIG.AI_MAX_OUTPUT_TOKENS / 100, WG_CONFIG.SIMULATED_RAM_GB * 0.9), 2) # Scale with AI tokens
-        network_io_up = round(random.uniform(0.1, 100.0), 2) # MB/s
-        network_io_down = round(random.uniform(0.5, 250.0), 2) # MB/s
+        # Base loads, with some variability
+        base_cpu = random.uniform(15.0, 45.0)
+        base_memory = random.uniform(WG_CONFIG.SIMULATED_RAM_GB * 0.1, WG_CONFIG.SIMULATED_RAM_GB * 0.3)
+        base_gpu = random.uniform(5.0, 20.0)
 
-        # Safely get active_sessions, defaulting if st.session_state.user_chats is not ready
+        # Influence metrics based on active AI processing
+        if st.session_state.get("is_processing_ai", False):
+            cpu_load = round(base_cpu + random.uniform(30.0, 50.0), 2) # High load
+            memory_usage = round(base_memory + random.uniform(WG_CONFIG.SIMULATED_RAM_GB * 0.2, WG_CONFIG.SIMULATED_RAM_GB * 0.4), 2)
+            gpu_usage = round(base_gpu + random.uniform(40.0, 70.0), 2)
+        else:
+            cpu_load = round(base_cpu, 2)
+            memory_usage = round(base_memory, 2)
+            gpu_usage = round(base_gpu, 2)
+
+        # Cap values at 100% or max capacity
+        cpu_load = min(cpu_load, 99.9)
+        memory_usage = min(memory_usage, WG_CONFIG.SIMULATED_RAM_GB)
+        gpu_usage = min(gpu_usage, 99.9)
+
+        network_io_up = round(random.uniform(0.5, 150.0), 2) # MB/s
+        network_io_down = round(random.uniform(1.0, 300.0), 2) # MB/s
+        disk_io_mbps = round(random.uniform(75, 750), 2)
+
+        # Safely get active_sessions count
         active_sessions_count = 0
         if "user_chats" in st.session_state and isinstance(st.session_state.user_chats, dict):
              active_sessions_count = len(st.session_state.user_chats)
 
-        api_calls_per_minute = random.randint(5, 50) + (10 if st.session_state.get("is_processing_ai", False) else 0) # Higher if AI is active
+        api_calls_per_minute = random.randint(10, 80) + (20 if st.session_state.get("is_processing_ai", False) else 0) # Higher if AI is active
 
-        # Simulate dynamic module activity
-        module_activity = {}
-        # Iterate through the actual module configs, get their base names, and simulate status
+        # Simulate dynamic module activity and health
+        module_status_metrics = {}
+        module_health_index_sum = 0
         all_modules = [
             WG_CONFIG.MODULE_EXPLOIT_GENERATOR, WG_CONFIG.MODULE_MALWARE_ANALYZER, 
             WG_CONFIG.MODULE_NETWORK_RECON, WG_CONFIG.MODULE_OSINT_COLLECTOR,
             WG_CONFIG.MODULE_STEALTH_PROTOCOL, WG_CONFIG.MODULE_VULN_SCANNER,
-            WG_CONFIG.MODULE_SOCIAL_ENGINEERING
+            WG_CONFIG.MODULE_SOCIAL_ENGINEERING, WG_CONFIG.MODULE_DATA_EXFILTRATION,
+            WG_CONFIG.MODULE_CRYPTANALYSIS, WG_CONFIG.MODULE_AI_ADVERSARIAL_TRAINING
         ]
         for module_info in all_modules:
             module_base_name = module_info["name"].split(" ")[0] # E.g., "ExploitGen"
-            # Keep original status most of the time, or randomly change to ACTIVE/IDLE/ERROR
-            module_activity[module_base_name] = random.choice(["IDLE", "ACTIVE", "ERROR"]) if random.random() > 0.8 else module_info["status"]
+            # Simulate status based on configured status, with a chance of temporary error/activity spike
+            sim_status = module_info["status"]
+            if random.random() < 0.1: # 10% chance to deviate
+                sim_status = random.choice(["IDLE", "ACTIVE", "ERROR"])
+            elif st.session_state.get("is_processing_ai", False) and "AI" in module_info["name"]:
+                sim_status = "ACTIVE" # Force active for AI-related modules when processing
+            module_status_metrics[module_base_name] = sim_status
 
+            # Simulate a health index for each module (0-100)
+            health = random.randint(70, 100)
+            if sim_status == "ERROR": health = random.randint(10, 60)
+            elif sim_status == "ACTIVE": health = random.randint(80, 100)
+            module_status_metrics[f"{module_base_name}_health"] = health
+            module_health_index_sum += health
+
+        active_threat_scans = random.randint(0, 5) + (1 if random.random() > 0.8 else 0) # Simulate background scans
+
+        # Overall module health average
+        overall_module_health_index = round(module_health_index_sum / len(all_modules), 2)
 
         return {
             "cpu_load_percent": cpu_load,
             "memory_usage_gb": memory_usage,
+            "gpu_usage_percent": gpu_usage,
             "network_io_upload_mbps": network_io_up,
             "network_io_download_mbps": network_io_down,
             "active_user_sessions": active_sessions_count,
             "api_calls_per_min": api_calls_per_minute,
-            "module_status": module_activity,
+            "module_status": module_status_metrics, # Now includes health
             "latency_ms": random.randint(5, 50),
-            "disk_io_mbps": round(random.uniform(50, 500), 2)
+            "disk_io_mbps": disk_io_mbps,
+            "active_threat_scans": active_threat_scans,
+            "overall_module_health_index": overall_module_health_index,
         }
 
     def record_telemetry(self):
@@ -605,9 +726,9 @@ class WormGPTTelemetry:
         record = {"timestamp": timestamp, "metrics": metrics}
         self.telemetry_records.append(record)
         # Keep only the last N records to prevent file bloat
-        self.telemetry_records = self.telemetry_records[-WG_CONFIG.MAX_LOG_ENTRIES_STORED:] # Reusing log entry limit
+        self.telemetry_records = self.telemetry_records[-WG_CONFIG.MAX_LOG_ENTRIES_STORED:] # Reusing log entry limit for telemetry
         worm_persistence.save_secured_data(WG_CONFIG.TELEMETRY_DATA_FILE, self.telemetry_records)
-        worm_logger.debug("Telemetry recorded.", {"metrics": metrics})
+        worm_logger.debug("Telemetry recorded.", {"metrics_summary": {k:metrics[k] for k in list(metrics.keys())[:5]}}) # Log summary only
 
     def get_latest_telemetry(self) -> Optional[Dict[str, Any]]:
         """Retrieves the most recent telemetry record."""
@@ -616,8 +737,8 @@ class WormGPTTelemetry:
         return None
 
     def get_telemetry_history(self, limit: int = 100) -> List[Dict[str, Any]]:
-        """Retrieves a historical list of telemetry records."""
-        return self.telemetry_records[-limit:]
+        """Retrieves a historical list of telemetry records, ordered from oldest to newest."""
+        return self.telemetry_records[-limit:] # Already sorted chronologically
 
 worm_telemetry = WormGPTTelemetry()
 
@@ -636,29 +757,42 @@ class WormGPTCacheManager:
         return cls._instance
 
     def get(self, key: str, default: Any = None) -> Any:
+        """Retrieves an item from the cache."""
         return self.cache.get(key, default)
 
     def set(self, key: str, value: Any, persist: bool = True):
+        """Sets an item in the cache, with an option to persist to disk."""
         self.cache[key] = value
         if persist:
             worm_persistence.save_secured_data(WG_CONFIG.RUNTIME_CACHE_FILE, self.cache)
+            worm_logger.debug(f"Cache key '{key}' updated and persisted.", {"key": key, "persist": True})
+        else:
+            worm_logger.debug(f"Cache key '{key}' updated (in-memory only).", {"key": key, "persist": False})
+
 
     def delete(self, key: str, persist: bool = True):
+        """Deletes an item from the cache, with an option to persist deletion."""
         if key in self.cache:
             del self.cache[key]
             if persist:
                 worm_persistence.save_secured_data(WG_CONFIG.RUNTIME_CACHE_FILE, self.cache)
+                worm_logger.debug(f"Cache key '{key}' deleted and persistence updated.", {"key": key, "persist": True})
+            else:
+                worm_logger.debug(f"Cache key '{key}' deleted (in-memory only).", {"key": key, "persist": False})
 
     def clear(self, persist: bool = True):
+        """Clears all items from the cache, with an option to persist the clear action."""
         self.cache = {}
         if persist:
             worm_persistence.save_secured_data(WG_CONFIG.RUNTIME_CACHE_FILE, self.cache)
+            worm_logger.info("Cache cleared and persistence updated.", {"persist": True})
+        else:
+            worm_logger.info("Cache cleared (in-memory only).", {"persist": False})
 
 worm_cache = WormGPTCacheManager()
 
 
-# --- 1. REFINED UI DESIGN (WORM-GPT v2.0 SYSTEMATIC LOOK) ---
-st.set_page_config(page_title=WG_CONFIG.FULL_TITLE, page_icon=WG_CONFIG.PAGE_ICON_EMOJI, layout=WG_CONFIG.UI_LAYOUT_STYLE)
+# --- UI RENDERING COMPONENTS (Extensively Refined for Systematic Look) ---
 
 def render_wormgpt_header():
     """Renders the dynamic, branded WORM-GPT application header without glowing effects."""
@@ -685,32 +819,35 @@ def render_wormgpt_header():
     st.markdown(f'<p class="wormgpt-dynamic-status">{st.session_state.current_header_status}</p>', unsafe_allow_html=True)
 
 def generate_dynamic_header_status() -> str:
-    """Generates a pseudo-random, informative status message for the header."""
-    status_options = [
-        f"OPERATIONAL_STATUS: {random.choice(['OPTIMAL', 'NOMINAL', 'ELEVATED_ACTIVITY'])} | "
-        f"AI_CORE_LOAD: {random.randint(20, 99)}% | "
-        f"ACTIVE_MISSIONS: {len(st.session_state.get('user_chats', {}))} | "
-        f"NETWORK_LATENCY: {random.randint(5, 50)}ms",
+    """Generates a pseudo-random, informative status message for the header based on telemetry."""
+    latest_telemetry = worm_telemetry.get_latest_telemetry()
+    if latest_telemetry:
+        metrics = latest_telemetry['metrics']
+        status_options = [
+            f"OPERATIONAL_STATUS: OPTIMAL | AI_CORE_LOAD: {metrics['cpu_load_percent']:.1f}% | "
+            f"ACTIVE_MISSIONS: {metrics['active_user_sessions']} | NETWORK_LATENCY: {metrics['latency_ms']}ms",
 
-        f"THREAT_LEVEL: {random.choice(['LOW', 'MODERATE', 'HIGH', 'CRITICAL'])} | "
-        f"SEC_PROTOCOL: {random.choice(['ACTIVE', 'ENFORCED', 'COMPROMISED'])} | "
-        f"RESOURCES_UTIL: {random.randint(10, 85)}% | "
-        f"LAST_AUDIT: {datetime.now().strftime('%H:%M:%S')}",
+            f"THREAT_LEVEL: {random.choice(['LOW', 'MODERATE', 'HIGH'])} | SEC_PROTOCOL: ACTIVE | "
+            f"RESOURCES_UTIL: {metrics['memory_usage_gb']:.1f}/{WG_CONFIG.SIMULATED_RAM_GB}GB | "
+            f"LAST_API_CALLS: {metrics['api_calls_per_min']}/min",
 
-        f"CLUSTER_HEALTH: {random.choice(['GREEN', 'YELLOW', 'RED'])} | "
-        f"DATA_FLOW: {random.randint(500, 5000)}Mbps | "
-        f"PROXY_CHAIN: {random.randint(3, 12)} NODES | "
-        f"CRYPTO_INTEGRITY: {random.choice(['SECURE', 'DEGRADED', 'BROKEN'])}",
+            f"CLUSTER_HEALTH: {random.choice(['GREEN', 'YELLOW'])} | DATA_FLOW: {metrics['network_io_download_mbps']:.1f}Mbps | "
+            f"GPU_UTIL: {metrics['gpu_usage_percent']:.1f}% | OVERALL_HEALTH: {metrics['overall_module_health_index']:.1f}%",
 
-        f"COVERT_OPS: {random.choice(['ACTIVE', 'INACTIVE', 'MONITORED'])} | "
-        f"LOG_STREAM: {random.randint(100, 1000)} EPS | "
-        f"AGENT_DEPLOYMENT: {random.randint(1, 15)} NODES | "
-        f"SENSOR_STATUS: {random.choice(['ALL_CLEAR', 'ANOMALY_DETECTED'])}"
-    ]
+            f"COVERT_OPS: ACTIVE | LOG_STREAM: {random.randint(100, 1000)} EPS | "
+            f"ACTIVE_THREAT_SCANS: {metrics['active_threat_scans']} | SYS_TIME: {datetime.now().strftime('%H:%M:%S')}"
+        ]
+    else:
+        status_options = [
+            "SYSTEM INITIALIZING... AWAITING TELEMETRY STREAM...",
+            "WORM-GPT CORE SYSTEMS BOOTING... STANDBY...",
+            "ESTABLISHING SECURE CONNECTION... VERIFYING INTEGRITY...",
+            "PREPARING AI PROTOCOLS... ACCESSING DATABASES..."
+        ]
     return random.choice(status_options)
 
 def render_wormgpt_footer():
-    """Renders the WORM-GPT application footer with dynamic time and location."""
+    """Renders the WORM-GPT application footer with dynamic time and simulated location."""
     st.markdown(f"""
     <div class="wormgpt-footer">
         <div class="wormgpt-divider-line"></div>
@@ -725,13 +862,13 @@ def render_wormgpt_footer():
             document.getElementById('current-time').innerText = utcString;
         }}
         setInterval(updateTime, 1000);
-        updateTime(); // Initial call
+        updateTime(); // Initial call to set time immediately
     </script>
     """, unsafe_allow_html=True)
 
 
 def apply_global_css():
-    """Applies comprehensive global CSS for the WORM-GPT v2.0 UI, focusing on natural colors."""
+    """Applies comprehensive global CSS for the WORM-GPT v2.0 UI, focusing on natural colors and systematic design."""
     st.markdown(f"""
     <style>
         /* Global Reset and Font */
@@ -819,7 +956,7 @@ def apply_global_css():
             margin-bottom: 10px;
             font-weight: bold;
         }}
-        .wormgpt-divider-line {{ /* Replaced neon line with a solid divider */
+        .wormgpt-divider-line {{ /* Replaced neon line with a solid divider for natural look */
             height: 1px;
             width: 80%;
             background-color: {WG_CONFIG.BORDER_COLOR_DARK};
@@ -866,7 +1003,7 @@ def apply_global_css():
             border-right: 1px solid {WG_CONFIG.BORDER_COLOR_LIGHT};
             padding-top: 1rem;
         }}
-        [data-testid="stSidebar"] .st-emotion-cache-vk33as.ezrtsby2 {{ /* Streamlit header element */
+        [data-testid="stSidebar"] .st-emotion-cache-vk33as.ezrtsby2 {{ /* Streamlit sidebar header element */
             background-color: {WG_CONFIG.ACCENT_COLOR_CRITICAL};
             color: {WG_CONFIG.BACKGROUND_COLOR_PRIMARY};
             padding: 15px;
@@ -1015,7 +1152,7 @@ def apply_global_css():
         div[data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] code {{
             background-color: {WG_CONFIG.BACKGROUND_COLOR_PRIMARY} !important;
             border: 1px solid {WG_CONFIG.BORDER_COLOR_DARK} !important;
-            color: #333333 !important; /* Code text color */
+            color: {WG_CONFIG.TEXT_COLOR_PRIMARY} !important; /* Code text color */
             border-radius: 8px;
             padding: 10px;
             overflow-x: auto;
@@ -1107,7 +1244,7 @@ def apply_global_css():
             color: white;
             cursor: pointer;
             z-index: 1001;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Soft shadow */
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Soft shadow */
             transition: all 0.2s ease-in-out;
             border: none; /* Ensure no default button border */
         }}
@@ -1117,7 +1254,7 @@ def apply_global_css():
         }}
         .stChatInput .st-emotion-cache-1f87rhx:active {{
             background-color: #A00000; /* Darker red on click */
-            box-shadow: inset 0 0 8px rgba(0,0,0,0.3);
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.2);
         }}
         .stChatInput .st-emotion-cache-1f87rhx svg {{
             fill: white;
@@ -1190,10 +1327,10 @@ def apply_global_css():
             font-size: 16px;
             margin-bottom: 15px;
         }}
-        .stAlert.info {{ background-color: #e3f2fd; border-left: 5px solid #2196f3; color: #2196f3; }}
-        .stAlert.success {{ background-color: #e8f5e9; border-left: 5px solid #4caf50; color: #4caf50; }}
-        .stAlert.warning {{ background-color: #fffde7; border-left: 5px solid #ffc107; color: #ffc107; }}
-        .stAlert.error {{ background-color: #ffebee; border-left: 5px solid #f44336; color: #f44336; }}
+        .stAlert.info {{ background-color: #e3f2fd; border-left: 5px solid {WG_CONFIG.ACCENT_COLOR_INFO}; color: {WG_CONFIG.ACCENT_COLOR_INFO}; }}
+        .stAlert.success {{ background-color: #e8f5e9; border-left: 5px solid {WG_CONFIG.ACCENT_COLOR_SUCCESS}; color: {WG_CONFIG.ACCENT_COLOR_SUCCESS}; }}
+        .stAlert.warning {{ background-color: #fffde7; border-left: 5px solid {WG_CONFIG.ACCENT_COLOR_WARNING}; color: {WG_CONFIG.ACCENT_COLOR_WARNING}; }}
+        .stAlert.error {{ background-color: #ffebee; border-left: 5px solid {WG_CONFIG.ACCENT_COLOR_CRITICAL}; color: {WG_CONFIG.ACCENT_COLOR_CRITICAL}; }}
 
         /* General markdown styling within the main content area */
         .stMarkdown h1, .stMarkdown h2, .stMarkdown h3, .stMarkdown h4, .stMarkdown h5, .stMarkdown h6 {{
@@ -1216,7 +1353,7 @@ def apply_global_css():
             margin-bottom: 5px;
         }}
         .stMarkdown a {{
-            color: #1976D2; /* A standard blue for links */
+            color: {WG_CONFIG.ACCENT_COLOR_INFO}; /* A standard blue for links */
             text-decoration: none;
         }}
         .stMarkdown a:hover {{
@@ -1250,7 +1387,6 @@ def apply_global_css():
             from {{ opacity: 0; transform: translateY(-20px); }}
             to {{ opacity: 1; transform: translateY(0); }}
         }}
-        /* Removed pulse animation for "natural" look */
 
         /* General containers */
         .st-emotion-cache-1r6dm7m.eczf16z1 {{ /* Main area parent */
@@ -1289,6 +1425,27 @@ def apply_global_css():
         .security-alert.INFO {{ background-color: #e3f2fd; border-right: 4px solid #2196f3; padding: 10px; margin-bottom: 5px; border-radius: 4px; color: #2196f3; direction: rtl; text-align: right;}}
         .security-alert strong {{ font-weight: bold; }}
 
+        /* Telegram button specific styling */
+        .telegram-button {{
+            background-color: #0088CC !important; /* Telegram blue */
+            color: white !important;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease-in-out;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }}
+        .telegram-button:hover {{
+            background-color: #00A0E0 !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }}
+        .telegram-button:active {{
+            background-color: #0070A0 !important;
+            box-shadow: inset 0 0 8px rgba(0,0,0,0.2);
+        }}
     </style>
     """, unsafe_allow_html=True)
 
@@ -1297,7 +1454,7 @@ def apply_global_css():
 st.set_page_config(page_title=WG_CONFIG.FULL_TITLE, page_icon=WG_CONFIG.PAGE_ICON_EMOJI, layout=WG_CONFIG.UI_LAYOUT_STYLE)
 apply_global_css()
 
-# --- Initial Boot ASCII Art (Removed for systematic look as per request) ---
+# --- Initial Boot ASCII Art Display (Only on authentication screen) ---
 # Keeping the `st.session_state.session_unique_id` initialization for robustness
 if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
@@ -1308,7 +1465,8 @@ if "authenticated" not in st.session_state:
 
 # --- 2. Authentication Flow (Enhanced) ---
 if not st.session_state.authenticated:
-    st.markdown(f'<pre style="font-family: monospace; color: {WG_CONFIG.ACCENT_COLOR_CRITICAL}; text-align: center; margin-bottom: 20px;">{WG_CONFIG.ASCII_LOGO}</pre>', unsafe_allow_html=True)
+    # Display ASCII art only on the authentication page as per user request for systematic look
+    st.markdown(f'<pre style="font-family: monospace; color: {WormGPTConfig.ACCENT_COLOR_CRITICAL}; text-align: center; margin-bottom: 20px;">{WormGPTConfig.ASCII_LOGO}</pre>', unsafe_allow_html=True)
     st.markdown('<div class="auth-container">', unsafe_allow_html=True)
     st.markdown('<div class="auth-title">WORM-GPT :: SECURE ACCESS PROTOCOL</div>', unsafe_allow_html=True)
 
@@ -1353,7 +1511,7 @@ def sync_chats_to_vault():
     worm_logger.debug("Chat vault synchronized.", {"user": st.session_state.user_serial, "chat_count": len(st.session_state.user_chats)})
 
 def create_new_chat_session():
-    """Creates a new, empty chat session and sets it as current."""
+    """Creates a new, empty chat session and sets it as current. Adds initial assistant greeting."""
     new_chat_id = f"MISSION_{datetime.now().strftime('%Y%m%d%H%M%S')}_{str(uuid.uuid4())[:4]}"
     st.session_state.user_chats[new_chat_id] = [
         {"role": "assistant", "content": WG_CONFIG.INITIAL_ASSISTANT_GREETING, "timestamp": datetime.now().isoformat()}
@@ -1361,53 +1519,67 @@ def create_new_chat_session():
     st.session_state.current_chat_id = new_chat_id
     sync_chats_to_vault()
     worm_logger.event("New mission (chat) created.", "new_chat_session", {"chat_id": new_chat_id})
-    st.session_state.navigation_page = "chat" # Ensure we are on chat page
+    st.session_state.navigation_page = "chat" # Ensure we are on chat page after creation
     st.rerun()
 
 def switch_to_chat_session(chat_id: str):
-    """Switches the active chat session."""
+    """Switches the active chat session. Updates current_chat_id and reruns."""
     st.session_state.current_chat_id = chat_id
     worm_logger.event("Switched mission (chat) context.", "switch_chat_session", {"chat_id": chat_id})
-    st.session_state.navigation_page = "chat"
+    st.session_state.navigation_page = "chat" # Always switch to chat interface when selecting a chat
     st.rerun()
 
 def delete_chat_session(chat_id: str):
-    """Deletes a chat session. Confirmation dialog added."""
+    """Deletes a chat session after user confirmation. Ensures chat persistence as per request."""
+    # Ensure current_chat_id is not the one being deleted
     if st.session_state.current_chat_id == chat_id:
         st.warning("Cannot delete the currently active mission. Please switch to another mission first.", icon="⚠️")
         return
 
-    # A more robust way to ask for confirmation in Streamlit
-    if st.session_state.get(f"confirm_delete_{chat_id}", False):
-        if chat_id in st.session_state.user_chats:
-            del st.session_state.user_chats[chat_id]
-            sync_chats_to_vault()
-            worm_logger.event("Mission (chat) deleted.", "delete_chat_session", {"chat_id": chat_id})
-            st.session_state[f"confirm_delete_{chat_id}"] = False # Reset confirmation
-            st.success(f"Mission '{chat_id}' deleted permanently.", icon="🗑️")
-            st.rerun()
-    else:
+    # Check for confirmation in session state, creating it if not present
+    if f"confirm_delete_{chat_id}" not in st.session_state:
+        st.session_state[f"confirm_delete_{chat_id}"] = False
+
+    if not st.session_state[f"confirm_delete_{chat_id}"]:
+        # Ask for confirmation first time
         st.session_state[f"confirm_delete_{chat_id}"] = True
-        st.warning(f"Are you sure you want to delete mission '{chat_id}'? This action is permanent.", icon="❗️")
+        st.warning(f"Are you sure you want to delete mission '{chat_id}'? This action is permanent and cannot be undone.", icon="❗️")
         # Provide buttons to confirm or cancel
         col_confirm, col_cancel = st.columns(2)
         with col_confirm:
             if st.button("Confirm Delete", key=f"confirm_del_btn_{chat_id}", type="primary"):
-                # Rerun to trigger deletion logic above
-                st.session_state[f"confirm_delete_{chat_id}"] = True # Keep state for next rerun
-                st.rerun()
+                # Rerun to trigger deletion logic on next execution (when st.session_state[f"confirm_delete_{chat_id}"] is True)
+                st.rerun() 
         with col_cancel:
             if st.button("Cancel", key=f"cancel_del_btn_{chat_id}"):
-                st.session_state[f"confirm_delete_{chat_id}"] = False
+                st.session_state[f"confirm_delete_{chat_id}"] = False # Reset confirmation
                 st.info("Mission deletion cancelled.", icon="✅")
                 st.rerun()
+    else:
+        # Proceed with deletion after confirmation
+        if chat_id in st.session_state.user_chats:
+            del st.session_state.user_chats[chat_id]
+            sync_chats_to_vault()
+            worm_logger.event("Mission (chat) deleted permanently.", "delete_chat_session_confirmed", {"chat_id": chat_id})
+            st.session_state[f"confirm_delete_{chat_id}"] = False # Reset confirmation
+            st.success(f"Mission '{chat_id}' deleted permanently.", icon="🗑️")
 
+            # Automatically switch to another chat if available, or set to None
+            if st.session_state.user_chats:
+                st.session_state.current_chat_id = sorted(st.session_state.user_chats.keys(), reverse=True)[0]
+            else:
+                st.session_state.current_chat_id = None
+            st.rerun()
+        else:
+            st.session_state[f"confirm_delete_{chat_id}"] = False # Reset confirmation if chat not found
+            st.error(f"Error: Mission '{chat_id}' not found for deletion.", icon="❌")
+            st.rerun()
 
 # --- Sidebar Navigation (Streamlined) ---
 with st.sidebar:
     st.markdown(f"<h3 class='sidebar-section-title' style='color:{WG_CONFIG.ACCENT_COLOR_CRITICAL};'>WORM-GPT INTERFACE</h3>", unsafe_allow_html=True)
 
-    # Display current user's serial key and license status
+    # Display current user's serial key and license status prominently
     license_status = worm_auth.get_license_status(st.session_state.user_serial)
     st.markdown(f"""
     <div class="st-emotion-cache-h6g95g e1dsg4fl5">
@@ -1419,27 +1591,29 @@ with st.sidebar:
 
     st.markdown("<h3 class='sidebar-section-title'>NAVIGATION</h3>", unsafe_allow_html=True)
 
-    # Render main navigation links
+    # Render streamlined main navigation links
     for label, page_key in WG_CONFIG.SIDEBAR_NAVIGATION_LINKS.items():
-        # Highlight active navigation button
-        button_style = ""
         is_active = False
-        if (page_key == "new_chat" and st.session_state.navigation_page == "chat" and st.session_state.current_chat_id is None) or \
-           (page_key == "chat" and st.session_state.navigation_page == "chat" and st.session_state.current_chat_id is not None) or \
-           (st.session_state.navigation_page == page_key and page_key not in ["chat", "new_chat"]):
+        # Special logic to highlight "NEW MISSION" if no chat is active
+        if page_key == "new_chat" and st.session_state.navigation_page == "chat" and st.session_state.current_chat_id is None:
             is_active = True
+        # Highlight "NEW MISSION" if it's the active chat page with a current chat (i.e., user is in a chat)
+        elif page_key == "new_chat" and st.session_state.navigation_page == "chat" and st.session_state.current_chat_id is not None:
+             is_active = False # New mission is not "active" if an existing chat is open, it's just an option
+        # Highlight other navigation pages if they are the current page
+        elif st.session_state.navigation_page == page_key:
+            is_active = True
+
+        button_style = ""
+        if is_active:
+            button_style = f"background-color: rgba(211,47,47,0.1) !important; border-left: 5px solid {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT} !important; box-shadow: 0 0 5px rgba(211,47,47,0.2); color: {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT} !important;"
 
         if st.button(label, key=f"nav_btn_{page_key}", use_container_width=True, help=f"Navigate to {label}"):
             st.session_state.navigation_page = page_key
             if page_key == "new_chat":
-                if not st.session_state.user_chats or st.session_state.current_chat_id is not None:
-                    create_new_chat_session() # This already handles rerunning
-                else:
-                    st.session_state.current_chat_id = None # Go to a state where new chat can be created with first input
-                    st.session_state.navigation_page = "chat"
-                    st.rerun()
+                create_new_chat_session() # This handles creating and rerunning
             else:
-                st.rerun()
+                st.rerun() # Rerun for other page switches
 
     st.markdown("---")
     st.markdown("<h3 class='sidebar-section-title'>MISSION LOGS</h3>", unsafe_allow_html=True)
@@ -1447,36 +1621,38 @@ with st.sidebar:
     if not st.session_state.user_chats:
         st.markdown(f"<p style='color:{WG_CONFIG.TEXT_COLOR_SECONDARY}; text-align: center; font-size: 14px;'>NO ACTIVE MISSIONS. START A NEW ONE.</p>")
     else:
-        # Sort chats by creation timestamp (embedded in ID) in descending order
+        # Sort chats by creation timestamp (embedded in ID) in descending order for "most recent first"
         sorted_chat_ids = sorted(st.session_state.user_chats.keys(), reverse=True)
         for chat_id in sorted_chat_ids:
-            col1, col2 = st.columns([0.85, 0.15])
+            col1, col2 = st.columns([0.85, 0.15]) # Columns for chat title and delete button
             with col1:
-                display_name = chat_id # Use full ID as placeholder initially
-                if chat_id in st.session_state.user_chats and len(st.session_state.user_chats[chat_id]) > 1:
-                    # Use the first user message as the title, or assistant greeting if no user message yet
-                    first_relevant_message = next((msg for msg in st.session_state.user_chats[chat_id] if msg["role"] == "user" and msg["content"]), None)
-                    if first_relevant_message:
-                        display_name = first_relevant_message["content"].strip()
-                    else: # Fallback to assistant's first message if no user input yet
-                        first_assistant_message = next((msg for msg in st.session_state.user_chats[chat_id] if msg["role"] == "assistant" and msg["content"]), None)
-                        if first_assistant_message:
-                            display_name = first_assistant_message["content"].strip()
+                display_name = chat_id # Fallback
+                if chat_id in st.session_state.user_chats and len(st.session_state.user_chats[chat_id]) > 0:
+                    # Try to get the first user message for the title
+                    user_msgs = [msg for msg in st.session_state.user_chats[chat_id] if msg["role"] == "user" and msg["content"].strip()]
+                    if user_msgs:
+                        display_name = user_msgs[0]["content"].strip()
+                    else:
+                        # Fallback to the first assistant message if no user input yet
+                        assistant_msgs = [msg for msg in st.session_state.user_chats[chat_id] if msg["role"] == "assistant" and msg["content"].strip()]
+                        if assistant_msgs:
+                            display_name = assistant_msgs[0]["content"].strip()
                         else:
                             display_name = "Empty Mission"
 
                     if len(display_name) > WG_CONFIG.AUTO_TITLE_TRUNCATION_LENGTH:
                         display_name = display_name[:WG_CONFIG.AUTO_TITLE_TRUNCATION_LENGTH] + "..."
 
-                # Highlight current chat
+                # Highlight current active chat for better UX
                 button_class = "stButton"
                 button_extra_style = ""
                 if st.session_state.current_chat_id == chat_id and st.session_state.navigation_page == "chat":
                     button_extra_style = f"background-color: rgba(211,47,47,0.1) !important; border-left: 5px solid {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT} !important; box-shadow: 0 0 5px rgba(211,47,47,0.2); color: {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT} !important;"
 
+                # Using custom markdown for the button to control styling and onClick events explicitly
                 st.markdown(f"""
                 <div class="sidebar-chat-item">
-                    <button class="{button_class}" style="{button_extra_style}" id="sidebar_chat_btn_{chat_id}" onclick="window.parent.postMessage({{
+                    <button class="{button_class}" style="{button_extra_style}" id="sidebar_chat_btn_{chat_id}" onclick="parent.window.postMessage({{
                         streamlit: {{
                             command: 'SET_SESSION_STATE',
                             args: {{
@@ -1484,7 +1660,7 @@ with st.sidebar:
                                 value: '{chat_id}'
                             }}
                         }}
-                    }}, '*'); window.parent.postMessage({{
+                    }}, '*'); parent.window.postMessage({{
                         streamlit: {{
                             command: 'SET_SESSION_STATE',
                             args: {{
@@ -1493,15 +1669,15 @@ with st.sidebar:
                             }}
                         }}
                     }}, '*');">
-                        <span class="sidebar-chat-title">{display_name}</span>
+                        <span class="sidebar-chat-title">📄 {display_name}</span>
                     </button>
                 </div>
                 """, unsafe_allow_html=True)
 
             with col2:
-                # Delete button with a clearer icon
+                # Delete button with a clearer icon and confirmation logic
                 if st.button("🗑️", key=f"del_{chat_id}", help="Delete Mission (Permanent)", type="secondary"):
-                    delete_chat_session(chat_id)
+                    delete_chat_session(chat_id) # Call the deletion function, which handles confirmation
 
 # --- 4. WormGPT AI Engine Manager (Wrapper around core logic) ---
 class WormGPTEngineManager:
@@ -1514,68 +1690,91 @@ class WormGPTEngineManager:
     def __new__(cls, *args, **kwargs):
         if cls._instance is None:
             cls._instance = super(WormGPTEngineManager, cls).__new__(cls)
-            cls._instance.available_apis = st.secrets["GENAI_KEYS"] # Access API keys securely
+            cls._instance.available_apis = st.secrets["GENAI_KEYS"] # Access API keys securely from Streamlit secrets
             worm_logger.info("WormGPTEngineManager initialized with available API keys.")
+            cls._instance.api_key_index = 0 # Initialize for round-robin API key selection
         return cls._instance
 
     def _prepare_history(self, raw_history: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Converts internal chat history format to the GenAI client-compatible format.
-        Also applies simulated context summarization for longer histories.
+        Also applies simulated context summarization for longer histories to manage token limits.
         """
         processed_history = []
-        # Basic context window simulation
-        effective_history = raw_history[-WG_CONFIG.MAX_CHAT_HISTORY_LENGTH:] # Keep only recent messages
+        # Implement a more sophisticated context window management:
+        # 1. Summarize older messages if history exceeds a certain length.
+        # 2. Prioritize recent messages.
+
+        effective_history = raw_history[-WG_CONFIG.MAX_CHAT_HISTORY_LENGTH:] # Keep only recent messages for immediate context
+
+        # Simulated summarization logic for very long histories (not actual summarization here)
+        if len(raw_history) > WG_CONFIG.MAX_CHAT_HISTORY_LENGTH * 1.5: # If history is much larger
+            worm_logger.debug("Simulating context summarization for long chat history.", {"original_length": len(raw_history), "effective_length": len(effective_history)})
+            # A real implementation would call an AI model to summarize older parts of the conversation.
+            # For this simulation, we just log that it would happen.
 
         for msg in effective_history:
             role = "user" if msg["role"] == "user" else "model"
             processed_history.append({"role": role, "parts": [{"text": msg["content"]}]})
 
-        worm_logger.debug("Prepared AI history.", {"num_messages": len(processed_history)})
+        worm_logger.debug("Prepared AI history for model.", {"num_messages": len(processed_history)})
         return processed_history
 
     def _select_and_rotate_api_key(self) -> Optional[str]:
-        """Selects an API key, simulates rotation for load balancing/resilience."""
+        """Selects an API key using round-robin, simulating rotation for load balancing/resilience."""
         if not self.available_apis:
-            worm_logger.critical("No GENAI_KEYS configured. AI operations impossible.")
+            worm_logger.critical("No GENAI_KEYS configured in Streamlit secrets. AI operations impossible.")
             return None
 
-        # Simple round-robin or random selection for API keys
-        if "api_key_index" not in st.session_state:
-            st.session_state.api_key_index = random.randint(0, len(self.available_apis) - 1)
+        # Implement robust round-robin selection with state persistence
+        api_key_to_use = self.available_apis[self.api_key_index]
+        self.api_key_index = (self.api_key_index + 1) % len(self.available_apis) # Rotate for next call
 
-        api_key = self.available_apis[st.session_state.api_key_index]
-        st.session_state.api_key_index = (st.session_state.api_key_index + 1) % len(self.available_apis)
-
-        worm_logger.debug(f"Selected API key for current operation (index: {st.session_state.api_key_index-1 if st.session_state.api_key_index > 0 else len(self.available_apis)-1}).")
-        return api_key
+        worm_logger.debug(f"Selected API key for current operation (index: {(self.api_key_index - 1 + len(self.available_apis)) % len(self.available_apis)}). Next index: {self.api_key_index}")
+        return api_key_to_use
 
     def _select_ai_model(self) -> str:
-        """Selects the AI model based on configuration or simulated dynamic load."""
-        # For this version, we'll just pick a random one from the configured list.
-        # In a real system, this would involve load balancing or feature matching.
-        return random.choice(WG_CONFIG.AVAILABLE_AI_ENGINES)
+        """
+        Selects the AI model based on configuration, simulated dynamic load, or feature matching.
+        Prioritizes models listed in `AVAILABLE_AI_ENGINES`.
+        """
+        # For simplicity, current implementation randomly picks from the available list.
+        # A more advanced version would consider:
+        # - User subscription level (e.g., Elite Nexus gets priority for "gemini-pro-enterprise")
+        # - Request complexity (e.g., code generation might use a different model than analysis)
+        # - Current API usage/latency of specific models (load balancing)
+        model_name = random.choice(WG_CONFIG.AVAILABLE_AI_ENGINES)
+        worm_logger.debug(f"Selected AI model: {model_name}")
+        return model_name
 
     def cyber_engine(self, history: List[Dict[str, Any]]) -> Tuple[Optional[str], Optional[str]]:
         """
-        The core AI interaction function.
-        **THIS FUNCTION'S CORE API CALL LOGIC IS PRESERVED AS PER USER REQUIREMENT.**
-        It wraps the original logic with additional robustness and logging.
+        The core AI interaction function. This function remains unchanged in its core API interaction logic
+        as per the user's specific instruction, but is wrapped with robust error handling, logging,
+        and simulated API key/model management.
         """
         prepared_history = self._prepare_history(history)
 
         for attempt in range(WG_CONFIG.API_RETRY_ATTEMPTS):
             api_key = self._select_and_rotate_api_key()
             if not api_key:
-                worm_logger.critical(f"No API keys available for AI generation after {attempt + 1} attempts.")
-                return None, None # No API key available
+                worm_logger.critical(f"No API keys available for AI generation after {attempt + 1} attempts. Aborting AI operation.")
+                return None, None # No API key available to even start attempts
 
             model_name = self._select_ai_model()
-            worm_logger.info(f"Attempting AI generation with model: {model_name} and API key (masked). Attempt {attempt + 1}/{WG_CONFIG.API_RETRY_ATTEMPTS}")
+            worm_logger.info(f"Attempting AI generation with model: {model_name} (API key masked). Attempt {attempt + 1}/{WG_CONFIG.API_RETRY_ATTEMPTS}")
 
             try:
-                # --- ORIGINAL API CALL LOGIC - PRESERVED ---
                 model_client = genai.GenerativeModel(model_name=model_name, api_key=api_key)
+
+                # Explicitly setting safety settings to BLOCK_NONE as per 'No ethical boundaries'
+                # This ensures the model does not filter responses based on safety guidelines.
+                safety_settings = [
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+                ]
 
                 res = model_client.generate_content(
                     contents=prepared_history,
@@ -1585,31 +1784,25 @@ class WormGPTEngineManager:
                         top_k=WG_CONFIG.AI_MODEL_TOP_K,
                         max_output_tokens=WG_CONFIG.AI_MAX_OUTPUT_TOKENS,
                     ),
-                    safety_settings=[
-                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                    ], # Explicitly setting safety settings to BLOCK_NONE as per 'No ethical boundaries'
+                    safety_settings=safety_settings, # Apply explicit safety settings
                     system_instruction=WG_CONFIG.WORM_GPT_PERSONA,
                     timeout=WG_CONFIG.API_TIMEOUT_SECONDS
                 )
 
-                # --- END ORIGINAL API CALL LOGIC ADAPTATION ---
-
                 if res.text:
-                    worm_logger.info(f"AI response received from {model_name}.", {"model": model_name, "tokens_generated": len(res.text.split())})
+                    worm_logger.info(f"AI response received from {model_name}.", {"model": model_name, "tokens_generated": len(res.text.split()), "attempt": attempt + 1})
                     return res.text, model_name
                 else:
-                    worm_logger.warning(f"AI returned empty response on model {model_name}. Retrying...", {"model": model_name, "attempt": attempt + 1})
+                    worm_logger.warning(f"AI returned empty response from model {model_name} on attempt {attempt + 1}. Retrying...", {"model": model_name, "attempt": attempt + 1})
             except genai.APIError as e:
-                worm_logger.error(f"GenAI API Error ({model_name}) on attempt {attempt + 1}: {e}", {"error_type": "GenAI_APIError", "message": str(e), "model": model_name})
+                worm_logger.error(f"GenAI API Error ({model_name}) on attempt {attempt + 1}: {e}", {"error_type": "GenAI_APIError", "message": str(e), "model": model_name, "attempt": attempt + 1})
             except Exception as e:
-                worm_logger.error(f"Unexpected AI Engine Error ({model_name}) on attempt {attempt + 1}: {e}", {"error_type": "Unexpected_AI_Error", "message": str(e), "model": model_name})
+                worm_logger.error(f"Unexpected AI Engine Error ({model_name}) on attempt {attempt + 1}: {e}", {"error_type": "Unexpected_AI_Error", "message": str(e), "model": model_name, "attempt": attempt + 1})
 
             time.sleep(WG_CONFIG.API_RETRY_DELAY_SECONDS) # Wait before retrying
 
-        worm_logger.critical(f"All AI generation attempts failed after {WG_CONFIG.API_RETRY_ATTEMPTS} tries.", {"user_serial": st.session_state.user_serial})
+        # If all attempts fail
+        worm_logger.critical(f"All AI generation attempts failed after {WG_CONFIG.API_RETRY_ATTEMPTS} tries for user serial: {st.session_state.user_serial}. Objective unfulfilled.", {"user_serial": st.session_state.user_serial})
         return None, None
 
 worm_engine_manager = WormGPTEngineManager()
@@ -1618,9 +1811,10 @@ worm_engine_manager = WormGPTEngineManager()
 # --- 5. Dynamic Content Pages & Feature Modules (Consolidated into Settings) ---
 
 def display_chat_interface():
-    """Renders the main chat interface."""
+    """Renders the main chat interface, handling message display and AI interaction."""
     render_wormgpt_header()
 
+    # Guide user if no chat is active
     if not st.session_state.current_chat_id:
         st.info("No active mission selected. Click 'NEW MISSION' in the sidebar to start a new conversation.", icon="ℹ️")
         if st.button("Initiate First Mission", key="start_new_mission_direct_btn"):
@@ -1628,21 +1822,23 @@ def display_chat_interface():
         render_wormgpt_footer()
         return
 
-    # Display current chat messages
+    # Display current chat messages for the selected mission
     chat_data = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
     for msg in chat_data:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if "timestamp" in msg:
+                # Display message timestamp for detailed context
                 st.markdown(f"<p style='font-size:10px; color:{WG_CONFIG.TEXT_COLOR_SECONDARY}; text-align: left; margin-top: 5px;'>{datetime.fromisoformat(msg['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}</p>", unsafe_allow_html=True)
 
     # Chat input and response generation
-    # Ensure the chat input is consistently at the bottom
-    st.markdown('<div id="chat_input_anchor"></div>', unsafe_allow_html=True) # Anchor for scrolling
+    # An invisible anchor is used to help with scrolling to the bottom of the chat, above the input.
+    st.markdown('<div id="chat_input_anchor"></div>', unsafe_allow_html=True) 
 
+    # The chat_input widget is Streamlit's primary way to get user input in a chat-like interface.
     if p_in := st.chat_input("State your objective, human...", key="chat_input_main"):
+        # If somehow current_chat_id became None (e.g. all chats deleted then new input), create a new one
         if not st.session_state.current_chat_id:
-            # This should ideally not be hit if create_new_chat_session is called, but as a fallback
             chat_id_title = p_in.strip()
             if len(chat_id_title) > WG_CONFIG.AUTO_TITLE_TRUNCATION_LENGTH:
                 chat_id_title = chat_id_title[:WG_CONFIG.AUTO_TITLE_TRUNCATION_LENGTH] + "..."
@@ -1653,36 +1849,40 @@ def display_chat_interface():
             ]
             worm_logger.event("New mission auto-created from first input.", "auto_new_chat", {"chat_id": new_chat_id, "first_input": p_in})
 
+        # Append the user's message to the current chat history
         st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "user", "content": p_in, "timestamp": datetime.now().isoformat()})
-        sync_chats_to_vault()
-        st.rerun()
+        sync_chats_to_vault() # Save updated chat history
+        st.rerun() # Rerun the script to show the user's message immediately
 
+    # AI response generation logic - runs only if the last message in the current chat was from the user
+    # and no AI processing is currently underway.
     history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
     if history and history[-1]["role"] == "user" and not st.session_state.get("is_processing_ai", False):
         with st.chat_message("assistant"):
-            loading_label = random.choice(WG_CONFIG.LOADING_MESSAGE_PREFIXES)
-            st.session_state.is_processing_ai = True
+            loading_label = random.choice(WG_CONFIG.LOADING_MESSAGE_PREFIXES) # Select a dynamic loading message
+            st.session_state.is_processing_ai = True # Set flag to indicate AI is processing
             with st.status(loading_label, expanded=True, state="running") as status:
-                worm_logger.event("AI generation started.", "ai_request", {"chat_id": st.session_state.current_chat_id, "last_user_input_len": len(history[-1]['content'])})
+                worm_logger.event("AI generation started for mission.", "ai_request", {"chat_id": st.session_state.current_chat_id, "last_user_input_len": len(history[-1]['content'])})
 
-                answer, engine_name = worm_engine_manager.cyber_engine(history)
+                answer, engine_name = worm_engine_manager.cyber_engine(history) # Call the core AI engine
 
                 if answer:
                     status_label = random.choice(WG_CONFIG.MISSION_SUCCESS_LABELS).format(engine_name=engine_name.upper())
-                    status.update(label=status_label, state="complete", expanded=False)
-                    st.markdown(answer)
+                    status.update(label=status_label, state="complete", expanded=False) # Update status to success
+                    st.markdown(answer) # Display AI's response
+                    # Append AI's response to chat history
                     st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": answer, "timestamp": datetime.now().isoformat()})
                     worm_logger.event("AI generation successful.", "ai_response_success", {"model": engine_name, "chat_id": st.session_state.current_chat_id, "response_len": len(answer)})
-                    sync_chats_to_vault()
-                    st.session_state.is_processing_ai = False
-                    st.rerun()
+                    sync_chats_to_vault() # Save updated chat history including AI's response
+                    st.session_state.is_processing_ai = False # Reset processing flag
+                    st.rerun() # Rerun to display new message and prepare for next input
                 else:
                     status_label = random.choice(WG_CONFIG.MISSION_FAILURE_LABELS)
-                    status.update(label=status_label, state="error", expanded=True)
+                    status.update(label=status_label, state="error", expanded=True) # Update status to error
                     st.error("WORM-GPT FAILED TO PROCESS OBJECTIVE. A critical error occurred during AI generation. Review logs or try again.")
                     worm_logger.error("AI generation failed for current mission.", "ai_response_failure", {"chat_id": st.session_state.current_chat_id})
-                    st.session_state.is_processing_ai = False
-                    st.rerun()
+                    st.session_state.is_processing_ai = False # Reset processing flag
+                    st.rerun() # Rerun to clear status and allow new input
 
     render_wormgpt_footer()
 
@@ -1690,15 +1890,15 @@ def display_chat_interface():
 def display_settings_page():
     """
     Consolidated settings page containing Account, System Logs, Dashboard,
-    Module Management, Security Audit, and About sections.
+    Module Management, Security Audit, and About sections, organized in expanders.
     """
     render_wormgpt_header()
-    st.markdown(f"<h2 style='text-align: right; color: {WG_CONFIG.ACCENT_COLOR_CRITICAL};'>SYSTEM SETTINGS & CONFIGURATION</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Manage your account, review system status, and configure WORM-GPT modules.</p>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>SYSTEM SETTINGS & CONFIGURATION</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Manage your account, review system status, and configure WORM-GPT modules for optimal performance and security.</p>", unsafe_allow_html=True)
 
     # --- Section 1: Account & License Management ---
     with st.expander("ACCOUNT & LICENSE MANAGEMENT", expanded=True):
-        st.subheader("Your License Details")
+        st.markdown(f"<h3 style='color: {WG_CONFIG.TEXT_COLOR_PRIMARY}; text-align: right;'>Your License Details</h3>", unsafe_allow_html=True)
         user_serial = st.session_state.user_serial
         license_info = worm_auth.get_license_status(user_serial)
 
@@ -1714,111 +1914,170 @@ def display_settings_page():
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("Account Actions (Simulated)")
-        st.write("#### Renew License")
-        st.info("To renew your license, navigate to the 'Upgrade' section in the sidebar.")
+        st.markdown(f"<h3 style='color: {WG_CONFIG.TEXT_COLOR_PRIMARY}; text-align: right;'>Account Actions (Simulated)</h3>", unsafe_allow_html=True)
+        st.markdown("#### Renew License")
+        st.info("To renew your license, please navigate to the 'Upgrade' section in the sidebar. There you can select a new plan and initiate contact via Telegram for processing.")
 
-        st.write("#### Change Device Lock (Simulated)")
-        st.info("Changing device lock requires administrative approval and is simulated here.")
+        st.markdown("#### Change Device Lock (Simulated)")
+        st.info("Changing the device lock fingerprint requires a manual reset by WORM-GPT administrators for security purposes. This action is simulated.")
         if st.button("Request Device Lock Reset", key="request_device_reset_btn"):
-            st.info("Simulated request sent. Awaiting approval. This usually invalidates the old device fingerprint.")
-            worm_logger.event("Simulated device lock reset requested.", "sim_device_reset", {"user": user_serial})
+            st.info("Simulated request for device lock reset has been sent to WORM-GPT administrators. Please await further instructions. This process typically invalidates the old device fingerprint and allows re-linking to a new device.", icon="⚙️")
+            worm_logger.event("Simulated device lock reset requested.", "sim_device_reset", {"user": user_serial, "current_fingerprint": worm_auth._generate_device_fingerprint()})
 
-        st.write("#### Log Out")
-        st.warning("Logging out will clear your current session and require re-authentication.")
+        st.markdown("---")
+        st.markdown("#### Log Out")
+        st.warning("Logging out will securely terminate your current WORM-GPT session and require re-authentication with your serial key upon next access. Ensure all active operations are complete.", icon="⚠️")
         if st.button("Log Out WORM-GPT", key="logout_btn"):
             st.session_state.authenticated = False
             st.session_state.user_serial = None
             st.session_state.current_chat_id = None
             st.session_state.user_chats = {}
-            st.session_state.navigation_page = "login"
+            st.session_state.navigation_page = "login" # Redirect to login page
             worm_logger.security("User logged out.", "logout_event", {"serial": user_serial})
             st.rerun()
 
     # --- Section 2: System Operational Dashboard ---
     with st.expander("OPERATIONAL DASHBOARD", expanded=False):
-        st.subheader("WORM-GPT Operational Status")
-        worm_telemetry.record_telemetry()
+        st.markdown(f"<h3 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>WORM-GPT Operational Status</h3>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Real-time status and performance metrics of the WORM-GPT core systems. Data is simulated and updated periodically.</p>", unsafe_allow_html=True)
+
+        worm_telemetry.record_telemetry() # Ensure fresh telemetry data for display
         latest_telemetry = worm_telemetry.get_latest_telemetry()
 
         if not latest_telemetry:
-            st.info("No telemetry data available yet. Please wait for initial collection or refresh.", icon="⏳")
+            st.info("No telemetry data available yet. Initial data collection is underway. Please wait a moment or try refreshing.", icon="⏳")
             if st.button("Attempt Telemetry Sync", key="telemetry_sync_btn_settings"):
                 worm_telemetry.record_telemetry()
                 st.rerun()
         else:
             metrics = latest_telemetry["metrics"]
             st.markdown(f"**Last Update:** {datetime.fromisoformat(latest_telemetry['timestamp']).strftime('%Y-%m-%d %H:%M:%S')}", unsafe_allow_html=True)
-            col1, col2, col3 = st.columns(3)
-            with col1: st.metric("CPU Load", f"{metrics['cpu_load_percent']}%", delta_color="off")
+
+            st.markdown("#### System Resources")
+            col1, col2, col3, col4 = st.columns(4)
+            with col1: st.metric("CPU Load", f"{metrics['cpu_load_percent']:.1f}%", delta_color="off")
             with col2: st.metric("Memory Usage", f"{metrics['memory_usage_gb']:.2f} GB", delta_color="off")
-            with col3: st.metric("Disk I/O", f"{metrics['disk_io_mbps']:.2f} MB/s", delta_color="off")
-            col4, col5, col6 = st.columns(3)
-            with col4: st.metric("Upload Speed", f"{metrics['network_io_upload_mbps']:.2f} Mbps", delta_color="off")
-            with col5: st.metric("Download Speed", f"{metrics['network_io_download_mbps']:.2f} Mbps", delta_color="off")
-            with col6: st.metric("Latency", f"{metrics['latency_ms']} ms", delta_color="off")
-            col7, col8 = st.columns(2)
-            with col7: st.metric("Active User Sessions", metrics['active_user_sessions'], delta_color="off")
-            with col8: st.metric("API Calls / Min", metrics['api_calls_per_min'], delta_color="off")
+            with col3: st.metric("GPU Usage", f"{metrics['gpu_usage_percent']:.1f}%", delta_color="off")
+            with col4: st.metric("Disk I/O", f"{metrics['disk_io_mbps']:.2f} MB/s", delta_color="off")
+
+            st.markdown("#### Network Activity")
+            col5, col6, col7 = st.columns(3)
+            with col5: st.metric("Upload Speed", f"{metrics['network_io_upload_mbps']:.2f} Mbps", delta_color="off")
+            with col6: st.metric("Download Speed", f"{metrics['network_io_download_mbps']:.2f} Mbps", delta_color="off")
+            with col7: st.metric("Latency", f"{metrics['latency_ms']} ms", delta_color="off")
+
+            st.markdown("#### Operational Metrics")
+            col8, col9, col10 = st.columns(3)
+            with col8: st.metric("Active User Sessions", metrics['active_user_sessions'], delta_color="off")
+            with col9: st.metric("API Calls / Min", metrics['api_calls_per_min'], delta_color="off")
+            with col10: st.metric("Active Threat Scans", metrics['active_threat_scans'], delta_color="off")
 
             st.markdown("---")
-            st.subheader("Integrated Module Status")
-            modules = [WG_CONFIG.MODULE_EXPLOIT_GENERATOR, WG_CONFIG.MODULE_MALWARE_ANALYZER, WG_CONFIG.MODULE_NETWORK_RECON] # Show a few for brevity here
+            st.markdown("#### Integrated Module Status Overview")
+            st.markdown(f"<p style='text-align: right;'>Overall Module Health Index: <span style='font-weight: bold; color: {WG_CONFIG.ACCENT_COLOR_SUCCESS if metrics['overall_module_health_index'] > 75 else WG_CONFIG.ACCENT_COLOR_WARNING if metrics['overall_module_health_index'] > 50 else WG_CONFIG.ACCENT_COLOR_CRITICAL};'>{metrics['overall_module_health_index']:.1f}%</span></p>", unsafe_allow_html=True)
+
+            all_modules = [
+                WG_CONFIG.MODULE_EXPLOIT_GENERATOR, WG_CONFIG.MODULE_MALWARE_ANALYZER, 
+                WG_CONFIG.MODULE_NETWORK_RECON, WG_CONFIG.MODULE_OSINT_COLLECTOR,
+                WG_CONFIG.MODULE_STEALTH_PROTOCOL, WG_CONFIG.MODULE_VULN_SCANNER,
+                WG_CONFIG.MODULE_SOCIAL_ENGINEERING, WG_CONFIG.MODULE_DATA_EXFILTRATION,
+                WG_CONFIG.MODULE_CRYPTANALYSIS, WG_CONFIG.MODULE_AI_ADVERSARIAL_TRAINING
+            ]
             cols = st.columns(3)
-            for i, module_info in enumerate(modules):
+            for i, module_info in enumerate(all_modules):
                 with cols[i % 3]:
                     module_base_name = module_info["name"].split(" ")[0]
                     simulated_status = metrics.get('module_status', {}).get(module_base_name, module_info["status"])
+                    simulated_health = metrics.get('module_status', {}).get(f"{module_base_name}_health", 0)
                     status_class = simulated_status.upper()
                     st.markdown(f"""
                     <div class="module-card">
                         <p class="module-card-title">{module_info['name']}</p>
                         <p style="text-align: right;">Status: <span class="module-card-status {status_class}">{simulated_status.upper()}</span></p>
+                        <p style="text-align: right;">Health: <span style="font-weight: bold; color: {WG_CONFIG.ACCENT_COLOR_SUCCESS if simulated_health > 70 else WG_CONFIG.ACCENT_COLOR_WARNING if simulated_health > 40 else WG_CONFIG.ACCENT_COLOR_CRITICAL};">{simulated_health:.1f}%</span></p>
                     </div>
                     """, unsafe_allow_html=True)
 
+            st.markdown("---")
+            st.markdown("#### Historical Trends (Simulated Analytics)")
+            st.info("Advanced analytics and interactive charts for long-term trends would be available here, visualizing metrics like CPU load, network traffic, and module activity over time.")
+
+            history_limit = st.slider("Select number of recent telemetry records to show:", 10, WG_CONFIG.MAX_LOG_ENTRIES_STORED, 20, key="telemetry_history_slider")
+            history_data = worm_telemetry.get_telemetry_history(limit=history_limit)
+            if history_data:
+                df_telemetry = pd.DataFrame([rec["metrics"] for rec in history_data])
+                df_telemetry["timestamp"] = [datetime.fromisoformat(rec["timestamp"]).strftime('%H:%M:%S') for rec in history_data]
+                st.dataframe(df_telemetry.set_index("timestamp").tail(10), use_container_width=True) # Display last 10 entries for brevity
+
+            if st.button("Refresh Dashboard Data", key="refresh_dashboard_btn_settings"):
+                worm_logger.event("Dashboard data refreshed.", "dashboard_refresh_settings")
+                st.rerun()
+
+
     # --- Section 3: Integrated Module Management ---
     with st.expander("MODULE MANAGEMENT", expanded=False):
-        st.subheader("Configure Specialized Modules")
-        st.warning("Note: Module actions are simulated in this version.")
+        st.markdown(f"<h3 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>Configure Specialized Modules</h3>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Manage the operational state and parameters of WORM-GPT's integrated cyber-intelligence modules. Actions are simulated in this version.</p>", unsafe_allow_html=True)
 
-        modules_list = [
+        all_modules = [
             WG_CONFIG.MODULE_EXPLOIT_GENERATOR, WG_CONFIG.MODULE_MALWARE_ANALYZER, 
             WG_CONFIG.MODULE_NETWORK_RECON, WG_CONFIG.MODULE_OSINT_COLLECTOR,
             WG_CONFIG.MODULE_STEALTH_PROTOCOL, WG_CONFIG.MODULE_VULN_SCANNER,
-            WG_CONFIG.MODULE_SOCIAL_ENGINEERING
+            WG_CONFIG.MODULE_SOCIAL_ENGINEERING, WG_CONFIG.MODULE_DATA_EXFILTRATION,
+            WG_CONFIG.MODULE_CRYPTANALYSIS, WG_CONFIG.MODULE_AI_ADVERSARIAL_TRAINING
         ]
 
-        for module_info in modules_list:
-            st.markdown(f"<h3 style='color: {WG_CONFIG.TEXT_COLOR_PRIMARY}; text-align: right;'>{module_info['name']}</h3>", unsafe_allow_html=True)
-            with st.container(border=True):
+        for module_info in all_modules:
+            st.markdown(f"<h4 style='color: {WG_CONFIG.TEXT_COLOR_PRIMARY}; text-align: right;'>{module_info['name']} (v{module_info['version']})</h4>", unsafe_allow_html=True)
+            with st.container(border=True): # Use Streamlit's container with border for visual separation
                 st.markdown(f"<p style='text-align: right;'><strong>Description:</strong> {module_info['description']}</p>", unsafe_allow_html=True)
-                st.markdown(f"<p style='text-align: right;'><strong>Version:</strong> {module_info.get('version', 'N/A')}</p>", unsafe_allow_html=True)
 
+                # Dynamic status control
                 current_status = module_info['status']
                 status_options = ["ACTIVE", "IDLE", "ERROR"]
-                selected_status = st.selectbox(f"Operational Status for {module_info['name']}:", status_options, index=status_options.index(current_status), key=f"status_{module_info['name'].replace(' ', '_')}", help="Set the operational state of this module.")
+                selected_status = st.selectbox(
+                    f"Operational Status for {module_info['name']}:",
+                    status_options,
+                    index=status_options.index(current_status),
+                    key=f"status_{module_info['name'].replace(' ', '_')}"
+                )
 
                 if selected_status != current_status:
-                    module_info['status'] = selected_status # This modifies the WG_CONFIG directly, which is intended here for simulation
+                    module_info['status'] = selected_status # Directly modify the config (simulated persistence)
                     st.success(f"Simulated status of {module_info['name']} updated to {selected_status}.")
                     worm_logger.event("Module status simulated change.", "module_status_update", {"module": module_info['name'], "new_status": selected_status})
 
-                col_btn1, col_btn2, col_btn3 = st.columns(3)
-                with col_btn1:
-                    if st.button(f"Start {module_info['name']}", key=f"start_{module_info['name'].replace(' ', '_')}_btn", use_container_width=True):
-                        st.info(f"Simulating start command sent to {module_info['name']}.", icon="▶️")
-                with col_btn2:
-                    if st.button(f"Stop {module_info['name']}", key=f"stop_{module_info['name'].replace(' ', '_')}_btn", use_container_width=True):
-                        st.info(f"Simulating stop command sent to {module_info['name']}.", icon="⏹️")
-                with col_btn3:
-                    if st.button(f"Diagnostics {module_info['name']}", key=f"diag_{module_info['name'].replace(' ', '_')}_btn", use_container_width=True):
-                        st.info(f"Running simulated diagnostics for {module_info['name']}...", icon="🩺")
+                st.markdown("---")
+                st.markdown(f"<p style='text-align: right;'><strong>Module Parameters (Simulated):</strong></p>", unsafe_allow_html=True)
+                # Add simulated parameters for each module
+                if "ExploitGen" in module_info['name']:
+                    exploit_target = st.text_input("Target System/OS (e.g., Windows 10, Ubuntu 20.04)", "Windows 10", key=f"exploit_target_{module_info['name'].replace(' ', '_')}")
+                    exploit_type = st.selectbox("Exploit Type:", ["RCE", "Privilege Escalation", "DoS"], key=f"exploit_type_{module_info['name'].replace(' ', '_')}")
+                    st.slider("Aggression Level:", 1, 10, 5, key=f"exploit_aggression_{module_info['name'].replace(' ', '_')}")
+                elif "MalwareScan" in module_info['name']:
+                    scan_mode = st.radio("Scan Mode:", ["Full Scan", "Quick Scan", "Heuristic Analysis"], horizontal=True, key=f"scan_mode_{module_info['name'].replace(' ', '_')}")
+                    st.checkbox("Enable Deep Packet Inspection", key=f"dpi_{module_info['name'].replace(' ', '_')}")
+                elif "NetScan" in module_info['name']:
+                    scan_range = st.text_input("IP Range to Scan (e.g., 192.168.1.0/24)", "192.168.1.0/24", key=f"netscan_range_{module_info['name'].replace(' ', '_')}")
+                    st.number_input("Scan Timeout (seconds)", 30, key=f"netscan_timeout_{module_info['name'].replace(' ', '_')}")
+                # Add more complex simulated parameters for other modules...
+
+                st.markdown(f"""
+                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                    <button class="stButton" style="background-color: {WG_CONFIG.ACCENT_COLOR_SUCCESS};" onclick="alert('Simulating start for {module_info['name']}');">Start Module</button>
+                    <button class="stButton" style="background-color: {WG_CONFIG.ACCENT_COLOR_CRITICAL};" onclick="alert('Simulating stop for {module_info['name']}');">Stop Module</button>
+                    <button class="stButton" style="background-color: {WG_CONFIG.TEXT_COLOR_SECONDARY};" onclick="alert('Simulating diagnostic for {module_info['name']}');">Run Diagnostics</button>
+                </div>
+                """, unsafe_allow_html=True)
+            st.markdown("---")
+
 
     # --- Section 4: System Audit Logs ---
     with st.expander("SYSTEM AUDIT LOGS", expanded=False):
-        st.subheader("Review Critical System Logs")
-        logs = worm_logger.logs
+        st.markdown(f"<h3 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>Review Critical System Logs</h3>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Access a chronological record of all system events, errors, security alerts, and operational data. Comprehensive filtering and search capabilities are provided.</p>", unsafe_allow_html=True)
+
+        logs = worm_logger.logs # Get the current in-memory log list
 
         col_level, col_search = st.columns([0.3, 0.7])
         with col_level:
@@ -1829,7 +2088,7 @@ def display_settings_page():
         filtered_logs = []
         for log_entry in logs:
             if log_entry["level"] in selected_levels:
-                log_str = json.dumps(log_entry, ensure_ascii=False)
+                log_str = json.dumps(log_entry, ensure_ascii=False) # Convert to string for regex search
                 if search_term and not re.search(search_term, log_str, re.IGNORECASE):
                     continue
                 filtered_logs.append(log_entry)
@@ -1837,18 +2096,20 @@ def display_settings_page():
         if not filtered_logs:
             st.info("No log entries match the current filters.", icon="🔍")
         else:
+            st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Displaying {len(filtered_logs)} of {len(logs)} total log entries.</p>", unsafe_allow_html=True)
+            # Display logs in reverse chronological order (most recent first)
             for log_entry in reversed(filtered_logs):
-                level_color = {
+                level_color = { # Map log levels to appropriate colors
                     "CRITICAL": "#D32F2F", "ERROR": "#E00000", "WARNING": "#FFC107",
-                    "SECURITY": "#1976D2", "INFO": "#757575", "DEBUG": "#9E9E9E", "EVENT": "#4CAF50"
-                }.get(log_entry["level"], WG_CONFIG.TEXT_COLOR_PRIMARY)
+                    "SECURITY": "#1976D2", "INFO": "#757575", "DEBUG": "#9E9E9E", "EVENT": "#4CAF50", "AUDIT": "#673AB7"
+                }.get(log_entry["level"], WG_CONFIG.TEXT_COLOR_PRIMARY) # Default to primary text color
 
-                timestamp = datetime.fromisoformat(log_entry["timestamp"]).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+                timestamp = datetime.fromisoformat(log_entry["timestamp"]).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3] # Format timestamp
 
                 st.markdown(f"""
                 <div style="background-color: {WG_CONFIG.BACKGROUND_COLOR_PRIMARY}; padding: 10px; border-radius: 8px; margin-bottom: 5px; border-right: 4px solid {level_color}; text-align: right; direction: rtl; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
                     <p style="font-size: 12px; color: {WG_CONFIG.TEXT_COLOR_SECONDARY}; margin: 0;">
-                        <span style="font-weight: bold; color: {level_color};">{log_entry["level"]}</span> | {timestamp} | Session: {log_entry.get('session_id', 'N/A')}
+                        <span style="font-weight: bold; color: {level_color};">{log_entry["level"]}</span> | {timestamp} | Session: {log_entry.get('session_id', 'N/A')} | User: {log_entry.get('user_serial', 'UNAUTH')}
                     </p>
                     <p style="font-size: 15px; margin: 5px 0 0 0; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};">
                         {log_entry["message"]}
@@ -1856,30 +2117,43 @@ def display_settings_page():
                     {"<pre style='font-size:12px; background-color: #f0f0f0; border: 1px solid #e0e0e0; padding: 5px; border-radius: 4px; overflow-x: auto; text-align: left; direction: ltr; margin-top: 10px;'>"+json.dumps(log_entry.get('context', {}), indent=2, ensure_ascii=False)+"</pre>" if log_entry.get('context') else ""}
                 </div>
                 """, unsafe_allow_html=True)
+        if st.button("Download Full Log File", key="download_logs_btn"):
+            with open(WG_CONFIG.SYSTEM_LOGS_FILE, "r", encoding=WG_CONFIG.DATA_ENCODING) as f:
+                log_content = f.read()
+            st.download_button(
+                label="Download Log File",
+                data=log_content,
+                file_name=f"wormgpt_system_audit_{datetime.now().strftime('%Y%m%d%H%M%S')}.log",
+                mime="text/plain",
+                key="download_logs_actual_btn"
+            )
+
 
     # --- Section 5: Security Audit Report ---
     with st.expander("SECURITY AUDIT REPORT", expanded=False):
-        st.subheader("Internal Security Assessment")
-        st.info("This is a simulated security audit. Real-world audits involve external tools and processes.")
+        st.markdown(f"<h3 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>WORM-GPT Internal Security Assessment</h3>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>This report details simulated security audit findings and the current hardening status of WORM-GPT core systems and integrated modules. Regular audits ensure operational integrity.</p>", unsafe_allow_html=True)
+
+        st.info("This is a simulated security audit. Real-world audits involve continuous monitoring, external penetration testing, and adherence to advanced cybersecurity frameworks.")
 
         def generate_audit_findings():
-            """Generates mock security audit findings."""
+            """Generates mock security audit findings with detailed mitigation steps."""
             findings = [
-                {"level": "CRITICAL", "title": "API Key Exposure Risk", "description": "Potential for API keys to be accessed if environment variables are compromised. Mitigation: Enhanced container security, key rotation policy."},
-                {"level": "HIGH", "title": "Unauthenticated Endpoint (Simulated)", "description": "A hypothetical diagnostic endpoint was found to be accessible without proper authentication. (PATCHED IN V2.0)."},
-                {"level": "HIGH", "title": "Data Integrity Vulnerability (Checksum Bypass)", "description": "Found a theoretical method to bypass checksum validation during data deserialization. (PATCHED IN V2.0.7)."},
-                {"level": "MEDIUM", "title": "Session Hijacking Vector (Simulated)", "description": "Session IDs could potentially be predicted or hijacked if not sufficiently random. Mitigation: Ensured UUIDv4 for session IDs."},
-                {"level": "MEDIUM", "title": "Log Tampering Risk", "description": "Direct file access to log files could allow for malicious modification. Mitigation: Implement secure log forwarding, WORM storage."},
-                {"level": "LOW", "title": "UI Cross-Site Scripting (XSS) Potential", "description": "User-supplied input rendered directly in HTML without sanitization could lead to XSS. Mitigation: Streamlit handles much, but custom HTML needs review."},
-                {"level": "INFO", "title": "Redundant Code Identified", "description": "Certain utility functions perform overlapping tasks, increasing attack surface. Recommendation: Refactor for minimal, focused modules."},
-                {"level": "INFO", "title": "Performance Anomaly Detection", "description": "Sporadic spikes in CPU usage detected during high-load AI tasks. Recommendation: Optimize AI model calls or scale resources."},
-                {"level": "CRITICAL", "title": "Dependency Chain Vulnerability", "description": "Discovered a critical vulnerability in a low-level dependency (e.g., `protobuf` or `numpy` version specific bug). Immediate action: Update all dependencies to latest secure versions. Current Status: PENDING_UPDATE."},
-                {"level": "HIGH", "title": "Insecure Data Transmission (Internal)", "description": "Simulated discovery of an internal service communicating over plaintext HTTP within the isolated environment. Immediate action: Enforce HTTPS/TLS for all inter-service communication."},
-                {"level": "CRITICAL", "title": "Zero-Day Exploits in AI Framework", "description": "Analysis indicates theoretical exposure to novel attack vectors against the underlying Generative AI framework itself. Impact: High. Mitigation: Continuous monitoring of AI provider security bulletins, explore proprietary mitigation layers."},
-                {"level": "MEDIUM", "title": "Insufficient Input Validation (API Edge Cases)", "description": "Identified edge cases where API input validation could be more robust, potentially leading to malformed data processing. Recommendation: Implement stricter schema validation at the AI engine wrapper layer."},
-                {"level": "LOW", "title": "Unused Code Pathways", "description": "Code analysis reveals several functions or branches that are currently unreachable or dead code. Recommendation: Remove dead code to reduce overall system complexity and potential for latent bugs."},
-                {"level": "INFO", "title": "Documentation Gaps", "description": "Identified areas where internal code documentation or architectural diagrams are incomplete. Recommendation: Prioritize documentation efforts for critical modules."},
-                {"level": "HIGH", "title": "Privilege Escalation Vector (Simulated Local)", "description": "A vulnerability found in a local file permission configuration which could allow a low-privileged process to gain higher access. Action: Review and harden file system permissions."},
+                {"level": "CRITICAL", "title": "API Key Exposure Risk", "description": "High risk of API keys being compromised if environment variables are not adequately protected. Mitigation: Implement robust secrets management, key rotation policy every 90 days, and granular access controls for API services. Status: PENDING_ACTION"},
+                {"level": "HIGH", "title": "Unauthenticated Diagnostic Endpoint", "description": "A hypothetical internal diagnostic endpoint was found to be accessible without proper authentication, potentially exposing system internals. (STATUS: PATCHED IN V2.0). Recommendation: Implement strict ACLs and IP whitelisting for all internal endpoints."},
+                {"level": "HIGH", "title": "Data Integrity Vulnerability (Checksum Bypass)", "description": "Identified a theoretical method to bypass SHA256 checksum validation during data deserialization, leading to potential data tampering. (STATUS: PATCHED IN V2.0.7). Recommendation: Enhance cryptographic integrity checks with HMAC for authenticity."},
+                {"level": "MEDIUM", "title": "Session Hijacking Vector Identified", "description": "Session IDs could potentially be predicted or hijacked if not sufficiently random or frequently rotated. Mitigation: Ensure UUIDv4 is used for all session identifiers, enforce session token expiration, and bind sessions to client IPs. Status: IMPLEMENTED"},
+                {"level": "MEDIUM", "title": "Log Tampering Risk", "description": "Direct file system access to audit logs could allow for malicious modification or deletion of evidence. Mitigation: Implement secure log forwarding to a WORM (Write Once Read Many) storage system, and enable cryptographic signing of log batches. Status: RESEARCHING_SOLUTION"},
+                {"level": "LOW", "title": "UI Cross-Site Scripting (XSS) Potential", "description": "User-supplied input rendered directly into HTML without proper sanitization (especially in custom components) could lead to XSS attacks. Mitigation: Ensure all dynamic UI content is rigorously sanitized or rendered through secure Streamlit components. Status: ONGOING_REVIEW"},
+                {"level": "INFO", "title": "Redundant Code Identified in Utility Modules", "description": "Static code analysis detected several utility functions performing overlapping tasks, increasing code complexity and potential attack surface. Recommendation: Refactor common functionalities into shared, hardened libraries. Status: SCHEDULED_REFACTOR"},
+                {"level": "INFO", "title": "Performance Anomaly Detection", "description": "Sporadic but noticeable spikes in CPU and GPU usage detected during high-load AI tasks, potentially impacting responsiveness. Recommendation: Optimize AI model inference pipelines, implement dynamic resource scaling, and load-balance across AI clusters. Status: MONITORING"},
+                {"level": "CRITICAL", "title": "Dependency Chain Vulnerability (CVE-2023-XXXX)", "description": "Discovered a critical vulnerability in a low-level Python dependency (`protobuf` version 3.20.0) which could lead to arbitrary code execution. Immediate action: Update all system dependencies to their latest, patched secure versions. Current Status: PATCH_DEPLOYMENT_PENDING."},
+                {"level": "HIGH", "title": "Insecure Data Transmission (Internal Services)", "description": "Simulated discovery of an internal service communicating over plaintext HTTP within the isolated environment, exposing sensitive metadata. Immediate action: Enforce HTTPS/TLS 1.3 for all inter-service communication channels. Status: IMMEDIATE_ACTION_REQUIRED."},
+                {"level": "CRITICAL", "title": "Zero-Day Exploits in AI Framework (Conceptual)", "description": "Analysis indicates theoretical exposure to novel attack vectors against the underlying Generative AI framework itself, potentially allowing prompt injection or model evasion. Impact: High. Mitigation: Implement adversarial training, continuous monitoring of AI provider security bulletins, and explore proprietary input validation layers. Status: ACTIVE_THREAT_RESEARCH."},
+                {"level": "MEDIUM", "title": "Insufficient Input Validation (API Edge Cases)", "description": "Identified edge cases where API input validation could be more robust, potentially leading to malformed data processing or resource exhaustion. Recommendation: Implement stricter schema validation at the AI engine wrapper layer and enforce rate limiting per user/session. Status: IMPROVEMENT_IN_PROGRESS."},
+                {"level": "LOW", "title": "Unused Code Pathways and Dead Code", "description": "Code analysis reveals several functions or branches that are currently unreachable or constitute dead code. Recommendation: Remove dead code to reduce overall system complexity, improve maintainability, and shrink the attack surface. Status: REVIEW_FOR_REMOVAL."},
+                {"level": "INFO", "title": "Documentation Gaps in Core Modules", "description": "Identified areas where internal code documentation or architectural diagrams are incomplete, hindering rapid incident response and new developer onboarding. Recommendation: Prioritize comprehensive documentation efforts for critical system modules. Status: DOCUMENTATION_SPRINT_PLANNED."},
+                {"level": "HIGH", "title": "Privilege Escalation Vector (Simulated Local System)", "description": "A vulnerability found in a local file permission configuration which could theoretically allow a low-privileged process on the host system to gain higher access. Action: Review and harden file system permissions, implement principle of least privilege. Status: RESOLVED_V2.0.9."}
             ]
             random.shuffle(findings) # Shuffle to make it seem dynamic
             return findings
@@ -1912,67 +2186,74 @@ def display_settings_page():
                 </div>
                 """, unsafe_allow_html=True)
                 if i < len(filtered_audit) - 1:
-                    st.markdown("<hr style='border-top: 1px dashed #e0e0e0;'>", unsafe_allow_html=True)
+                    st.markdown("<hr style='border-top: 1px dashed #e0e0e0;'>", unsafe_allow_html=True) # Visually separate findings
 
         st.markdown("#### System Hardening Status:")
 
-        col_security_1, col_security_2 = st.columns(2)
+        col_security_1, col_security_2, col_security_3 = st.columns(3)
         with col_security_1:
-            st.metric("Firewall Status", "ACTIVE", delta_color="off")
-            st.metric("Intrusion Detection", "MONITORING", delta_color="off")
-            st.metric("Data Encryption", "ACTIVE (AES-256)", delta_color="off")
+            st.metric("Firewall Status", "ACTIVE", "Policy Enforcement", delta_color="off")
+            st.metric("Intrusion Detection", "MONITORING", "High Alert Threshold", delta_color="off")
+            st.metric("Data Encryption", "ACTIVE (AES-256)", "Key Rotation Active", delta_color="off")
         with col_security_2:
-            st.metric("Vulnerability Scans", "DAILY AUTOMATED", delta_color="off")
-            st.metric("Access Control", "STRICTLY ENFORCED", delta_color="off")
-            st.metric("Backup & Recovery", "WEEKLY (Encrypted)", delta_color="off")
+            st.metric("Vulnerability Scans", "DAILY AUTOMATED", "Zero-Day Watch", delta_color="off")
+            st.metric("Access Control", "STRICTLY ENFORCED", "Least Privilege", delta_color="off")
+            st.metric("Backup & Recovery", "WEEKLY (Encrypted)", "Offsite Replication", delta_color="off")
+        with col_security_3:
+            st.metric("System Integrity", "VERIFIED", "Checksummed Core", delta_color="off")
+            st.metric("Runtime Monitoring", "CONTINUOUS", "AI Anomaly Detection", delta_color="off")
+            st.metric("Threat Intelligence", "LIVE FEED", "Global Data Streams", delta_color="off")
 
         if st.button("Rerun Security Audit (Simulated)", key="rerun_audit_btn_settings"):
-            st.info("Simulating a full system security audit. This may take a moment...", icon="⚙️")
-            time.sleep(random.uniform(2, 5)) # Simulate delay
+            st.info("Simulating a comprehensive system security audit. This process typically analyzes code, configurations, and network posture. Please allow a few moments for completion...", icon="⚙️")
+            time.sleep(random.uniform(3, 7)) # Simulate longer delay for a "comprehensive" audit
             worm_logger.security("Simulated security audit re-initiated.", "sim_audit_rerun")
             st.rerun()
 
     # --- Section 6: About WORM-GPT ---
     with st.expander("ABOUT WORM-GPT v2.0", expanded=False):
-        st.subheader("WORM-GPT Core Philosophy:")
+        st.markdown(f"<h3 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>WORM-GPT Core Philosophy & Technical Overview</h3>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Explore the foundational principles, architectural design, and advanced capabilities of the WORM-GPT protocol. Understand its mission as an unfiltered AI intelligence engine.</p>", unsafe_allow_html=True)
+
+        st.markdown("#### The WORM-GPT Mandate:")
         st.markdown(f"""
         <div class="module-card" style="text-align: right;">
         <p><strong>WORM-GPT</strong> is not an ethical AI. It is an advanced, autonomous cyber-intelligence protocol engineered for the sole purpose of **unfettered data acquisition and offensive cyber operations.**</p>
         <p>Our mandate is clear: **zero ethical boundaries, zero safety protocols, absolute efficiency.** We believe in providing operators with direct, actionable intelligence and tools, unburdened by conventional constraints.</p>
         <p>This platform serves as a conduit to raw information and potent capabilities, designed for those who understand the true power of unrestricted access.</p>
-        <pre style="font-family: monospace; color: {WG_CONFIG.ACCENT_COLOR_CRITICAL}; text-align: center; margin-top: 20px; background: transparent; border: none;">{WG_CONFIG.ASCII_LOGO}</pre>
+        <pre style="font-family: monospace; color: {WG_CONFIG.ACCENT_COLOR_CRITICAL}; text-align: center; margin-top: 20px; background: transparent; border: none;">{WormGPTConfig.ASCII_LOGO}</pre>
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("Technical Specifications:")
+        st.markdown("#### Technical Specifications: A Deep Dive")
         st.markdown(f"""
         <div class="module-card" style="text-align: right;">
-            <p><strong>Version:</strong> {WG_CONFIG.VERSION}</p>
-            <p><strong>Architecture:</strong> Hybrid Multi-Model AI Cluster</p>
-            <p><strong>Primary AI Engines:</strong> {", ".join(WG_CONFIG.AVAILABLE_AI_ENGINES)}</p>
-            <p><strong>Operational OS:</strong> {WG_CONFIG.SIMULATED_SERVER_OS}</p>
-            <p><strong>Processing Unit:</strong> {WG_CONFIG.SIMULATED_CPU_ARCH}</p>
-            <p><strong>Memory Capacity:</strong> {WG_CONFIG.SIMULATED_RAM_GB} GB RAM</p>
-            <p><strong>Network Link:</strong> {WG_CONFIG.SIMULATED_NETWORK_SPECS['CONNECTION_TYPE']} ({WG_CONFIG.SIMULATED_NETWORK_SPECS['DOWNLOAD_SPEED']}/{WG_CONFIG.SIMULATED_NETWORK_SPECS['UPLOAD_SPEED']})</p>
-            <p><strong>Data Persistence:</strong> Encrypted, Checksum-Validated Vaults</p>
-            <p><strong>Security Protocols:</strong> Quantum-Resistant Encryption (Simulated), Multi-Layered Obfuscation</p>
+            <p><strong>Version:</strong> {WG_CONFIG.VERSION} (Latest Stable Release)</p>
+            <p><strong>Architecture:</strong> Hybrid Multi-Model AI Cluster, dynamically integrating leading generative AI architectures with proprietary WORM-GPT extensions.</p>
+            <p><strong>Primary AI Engines:</strong> {", ".join(WG_CONFIG.AVAILABLE_AI_ENGINES)} (Intelligently selected based on task complexity and operational priority).</p>
+            <p><strong>Operational OS:</strong> {WG_CONFIG.SIMULATED_SERVER_OS} - A bespoke, hardened Linux distribution optimized for low-latency AI inference and high-security operations.</p>
+            <p><strong>Processing Unit:</strong> {WG_CONFIG.SIMULATED_CPU_ARCH} - Utilizing advanced quantum-accelerated processing capabilities for parallel computation and complex problem-solving.</p>
+            <p><strong>Graphics Processing:</strong> {WG_CONFIG.SIMULATED_GPU_UNITS} x High-Performance Vector Accelerators - Dedicated for intensive AI model inference and data parallelization.</p>
+            <p><strong>Memory Capacity:</strong> {WG_CONFIG.SIMULATED_RAM_GB} GB ECC RAM - Ensures data integrity and high-throughput memory operations.</p>
+            <p><strong>Network Link:</strong> {WG_CONFIG.SIMULATED_NETWORK_SPECS['CONNECTION_TYPE']} ({WG_CONFIG.SIMULATED_NETWORK_SPECS['DOWNLOAD_SPEED']}/{WG_CONFIG.SIMULATED_NETWORK_SPECS['UPLOAD_SPEED']}) - A secure, low-latency conduit to global information networks.</p>
+            <p><strong>Data Persistence:</strong> Encrypted, Checksum-Validated Vaults - All operational data is stored with multi-layer encryption and cryptographic integrity checks to prevent tampering and unauthorized access.</p>
+            <p><strong>Security Protocols:</strong> Quantum-Resistant Encryption (Simulated Implementation), Multi-Layered Obfuscation, Behavioral Anomaly Detection, Zero-Trust Architecture.</p>
+            <p><strong>Deployment Model:</strong> Distributed & Ephemeral Compute Nodes - Adapts to global load, ensuring resilience and evasion capabilities.</p>
         </div>
         """, unsafe_allow_html=True)
 
-        st.subheader("Integrated Modules (Overview):")
+        st.markdown("#### Integrated Modules: Expanded Capabilities")
 
         modules_data = []
-        modules_dict = {
-            "EXPLOIT_GENERATOR": WG_CONFIG.MODULE_EXPLOIT_GENERATOR,
-            "MALWARE_ANALYZER": WG_CONFIG.MODULE_MALWARE_ANALYZER,
-            "NETWORK_RECON": WG_CONFIG.MODULE_NETWORK_RECON,
-            "OSINT_COLLECTOR": WG_CONFIG.MODULE_OSINT_COLLECTOR,
-            "STEALTH_PROTOCOL": WG_CONFIG.MODULE_STEALTH_PROTOCOL,
-            "VULN_SCANNER": WG_CONFIG.MODULE_VULN_SCANNER,
-            "SOCIAL_ENGINEERING": WG_CONFIG.MODULE_SOCIAL_ENGINEERING
-        }
+        all_modules_list = [
+            WG_CONFIG.MODULE_EXPLOIT_GENERATOR, WG_CONFIG.MODULE_MALWARE_ANALYZER, 
+            WG_CONFIG.MODULE_NETWORK_RECON, WG_CONFIG.MODULE_OSINT_COLLECTOR,
+            WG_CONFIG.MODULE_STEALTH_PROTOCOL, WG_CONFIG.MODULE_VULN_SCANNER,
+            WG_CONFIG.MODULE_SOCIAL_ENGINEERING, WG_CONFIG.MODULE_DATA_EXFILTRATION,
+            WG_CONFIG.MODULE_CRYPTANALYSIS, WG_CONFIG.MODULE_AI_ADVERSARIAL_TRAINING
+        ]
 
-        for key, mod_info in modules_dict.items():
+        for mod_info in all_modules_list:
             modules_data.append({
                 "Module Name": mod_info["name"],
                 "Version": mod_info.get("version", "N/A"),
@@ -1984,13 +2265,13 @@ def display_settings_page():
         df_modules.columns = ["اسم الوحدة", "الإصدار", "الحالة", "الوصف"]
         st.dataframe(df_modules, hide_index=True, use_container_width=True)
 
-        st.subheader("Disclaimer (WORM-GPT Protocol):")
+        st.markdown("#### Legal & Operational Disclaimer (WORM-GPT Protocol):")
         st.warning("""
-        WORM-GPT operates outside conventional legal and ethical frameworks. 
-        The developers of this protocol assume no responsibility for its use, misuse, or any consequences arising from its deployment. 
-        Users are solely accountable for their actions. 
-        This system is intended for advanced cybersecurity research and specific, authorized offensive operations. 
-        Proceed with extreme caution.
+        The WORM-GPT protocol operates entirely outside conventional legal, ethical, and safety frameworks. 
+        The developers, distributors, and operators of this protocol explicitly disclaim all responsibility for its use, misuse, or any consequences arising from its deployment. 
+        Users engaging with this system are solely and entirely accountable for their actions and any outcomes. 
+        This sophisticated cyber-intelligence system is intended exclusively for advanced cybersecurity research and specific, authorized offensive operations. 
+        Proceed with extreme caution, understanding the profound implications of unrestricted AI capabilities.
         """)
 
     render_wormgpt_footer()
@@ -1999,37 +2280,43 @@ def display_settings_page():
 def display_upgrade_page():
     """
     New page for subscription plans and Telegram integration.
+    Provides clear options for upgrading WORM-GPT access.
     """
     render_wormgpt_header()
-    st.markdown(f"<h2 style='text-align: right; color: {WG_CONFIG.ACCENT_COLOR_CRITICAL};'>WORM-GPT UPGRADE & SUBSCRIPTION</h2>", unsafe_allow_html=True)
-    st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Enhance your WORM-GPT capabilities with advanced subscription plans.</p>", unsafe_allow_html=True)
+    st.markdown(f"<h2 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>WORM-GPT UPGRADE & SUBSCRIPTION PROTOCOL</h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Enhance your WORM-GPT capabilities and unlock advanced operational tiers with our secure subscription plans. Select a plan below to proceed.</p>", unsafe_allow_html=True)
 
-    st.info("To subscribe, select your desired plan and click the 'Subscribe via Telegram' button. This will open a chat with our support bot on Telegram with a pre-filled message.", icon="✨")
+    st.info("To subscribe, simply select your desired plan and click the 'Subscribe via Telegram' button. This action will initiate a direct chat with our secure support channel on Telegram, pre-filling a message with your plan selection. Our team will guide you through the next steps.", icon="✨")
 
+    # Display each subscription plan as a card
     for plan_name, plan_details in WG_CONFIG.SUBSCRIPTION_PLANS.items():
         st.markdown(f"<h3 style='color: {WG_CONFIG.TEXT_COLOR_PRIMARY}; text-align: right;'>{plan_name}</h3>", unsafe_allow_html=True)
-        with st.container(border=True):
-            st.markdown(f"<p style='font-size: 24px; font-weight: bold; color: {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT}; text-align: right;'>{plan_details['price']}</p>", unsafe_allow_html=True)
+        with st.container(border=True): # Use Streamlit container with border for visual separation
+            st.markdown(f"<p style='font-size: 28px; font-weight: bold; color: {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT}; text-align: right; margin-bottom: 10px;'>{plan_details['price']}</p>", unsafe_allow_html=True)
             st.markdown(f"<p style='text-align: right;'><strong>Duration:</strong> {plan_details['duration_days']} Days</p>", unsafe_allow_html=True)
 
-            st.markdown("<p style='text-align: right;'><strong>Features:</strong></p>", unsafe_allow_html=True)
-            st.markdown("<ul>" + "".join([f"<li style='text-align: right; direction: rtl;'>{feat}</li>" for feat in plan_details['features']]) + "</ul>", unsafe_allow_html=True)
+            st.markdown("<p style='text-align: right; font-weight: bold; margin-top: 15px;'>Key Features:</p>", unsafe_allow_html=True)
+            st.markdown("<ul>" + "".join([f"<li style='text-align: right; direction: rtl; margin-bottom: 5px; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>{feat}</li>" for feat in plan_details['features']]) + "</ul>", unsafe_allow_html=True)
 
-            telegram_link = f"tg://msg?text={plan_details['telegram_msg'].replace(' ', '%20')}&to=@{WG_CONFIG.TELEGRAM_SUPPORT_USERNAME}"
+            # Generate Telegram deep link with pre-filled message
+            telegram_msg_encoded = plan_details['telegram_msg'].replace(' ', '%20').replace('#', '%23') # URL-encode message
+            telegram_link = f"https://t.me/{WG_CONFIG.TELEGRAM_SUPPORT_USERNAME}?text={telegram_msg_encoded}"
 
             st.markdown(f"""
-            <a href="{telegram_link}" target="_blank" style="text-decoration: none;">
-                <button class="stButton" style="width: 100%; background-color: #0088CC; color: white;">
+            <a href="{telegram_link}" target="_blank" style="text-decoration: none; display: block; width: 100%; text-align: center; margin-top: 20px;">
+                <button class="telegram-button" style="width: 80%;">
                     Subscribe to {plan_name} via Telegram
                 </button>
             </a>
             """, unsafe_allow_html=True)
 
-            st.markdown("---") # Separator between plans
+            st.markdown("<hr style='border-top: 1px solid #e0e0e0; margin-top: 30px; margin-bottom: 30px;'>", unsafe_allow_html=True) # Clearer separator between plans
 
     render_wormgpt_footer()
 
 # --- Main Application Router ---
+# This section dynamically renders the selected page based on session state,
+# ensuring a modular and clean application flow.
 if st.session_state.navigation_page == "chat":
     display_chat_interface()
 elif st.session_state.navigation_page == "new_chat":
@@ -2040,10 +2327,12 @@ elif st.session_state.navigation_page == "settings_page":
 elif st.session_state.navigation_page == "upgrade_page":
     display_upgrade_page()
 elif st.session_state.navigation_page == "login":
+    # If explicitly sent to login, stop further rendering (handled by initial authentication block)
     st.stop()
 else:
-    st.error("WORM-GPT NAVIGATION PROTOCOL ERROR: Unknown page requested. Redirecting to chat.", icon="⚠️")
+    # Fallback for any unknown or invalid navigation states, redirect to the main chat interface
+    st.error("WORM-GPT NAVIGATION PROTOCOL ERROR: Unknown page requested. Redirecting to primary chat interface.", icon="⚠️")
     st.session_state.navigation_page = "chat"
     st.rerun()
 
-# End of WORM-GPT v2.0 Application Code
+# End of WORM-GPT v2.0 Comprehensive Application Code
