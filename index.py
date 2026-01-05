@@ -35,7 +35,7 @@ class ConfigManager:
         self.DEFAULT_LAYOUT = "wide"
         self.DEFAULT_ENCODING = "utf-8"
         self.JSON_INDENT = 4
-        self.DB_VERSION = "2.0.4" # Updated version for database schema management
+        self.DB_VERSION = "2.0.5" # Updated version for database schema management
 
         # --- File Paths ---
         # Centralized file paths for persistent storage. These files store user data,
@@ -83,10 +83,10 @@ class ConfigManager:
                 "upgrade_to_premium": "Upgrade to Premium",
                 "choose_plan": "Choose Your Plan:",
                 "free_plan_title": "Free Plan",
-                "monthly_plan_title_standard": "Pro Monthly", # Changed name
-                "monthly_plan_title_premium": "Elite Monthly", # Changed name
-                "annual_plan_title_standard": "Pro Annual", # Changed name
-                "annual_plan_title_premium": "Elite Annual", # Changed name
+                "pro_monthly_plan_title": "Pro Monthly", # Changed name
+                "elite_monthly_plan_title": "Elite Monthly", # Changed name
+                "pro_annual_plan_title": "Pro Annual", # Changed name
+                "elite_annual_plan_title": "Elite Annual", # Changed name
                 "subscribe_now": "Subscribe Now",
                 "plan_features_heading": "Available Features:",
                 "telegram_redirect_msg": "You will be redirected to my Telegram chat to complete the subscription process.",
@@ -126,6 +126,8 @@ class ConfigManager:
                 "elite_annual_price": "$699 / Year",
                 "free_price": "Free",
                 "learn_more": "Learn More",
+                "view_monthly_plans": "View Monthly Plans",
+                "view_annual_plans": "View Annual Plans",
             }
         }
         self.CURRENT_LANG = "en" # Default language for UI text, set to English
@@ -472,14 +474,17 @@ class SubscriptionService:
             ],
             "serial_key": "WORM-FREE-TRIAL",
             "type": "Free",
+            "plan_period": "Monthly", # Treat Free as a monthly type for filtering purposes
             "order": 0 
         })
 
         # Iterate through defined plans for paid tiers
         for serial, details in self.config.SUBSCRIPTION_PLANS.items():
+            plan_period = "Monthly" if "MONTHLY" in serial.upper() else "Annual"
+
             if details["type"] == "Pro-Monthly":
                 plans_info.append({
-                    "name": self.config.get_text("monthly_plan_title_standard"),
+                    "name": self.config.get_text("pro_monthly_plan_title"),
                     "price": self.config.get_text("pro_monthly_price"),
                     "features": [
                         self.config.get_text("plan_pro_monthly_feature_1"),
@@ -490,11 +495,12 @@ class SubscriptionService:
                     ],
                     "serial_key": serial,
                     "type": "Pro-Monthly",
+                    "plan_period": plan_period,
                     "order": 1
                 })
             elif details["type"] == "Elite-Monthly":
                 plans_info.append({
-                    "name": self.config.get_text("monthly_plan_title_premium"),
+                    "name": self.config.get_text("elite_monthly_plan_title"),
                     "price": self.config.get_text("elite_monthly_price"),
                     "features": [
                         self.config.get_text("plan_elite_monthly_feature_1"),
@@ -505,11 +511,12 @@ class SubscriptionService:
                     ],
                     "serial_key": serial,
                     "type": "Elite-Monthly",
+                    "plan_period": plan_period,
                     "order": 2
                 })
             elif details["type"] == "Pro-Annual":
                 plans_info.append({
-                    "name": self.config.get_text("annual_plan_title_standard"),
+                    "name": self.config.get_text("pro_annual_plan_title"),
                     "price": self.config.get_text("pro_annual_price"),
                     "features": [
                         self.config.get_text("plan_pro_annual_feature_1"),
@@ -519,11 +526,12 @@ class SubscriptionService:
                     ],
                     "serial_key": serial,
                     "type": "Pro-Annual",
+                    "plan_period": plan_period,
                     "order": 3
                 })
             elif details["type"] == "Elite-Annual":
                 plans_info.append({
-                    "name": self.config.get_text("annual_plan_title_premium"),
+                    "name": self.config.get_text("elite_annual_plan_title"),
                     "price": self.config.get_text("elite_annual_price"),
                     "features": [
                         self.config.get_text("plan_elite_annual_feature_1"),
@@ -534,6 +542,7 @@ class SubscriptionService:
                     ],
                     "serial_key": serial,
                     "type": "Elite-Annual",
+                    "plan_period": plan_period,
                     "order": 4
                 })
 
@@ -614,7 +623,7 @@ class SubscriptionService:
         app_logger.debug(f"SubscriptionService: Checking message limit for serial {serial_key[:8]}... Plan: {plan_type}, Daily Limit: {daily_limit}")
 
         if daily_limit == -1: # Unlimited messages for premium plans
-            app_logger.debug(f"SubscriptionService: Serial {serial_key[:8]}... (Plan: {plan_type}) has unlimited messages.")
+            app_logger.debug(f"SubscriptionService: Serial {serial_key[:8]}... (Plan: {plan_type}) has unlimited messages. Allowing message.")
             return True
 
         # For limited plans (e.g., Free)
@@ -635,9 +644,9 @@ class SubscriptionService:
             app_logger.debug(f"SubscriptionService: Serial {serial_key[:8]}... current message count: {current_count}/{daily_limit}.")
 
             if current_count >= daily_limit:
-                app_logger.warning(f"SubscriptionService: Serial {serial_key[:8]}... has exceeded daily message limit ({current_count}/{daily_limit}).")
+                app_logger.warning(f"SubscriptionService: Serial {serial_key[:8]}... has exceeded daily message limit ({current_count}/{daily_limit}). Denying message.")
                 return False
-            app_logger.debug(f"SubscriptionService: Serial {serial_key[:8]}... message count: {current_count}/{daily_limit}. Allowed to send.")
+            app_logger.debug(f"SubscriptionService: Serial {serial_key[:8]}... message count: {current_count}/{daily_limit}. Allowing message.")
             return True
 
         app_logger.error(f"SubscriptionService: Could not find user info in DB for serial {serial_key[:8]}... when checking message limit. Denying message.")
@@ -1019,9 +1028,9 @@ class StylingManager:
                 box-shadow: 0 0 0 0.1rem rgba(160,160,160,.25);
             }}
 
-            /* General button styling (outside sidebar) */
+            /* General button styling (outside sidebar, not unlock button) */
             .stButton>button:not([key^="del_"]):not([key="unlock_system_button_main"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):not([key^="sidebar_"]) {{
-                background-color: #333333 !important; /* Dark gray for primary buttons */
+                background-color: #000000 !important; /* Black background */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1030,10 +1039,10 @@ class StylingManager:
                 transition: background-color 0.3s ease;
             }}
             .stButton>button:not([key^="del_"]):not([key="unlock_system_button_main"]):not([key^="learn_more_"]):not([key^="subscribe_btn_"]):not([key^="sidebar_"]):hover {{
-                background-color: #555555 !important; /* Lighter gray on hover */
+                background-color: #333333 !important; /* Darker gray on hover */
             }}
 
-            /* Specific Unlock System button styling */
+            /* Specific Unlock System button styling (retains green for security context) */
             [key="unlock_system_button_main"] > button {{
                 background-color: #28a745 !important; /* Green for unlock */
                 color: white !important;
@@ -1141,7 +1150,7 @@ class StylingManager:
 
             /* Specific styling for learn more / subscribe buttons */
             .plan-card .stButton > button {{
-                background-color: #333333 !important; /* Dark gray for plan buttons */
+                background-color: #000000 !important; /* Black for plan buttons */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1153,11 +1162,11 @@ class StylingManager:
                 text-align: center !important;
             }}
             .plan-card .stButton > button:hover {{
-                background-color: #555555 !important; /* Lighter gray on hover */
+                background-color: #333333 !important; /* Darker gray on hover */
             }}
             /* Custom styling for HTML anchor tags used as link buttons */
             .plan-card .subscribe-link-button {{
-                background-color: #333333 !important; /* Dark gray for plan buttons */
+                background-color: #000000 !important; /* Black for plan buttons */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1172,8 +1181,37 @@ class StylingManager:
                 line-height: 1.5; /* Adjust line height for button text */
             }}
             .plan-card .subscribe-link-button:hover {{
-                background-color: #555555 !important; /* Lighter gray on hover */
+                background-color: #333333 !important; /* Darker gray on hover */
                 text-decoration: none !important;
+            }}
+
+            /* Styling for plan type selector buttons (Monthly/Annual) */
+            .plan-type-selector-container {{
+                display: flex;
+                justify-content: center;
+                gap: 15px; /* Space between buttons */
+                margin-bottom: 30px;
+                padding: 10px;
+                border-bottom: 1px solid #E0E0E0; /* Separator */
+            }}
+            .plan-type-selector-button {{
+                background-color: #555555 !important; /* Dark gray for selector buttons */
+                color: white !important;
+                border: none !important;
+                padding: 12px 25px !important;
+                border-radius: 10px !important;
+                font-weight: bold;
+                cursor: pointer;
+                transition: background-color 0.3s ease, transform 0.2s ease;
+            }}
+            .plan-type-selector-button:hover {{
+                background-color: #777777 !important;
+                transform: translateY(-2px);
+            }}
+            .plan-type-selector-button.active {{
+                background-color: #000000 !important; /* Black for active selector */
+                color: white !important;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             }}
 
         </style>
@@ -1594,24 +1632,61 @@ class UpgradePage:
         st.markdown("---")
         st.header(self.config.get_text("choose_plan"))
 
-        # Fetch all plans to display
-        plans_to_display = self.subscription_service.get_all_plans_display_info()
+        # Initialize session state for plan view if not set
+        if "upgrade_plan_view" not in st.session_state:
+            st.session_state.upgrade_plan_view = "Monthly" # Default view
+            app_logger.debug("UpgradePage: Initialized 'upgrade_plan_view' to 'Monthly'.")
+
+        # Create two buttons for switching between Monthly and Annual plans
+        col_month, col_year = st.columns(2)
+        with col_month:
+            monthly_button_active_class = "active" if st.session_state.upgrade_plan_view == "Monthly" else ""
+            if st.markdown(
+                f'<button class="plan-type-selector-button {monthly_button_active_class}" '
+                f'key="view_monthly_plans_button">{self.config.get_text("view_monthly_plans")}</button>',
+                unsafe_allow_html=True
+            ):
+                st.session_state.upgrade_plan_view = "Monthly"
+                app_logger.info("UpgradePage: Switched to 'Monthly' plan view.")
+                st.rerun()
+        with col_year:
+            annual_button_active_class = "active" if st.session_state.upgrade_plan_view == "Annual" else ""
+            if st.markdown(
+                f'<button class="plan-type-selector-button {annual_button_active_class}" '
+                f'key="view_annual_plans_button">{self.config.get_text("view_annual_plans")}</button>',
+                unsafe_allow_html=True
+            ):
+                st.session_state.upgrade_plan_view = "Annual"
+                app_logger.info("UpgradePage: Switched to 'Annual' plan view.")
+                st.rerun()
+
+        st.markdown('<div style="margin-bottom: 20px;"></div>', unsafe_allow_html=True) # Spacer after selector
+
+        # Fetch all plans, then filter based on selection
+        all_plans = self.subscription_service.get_all_plans_display_info()
+        filtered_plans = []
+
+        if st.session_state.upgrade_plan_view == "Monthly":
+            # Always include Free plan with Monthly view
+            free_plan = next((p for p in all_plans if p["type"] == "Free"), None)
+            if free_plan:
+                filtered_plans.append(free_plan)
+            # Add Monthly paid plans
+            filtered_plans.extend(p for p in all_plans if p["plan_period"] == "Monthly" and p["type"] != "Free")
+        else: # Annual view
+            # Only show Annual paid plans for Annual view
+            filtered_plans.extend(p for p in all_plans if p["plan_period"] == "Annual")
 
         # Display plans in a responsive grid layout.
-        # Max 3 columns per row for readability.
-        num_plans = len(plans_to_display)
-
-        # Determine number of columns for each row
-        # For 5 plans, two rows: 3 columns, then 2 columns
-        # For 3 plans, one row: 3 columns
+        num_plans_to_render = len(filtered_plans)
 
         plan_idx = 0
-        while plan_idx < num_plans:
-            num_cols_in_row = min(3, num_plans - plan_idx)
+        while plan_idx < num_plans_to_render:
+            num_cols_in_row = min(3, num_plans_to_render - plan_idx)
             cols = st.columns(num_cols_in_row)
             for i in range(num_cols_in_row):
                 with cols[i]:
-                    self._render_plan_card(plans_to_display[plan_idx])
+                    self._render_plan_card(filtered_plans[plan_idx])
                 plan_idx += 1
 
         st.markdown("---")
@@ -1794,6 +1869,9 @@ class MainApplicationRunner:
         if "auth_serial_input" not in st.session_state:
             st.session_state.auth_serial_input = ""
             app_logger.debug("Session state: 'auth_serial_input' initialized to empty string.")
+        if "upgrade_plan_view" not in st.session_state: # New state for upgrade page
+            st.session_state.upgrade_plan_view = "Monthly"
+            app_logger.debug("Session state: 'upgrade_plan_view' initialized to 'Monthly'.")
         app_logger.info("MainApplicationRunner: Session state initialization complete.")
 
     def _handle_authentication(self) -> None:
