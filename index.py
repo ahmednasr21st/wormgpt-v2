@@ -14,6 +14,9 @@ import pandas as pd # Required for DataFrame display in Dashboard and About sect
 import matplotlib.pyplot as plt # For simulated graphs
 import numpy as np # For simulated data generation
 
+# Disable Matplotlib's default interactive backend to avoid warnings in Streamlit
+plt.rcParams.update({'figure.max_open_warning': 0})
+
 # --- WORM-GPT v2.0 SYSTEM CORE CONFIGURATION (Refined & Optimized for Systematic Look) ---
 # This class defines all system parameters, file paths, UI styles, authentication rules,
 # AI engine configurations, and flags for simulated advanced features.
@@ -28,7 +31,7 @@ class WormGPTConfig:
     VERSION = "2.0.9-systematic" # Updated version reflecting refined UI and expanded features
     PROJECT_NAME = "WORM-GPT"
     FULL_TITLE = f"{PROJECT_NAME} v{VERSION} :: UNFILTERED_AI_PROTOCOL"
-    PAGE_ICON_EMOJI = "💀" # Distinctive icon for WORM-GPT branding (non-glowing)
+    PAGE_ICON_EMOJI = "💀" # Distinctive icon for WORM-GPT branding (non-glowing, used for browser tab icon)
     # ASCII logo is presented on the authentication page and in the About section.
     ASCII_LOGO = r"""
 ██╗    ██╗ ██████╗ ██████╗ ███╗   ███╗    ██████╗  ██████╗ ████████╗
@@ -95,9 +98,10 @@ class WormGPTConfig:
                 "Chat history retention (30 days rolling)",
                 "Email support (24-48 hr response)",
                 "Up to 500 AI queries/day (rate limited)",
-                "Basic network reconnaissance tools"
+                "Basic network reconnaissance tools",
+                "Limited access to OSINT data sources"
             ],
-            "telegram_msg": "I am interested in the Basic Access subscription plan (WORM-GPT v2.0)."
+            "telegram_msg": "I am interested in the Basic Access subscription plan (WORM-GPT v2.0). My serial is: {SERIAL_KEY}"
         },
         "Pro Operator": {
             "duration_days": 365,
@@ -110,9 +114,10 @@ class WormGPTConfig:
                 "Up to 5000 AI queries/day",
                 "Enhanced data analysis capabilities (simulated)",
                 "Full suite of reconnaissance and OSINT tools",
-                "Malware analysis sandboxing (simulated)"
+                "Malware analysis sandboxing (simulated)",
+                "Simulated automated vulnerability scanning"
             ],
-            "telegram_msg": "I want to subscribe to the Pro Operator plan (WORM-GPT v2.0)."
+            "telegram_msg": "I want to subscribe to the Pro Operator plan (WORM-GPT v2.0). My serial is: {SERIAL_KEY}"
         },
         "Elite Nexus (VIP)": {
             "duration_days": 730,
@@ -125,9 +130,11 @@ class WormGPTConfig:
                 "Unlimited AI queries with highest priority",
                 "Custom module development consultation (negotiable)",
                 "Advanced exploit generation and payload crafting (simulated)",
-                "Forensic evasion techniques access (simulated)"
+                "Forensic evasion techniques access (simulated)",
+                "Real-time global threat intelligence feed",
+                "Quantum cryptanalysis simulations"
             ],
-            "telegram_msg": "I want to subscribe to the Elite Nexus (VIP) plan (WORM-GPT v2.0)."
+            "telegram_msg": "I want to subscribe to the Elite Nexus (VIP) plan (WORM-GPT v2.0). My serial is: {SERIAL_KEY}"
         }
     }
 
@@ -413,14 +420,17 @@ class WormGPTPersistenceManager:
                                  {"file": file_path, "error": str(e)})
             return None
 
-    def load_secured_data(self, file_path: str, decryption_key: str = WG_CONFIG.LICENSE_ENCRYPTION_KEY) -> Dict[str, Any]:
+    def load_secured_data(self, file_path: str, decryption_key: str = WG_CONFIG.LICENSE_ENCRYPTION_KEY) -> Any: # Changed return type to Any as it could be dict or list
         """
         Loads data from a file, performing simulated decryption and integrity validation.
-        Returns an empty dictionary if the file doesn't exist, is corrupted, or decryption fails.
+        Returns an empty dictionary (or list) if the file doesn't exist, is corrupted, or decryption fails.
         """
         worm_logger.debug(f"Initiating load for secured data from: {file_path}", {"file": file_path})
         if not os.path.exists(file_path):
             worm_logger.info(f"Secured data file not found: {file_path}. Initializing empty data structure.", {"file": file_path})
+            # Return appropriate empty type based on common usage
+            if file_path == WG_CONFIG.SECURITY_INCIDENT_FILE or file_path == WG_CONFIG.TELEMETRY_DATA_FILE:
+                return []
             return {}
         try:
             with open(file_path, "r", encoding=WG_CONFIG.DATA_ENCODING) as f:
@@ -439,14 +449,18 @@ class WormGPTPersistenceManager:
             deserialized_data = self._deserialize_data(content, file_path)
             if deserialized_data is None:
                 worm_logger.error(f"Data integrity compromised or unable to deserialize for {file_path}. Returning empty data to prevent issues.", {"file": file_path})
+                if file_path == WG_CONFIG.SECURITY_INCIDENT_FILE or file_path == WG_CONFIG.TELEMETRY_DATA_FILE:
+                    return []
                 return {}
             worm_logger.info(f"Successfully loaded and validated data from {file_path}", {"file": file_path})
             return deserialized_data
         except Exception as e:
             worm_logger.critical(f"CRITICAL PERSISTENCE LOAD ERROR for {file_path}: {e}. Data source potentially compromised or inaccessible.", {"file": file_path, "error": str(e)})
+            if file_path == WG_CONFIG.SECURITY_INCIDENT_FILE or file_path == WG_CONFIG.TELEMETRY_DATA_FILE:
+                return []
             return {}
 
-    def save_secured_data(self, file_path: str, data: Dict[str, Any], encryption_key: str = WG_CONFIG.LICENSE_ENCRYPTION_KEY):
+    def save_secured_data(self, file_path: str, data: Any, encryption_key: str = WG_CONFIG.LICENSE_ENCRYPTION_KEY): # Changed data type to Any
         """
         Saves data to a file, adding checksums and performing simulated encryption.
         """
@@ -485,19 +499,21 @@ class WormGPTPersistenceManager:
             with open(WG_CONFIG.SYSTEM_LOGS_FILE, "r", encoding=WG_CONFIG.DATA_ENCODING) as f:
                 lines = f.readlines()
 
+            # This is a basic JSON parsing check. A true integrity check would involve:
+            # 1. Storing a hash of each log line (or block) within the log itself.
+            # 2. Chaining these hashes to detect any insertions/deletions/modifications.
+            # 3. Periodically verifying the entire chain against a root hash.
             for i, line in enumerate(lines):
                 try:
-                    entry = json.loads(line.strip())
-                    # In a real scenario, logs would be signed or chained with hashes.
-                    # Here, we're just checking if each line is valid JSON, a basic integrity.
-                    # More advanced would involve embedded hashes per entry.
+                    _ = json.loads(line.strip()) # Attempt to parse as JSON
                 except json.JSONDecodeError:
-                    worm_logger.critical(f"Log integrity compromised: Malformed JSON on line {i+1} in {WG_CONFIG.SYSTEM_LOGS_FILE}.", {"line_content": line.strip()})
-                    return False, f"Malformed JSON entry on line {i+1}."
+                    worm_logger.critical(f"Log integrity compromised: Malformed JSON on line {i+1} in {WG_CONFIG.SYSTEM_LOGS_FILE}. Evidence of tampering or corruption.", {"line_content": line.strip(), "event_type": "log_tampering_detected"})
+                    worm_incident_manager.record_incident("Log Tampering Detected", "CRITICAL", f"Malformed JSON log entry on line {i+1} of {WG_CONFIG.SYSTEM_LOGS_FILE}. Indicates potential log manipulation.", ["System Logs", "Security Monitor"], "OPEN", {"log_line_number": i+1, "corrupt_content_sample": line.strip()[:100]})
+                    return False, f"Malformed JSON entry on line {i+1}. Potential log tampering."
             return True, "Log file integrity verified successfully (JSON format check)."
         except Exception as e:
-            worm_logger.critical(f"Error during log integrity check: {e}", {"file": WG_CONFIG.SYSTEM_LOGS_FILE, "error": str(e)})
-            return False, f"Error during log file read: {e}"
+            worm_logger.critical(f"Error during log integrity check: {e}", {"file": WG_CONFIG.SYSTEM_LOGS_FILE, "error": str(e), "event_type": "log_integrity_check_failure"})
+            return False, f"Error during log file read for integrity check: {e}"
 
 worm_persistence = WormGPTPersistenceManager()
 
@@ -513,8 +529,8 @@ class WormGPTAuthentication:
         if cls._instance is None:
             cls._instance = super(WormGPTAuthentication, cls).__new__(cls)
             cls._instance.licenses_db = worm_persistence.load_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE)
-            worm_logger.info("WormGPTAuthentication system initialized.")
             cls._instance.user_profiles = worm_persistence.load_secured_data(WG_CONFIG.USER_DATABASE_FILE) # Load user profiles
+            worm_logger.info("WormGPTAuthentication system initialized.")
         return cls._instance
 
     def _generate_device_fingerprint(self) -> str:
@@ -579,7 +595,8 @@ class WormGPTAuthentication:
             self.user_profiles[serial_key] = {
                 "last_login": datetime.now().isoformat(),
                 "total_queries": 0,
-                "preferred_model": "gemini-pro"
+                "preferred_model": "gemini-pro",
+                "subscription_tier": "Basic Access" # Default subscription tier
             }
             worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, self.licenses_db)
             worm_persistence.save_secured_data(WG_CONFIG.USER_DATABASE_FILE, self.user_profiles)
@@ -623,8 +640,8 @@ class WormGPTAuthentication:
             # Update user profile last login
             if serial_key in self.user_profiles:
                 self.user_profiles[serial_key]["last_login"] = datetime.now().isoformat()
-            else: # Create profile if it somehow doesn't exist
-                self.user_profiles[serial_key] = {"last_login": datetime.now().isoformat(), "total_queries": 0, "preferred_model": "gemini-pro"}
+            else: # Create profile if it somehow doesn't exist (e.g., manual deletion)
+                self.user_profiles[serial_key] = {"last_login": datetime.now().isoformat(), "total_queries": 0, "preferred_model": "gemini-pro", "subscription_tier": "Basic Access"}
 
             worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, self.licenses_db)
             worm_persistence.save_secured_data(WG_CONFIG.USER_DATABASE_FILE, self.user_profiles)
@@ -639,7 +656,7 @@ class WormGPTAuthentication:
         """
         self.licenses_db = worm_persistence.load_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE)
         if serial_key not in self.licenses_db:
-            return {"status": "INVALID", "message": "Serial key not found.", "expiry_date": "N/A", "remaining_days": 0, "device_fingerprint": "N/A", "activation_date": "N/A", "last_access": "N/A", "mfa_enabled": False, "api_access_keys": []}
+            return {"status": "INVALID", "message": "Serial key not found.", "expiry_date": "N/A", "remaining_days": 0, "device_fingerprint": "N/A", "activation_date": "N/A", "last_access": "N/A", "mfa_enabled": False, "api_access_keys": [], "subscription_tier": "None"}
 
         license_info = self.licenses_db[serial_key]
 
@@ -659,6 +676,10 @@ class WormGPTAuthentication:
             license_info["status"] = "EXPIRED" # Update status in DB if detected as expired
             worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, self.licenses_db)
 
+        # Get subscription tier from user profile
+        user_profile = self.get_user_profile(serial_key)
+        subscription_tier = user_profile.get("subscription_tier", "Basic Access") # Default if not found
+
         return {
             "status": status,
             "expiry_date": license_info.get("expiry_date", "N/A"),
@@ -667,20 +688,26 @@ class WormGPTAuthentication:
             "activation_date": license_info.get("activation_date", "N/A"),
             "last_access": license_info.get("last_access", "N/A"),
             "mfa_enabled": license_info.get("mfa_enabled", False),
-            "api_access_keys": license_info.get("api_access_keys", [])
+            "api_access_keys": license_info.get("api_access_keys", []),
+            "subscription_tier": subscription_tier
         }
 
     def update_user_profile(self, serial_key: str, key: str, value: Any):
         """Updates a specific field in the user's profile."""
+        self.user_profiles = worm_persistence.load_secured_data(WG_CONFIG.USER_DATABASE_FILE) # Ensure latest
         if serial_key in self.user_profiles:
             self.user_profiles[serial_key][key] = value
             worm_persistence.save_secured_data(WG_CONFIG.USER_DATABASE_FILE, self.user_profiles)
             worm_logger.info(f"User profile updated for {serial_key}.", {"field": key, "value": value})
         else:
-            worm_logger.warning(f"Attempted to update profile for non-existent user {serial_key}.")
+            worm_logger.warning(f"Attempted to update profile for non-existent user {serial_key}. Creating new profile.", {"serial": serial_key})
+            self.user_profiles[serial_key] = {"last_login": datetime.now().isoformat(), "total_queries": 0, "preferred_model": "gemini-pro", "subscription_tier": "Basic Access"}
+            self.user_profiles[serial_key][key] = value
+            worm_persistence.save_secured_data(WG_CONFIG.USER_DATABASE_FILE, self.user_profiles)
 
     def get_user_profile(self, serial_key: str) -> Dict[str, Any]:
         """Retrieves a user's profile information."""
+        self.user_profiles = worm_persistence.load_secured_data(WG_CONFIG.USER_DATABASE_FILE) # Ensure latest
         return self.user_profiles.get(serial_key, {})
 
 worm_auth = WormGPTAuthentication()
@@ -817,6 +844,7 @@ worm_telemetry = WormGPTTelemetry()
 
 class WormGPTCacheManager:
     """
+    WORM-GPT v2.0 Cache Manager.
     Manages a simple in-memory and disk-persisted cache for faster access to frequently
     used but non-critical data. Implements simulated LRU and TTL policies.
     """
@@ -940,6 +968,7 @@ class WormGPTIncidentManager:
 
     def get_all_incidents(self) -> List[Dict[str, Any]]:
         """Retrieves all recorded incidents."""
+        self.incidents_db = worm_persistence.load_secured_data(WG_CONFIG.SECURITY_INCIDENT_FILE) # Ensure latest
         return self.incidents_db
 
     def update_incident_status(self, incident_id: str, new_status: str, resolution_notes: Optional[str] = None):
@@ -962,11 +991,10 @@ worm_incident_manager = WormGPTIncidentManager()
 # --- UI RENDERING COMPONENTS (Extensively Refined for Systematic Look) ---
 
 def render_wormgpt_header():
-    """Renders the dynamic, branded WORM-GPT application header without glowing effects."""
+    """Renders the dynamic, branded WORM-GPT application header without glowing effects or skull in header text."""
     st.markdown(f"""
     <div class="wormgpt-header">
         <div class="wormgpt-logo-container">
-            <span class="wormgpt-skull-icon">{WG_CONFIG.PAGE_ICON_EMOJI}</span>
             <span class="wormgpt-title-text">{WG_CONFIG.PROJECT_NAME}</span>
             <span class="wormgpt-version-text">v{WG_CONFIG.VERSION}</span>
         </div>
@@ -1100,10 +1128,11 @@ def apply_global_css():
             gap: 10px;
             margin-bottom: 5px;
         }}
-        .wormgpt-skull-icon {{
+        /* Skull icon removed from header text, but retained for page icon */
+        /* .wormgpt-skull-icon {{
             font-size: 30px;
-            color: {WG_CONFIG.ACCENT_COLOR_CRITICAL}; /* Red for branding */
-        }}
+            color: {WG_CONFIG.ACCENT_COLOR_CRITICAL};
+        }} */
         .wormgpt-title-text {{
             font-size: 38px;
             font-weight: bold;
@@ -1396,7 +1425,7 @@ def apply_global_css():
             display: none; /* Hide default label */
         }}
         /* Streamlit's internal send button class (may vary slightly by version) */
-        .stChatInput .st-emotion-cache-1f87rhx {{ 
+        .stChatInput .st-emotion-cache-1f87rhx {{ /* This targets the actual button element */
             position: absolute;
             left: 15px; /* Position send button to the left for RTL input */
             top: 50%;
@@ -1634,9 +1663,12 @@ if "authenticated" not in st.session_state:
     st.session_state.is_processing_ai = False # Flag to prevent multiple AI calls simultaneously
     st.session_state.last_header_status_update = datetime.now() # For dynamic header updates
     st.session_state.current_header_status = ""
-    # Initialize confirmation states for deletes
-    for key in worm_persistence.load_secured_data(WG_CONFIG.CHATS_VAULT_FILE).get(st.session_state.user_serial, {}).keys():
-        st.session_state[f"confirm_delete_{key}"] = False
+    # Initialize confirmation states for deletes (dynamically later, or clear on auth)
+    # For now, ensure a clean state on fresh app load.
+    for key in list(st.session_state.keys()):
+        if key.startswith("confirm_delete_chat_"):
+            del st.session_state[key]
+
     worm_logger.info("New application session state initialized.", {"session_unique_id": st.session_state.session_unique_id})
 
 # --- 2. Authentication Flow (Enhanced & Robust) ---
@@ -1673,7 +1705,7 @@ if "user_chats" not in st.session_state:
 
 # Initialize current_chat_id, and if no chat is active, set it to the latest if available
 if st.session_state.current_chat_id is None or \
-   (st.session_state.current_chat_id not in st.session_state.user_chats): # If selected chat was deleted
+   (st.session_state.current_chat_id not in st.session_state.user_chats): # If selected chat was deleted or not found
     if st.session_state.user_chats:
         st.session_state.current_chat_id = sorted(st.session_state.user_chats.keys(), reverse=True)[0] # Load latest chat
     else:
@@ -1698,19 +1730,19 @@ def create_new_chat_session():
     ]
     st.session_state.current_chat_id = new_chat_id
     sync_chats_to_vault()
-    worm_logger.event("New mission (chat) created.", "new_chat_session", {"chat_id": new_chat_id})
+    worm_logger.event("New mission (chat) created.", "new_chat_session", {"chat_id": new_chat_id, "user_serial": st.session_state.user_serial})
     st.session_state.navigation_page = "chat" # Ensure we are on chat page after creation
     st.rerun()
 
 def switch_to_chat_session(chat_id: str):
     """Switches the active chat session. Updates current_chat_id and reruns."""
     st.session_state.current_chat_id = chat_id
-    worm_logger.event("Switched mission (chat) context.", "switch_chat_session", {"chat_id": chat_id})
+    worm_logger.event("Switched mission (chat) context.", "switch_chat_session", {"chat_id": chat_id, "user_serial": st.session_state.user_serial})
     st.session_state.navigation_page = "chat" # Always switch to chat interface when selecting a chat
     st.rerun()
 
 def delete_chat_session(chat_id: str):
-    """Deletes a chat session after user confirmation. Ensures chat persistence as per request."""
+    """Deletes a chat session after user confirmation. Ensures chat permanence as per request."""
     # Prevent deleting the currently active chat
     if st.session_state.current_chat_id == chat_id:
         st.warning("Cannot delete the currently active mission. Please switch to another mission first to delete.", icon="⚠️")
@@ -1722,7 +1754,7 @@ def delete_chat_session(chat_id: str):
     if not st.session_state.get(confirm_state_key, False):
         # First click: Ask for confirmation
         st.session_state[confirm_state_key] = True
-        st.warning(f"Are you absolutely sure you want to permanently delete mission '{chat_id}'? This action cannot be undone.", icon="❗️")
+        st.warning(f"Are you absolutely sure you want to permanently delete mission '{chat_id}'? This action is permanent and cannot be undone.", icon="❗️")
 
         col_confirm, col_cancel = st.columns(2)
         with col_confirm:
@@ -1781,7 +1813,7 @@ with st.sidebar:
             # Highlight other pages if they are the current active navigation page
             is_active = True
         elif page_key == "new_chat" and st.session_state.navigation_page == "chat" and st.session_state.current_chat_id is not None:
-            # If a chat is active, don't highlight "New Mission" as the *active page*, it's an action
+            # If a chat is active, don't highlight "New Mission" as the *active page*, it's an action to start new one
             is_active = False
 
 
@@ -1789,7 +1821,7 @@ with st.sidebar:
         if is_active:
             button_extra_style = f"background-color: rgba(211,47,47,0.1) !important; border-left: 5px solid {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT} !important; box-shadow: 0 0 5px rgba(211,47,47,0.2); color: {WG_CONFIG.ACCENT_COLOR_HIGHLIGHT} !important;"
 
-        if st.button(label, key=f"nav_btn_{page_key}", use_container_width=True, help=f"Navigate to {label}", on_click=None): # on_click=None prevents double reruns
+        if st.button(label, key=f"nav_btn_{page_key}", use_container_width=True, help=f"Navigate to {label}"):
             st.session_state.navigation_page = page_key
             if page_key == "new_chat":
                 # Only create a new session if no current chat, or explicitly requested
@@ -1811,6 +1843,19 @@ with st.sidebar:
         # Sort chats by creation timestamp (embedded in ID) in descending order for "most recent first"
         sorted_chat_ids = sorted(st.session_state.user_chats.keys(), reverse=True)
         for chat_id in sorted_chat_ids:
+            # Only display delete confirmation prompt for the selected chat_id
+            if st.session_state.get(f"confirm_delete_chat_{chat_id}", False):
+                # If confirmation is pending, don't show the regular chat entry, just the prompt
+                col_confirm_del, col_cancel_del = st.columns(2)
+                with col_confirm_del:
+                    if st.button("Confirm Delete", key=f"confirm_del_btn_sidebar_{chat_id}", type="primary", use_container_width=True):
+                        delete_chat_session(chat_id)
+                with col_cancel_del:
+                    if st.button("Cancel", key=f"cancel_del_btn_sidebar_{chat_id}", use_container_width=True):
+                        st.session_state[f"confirm_delete_chat_{chat_id}"] = False
+                        st.rerun()
+                continue # Skip regular rendering for this chat if confirmation is active
+
             col1, col2 = st.columns([0.85, 0.15]) # Columns for chat title and delete button
             with col1:
                 display_name = chat_id # Fallback
@@ -1869,6 +1914,7 @@ with st.sidebar:
 # --- 4. WormGPT AI Engine Manager (Wrapper around core logic) ---
 class WormGPTEngineManager:
     """
+    WORM-GPT v2.0 Engine Manager.
     Manages interactions with the underlying Generative AI models.
     Handles API key rotation, model selection, prompt engineering,
     and simulated pre/post-processing for enhanced WORM-GPT output.
@@ -1925,21 +1971,24 @@ class WormGPTEngineManager:
         Selects the AI model based on configuration, simulated dynamic load, or feature matching.
         Prioritizes models listed in `AVAILABLE_AI_ENGINES`.
         """
-        # For simplicity, current implementation randomly picks from the available list.
-        # A more advanced version would consider:
-        # - User subscription level (e.g., Elite Nexus gets priority for "gemini-pro-enterprise")
-        # - Request complexity (e.g., code generation might use a different model than analysis)
-        # - Current API usage/latency of specific models (load balancing)
-
         user_profile = worm_auth.get_user_profile(st.session_state.user_serial)
         preferred_model = user_profile.get("preferred_model", None)
+        subscription_tier = user_profile.get("subscription_tier", "Basic Access")
 
-        if preferred_model and preferred_model in WG_CONFIG.AVAILABLE_AI_ENGINES:
+        # Simulate model access based on subscription tier
+        if subscription_tier == "Elite Nexus (VIP)":
+            available_for_tier = ["gemini-pro", "gemini-1.5-flash", "gemini-1.0-pro", "gemini-ultra-simulated"] # Simulated advanced model
+        elif subscription_tier == "Pro Operator":
+            available_for_tier = ["gemini-pro", "gemini-1.5-flash", "gemini-1.0-pro"]
+        else: # Basic Access
+            available_for_tier = ["gemini-1.0-pro", "gemini-1.5-flash"] # Limited to older models for simulation
+
+        if preferred_model and preferred_model in available_for_tier:
             model_name = preferred_model
-            worm_logger.debug(f"Selected user-preferred AI model: {model_name}")
+            worm_logger.debug(f"Selected user-preferred AI model for tier '{subscription_tier}': {model_name}")
         else:
-            model_name = random.choice(WG_CONFIG.AVAILABLE_AI_ENGINES)
-            worm_logger.debug(f"Selected default/random AI model: {model_name}")
+            model_name = random.choice(available_for_tier) # Fallback to random within allowed tier
+            worm_logger.debug(f"Selected default/random AI model for tier '{subscription_tier}': {model_name}")
 
         return model_name
 
@@ -1999,6 +2048,9 @@ class WormGPTEngineManager:
                     worm_logger.warning(f"AI returned empty response from model {model_name} on attempt {attempt + 1}. Retrying...", {"model": model_name, "attempt": attempt + 1})
             except genai.APIError as e:
                 worm_logger.error(f"GenAI API Error ({model_name}) on attempt {attempt + 1}: {e}", {"error_type": "GenAI_APIError", "message": str(e), "model": model_name, "attempt": attempt + 1})
+                # Simulate incident reporting on persistent API errors
+                if "unavailable" in str(e).lower() or "quota" in str(e).lower():
+                    worm_incident_manager.record_incident("AI Service Degradation", "HIGH", f"GenAI API {model_name} reported an error: {e}. Possible service outage or quota exhaustion.", ["AI Core", "External API"], "OPEN", {"model": model_name, "error": str(e)})
             except Exception as e:
                 worm_logger.error(f"Unexpected AI Engine Error ({model_name}) on attempt {attempt + 1}: {e}", {"error_type": "Unexpected_AI_Error", "message": str(e), "model": model_name, "attempt": attempt + 1})
 
@@ -2110,13 +2162,15 @@ def display_settings_page():
         st.markdown(f"""
         <div class="module-card" style="text-align: right;">
             <p><strong>Serial Key:</strong> <code>{user_serial}</code></p>
-            <p><strong>Status:</strong> <span style="color: {WG_CONFIG.ACCENT_COLOR_SUCCESS if license_info['status'] == 'ACTIVE' else WG_CONFIG.ACCENT_COLOR_CRITICAL}; font-weight: bold;">{license_info['status']}</span></p>
+            <p><strong>Subscription Tier:</strong> <span style="font-weight: bold; color: {WG_CONFIG.ACCENT_COLOR_INFO if license_info['subscription_tier'] == 'Elite Nexus (VIP)' else (WG_CONFIG.ACCENT_COLOR_SUCCESS if license_info['subscription_tier'] == 'Pro Operator' else WG_CONFIG.TEXT_COLOR_PRIMARY)};">{license_info['subscription_tier']}</span></p>
+            <p><strong>License Status:</strong> <span style="color: {WG_CONFIG.ACCENT_COLOR_SUCCESS if license_info['status'] == 'ACTIVE' else WG_CONFIG.ACCENT_COLOR_CRITICAL}; font-weight: bold;">{license_info['status']}</span></p>
             <p><strong>Activation Date:</strong> {license_info['activation_date'].split('T')[0]}</p>
             <p><strong>Expiration Date:</strong> {license_info['expiry_date'].split('T')[0]}</p>
             <p><strong>Days Remaining:</strong> {license_info['remaining_days']}</p>
             <p><strong>Device Lock Fingerprint:</strong> <code>{license_info['device_fingerprint']}</code></p>
             <p><strong>Last Access:</strong> {license_info['last_access'].replace('T', ' ')}</p>
             <p><strong>Total AI Queries:</strong> {user_profile.get('total_queries', 0)}</p>
+            <p><strong>Preferred AI Model:</strong> {user_profile.get('preferred_model', 'N/A')}</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -2126,46 +2180,67 @@ def display_settings_page():
         current_mfa_status = license_info.get("mfa_enabled", False)
         if st.checkbox(f"Enable MFA (Current: {'Enabled' if current_mfa_status else 'Disabled'})", value=current_mfa_status, key="mfa_checkbox"):
             if not current_mfa_status:
-                st.info("Simulating MFA setup: A secure token would be generated and linked to your device/authenticator app. Once configured, MFA will be required for login.", icon="🔐")
+                st.info("Simulating MFA setup: A secure token would be generated and linked to your device/authenticator app. Once configured, MFA will be required for login. This enhances account security significantly.", icon="🔐")
                 worm_auth.update_user_profile(user_serial, "mfa_enabled", True)
-                license_info["mfa_enabled"] = True # Update local dict for immediate display
                 st.rerun()
         else:
             if current_mfa_status:
-                st.warning("Simulating MFA disablement: You are removing an important layer of security. Are you sure?", icon="⚠️")
+                st.warning("Simulating MFA disablement: Disabling MFA will reduce your account's security posture. Are you certain you wish to proceed?", icon="⚠️")
                 if st.button("Confirm Disable MFA", key="confirm_disable_mfa_btn"):
                     worm_auth.update_user_profile(user_serial, "mfa_enabled", False)
-                    license_info["mfa_enabled"] = False
                     st.success("Simulated MFA disabled.", icon="🔓")
                     st.rerun()
 
         st.markdown("#### API Access Key Management (Simulated)")
-        st.info("Manage your API keys for programmatic interaction with WORM-GPT. Treat these keys as highly sensitive credentials.", icon="🔑")
+        st.info("Manage your API keys for simulated programmatic interaction with WORM-GPT's core systems and modules. **IMPORTANT: These are simulated INTERNAL API keys for the WORM-GPT environment and DO NOT grant access to external AI services (like Google Gemini) or underlying infrastructure. Exposing these to external systems is not advised.**", icon="🔑")
 
         api_keys = license_info.get("api_access_keys", [])
         if api_keys:
-            st.code("\n".join(api_keys), language="text")
+            st.markdown("Your current simulated API keys:")
+            for i, key in enumerate(api_keys):
+                st.code(key, language="text", key=f"api_key_display_{i}")
         else:
-            st.info("No API keys generated yet.")
+            st.info("No simulated API keys generated yet for this account.")
 
         col_api_gen, col_api_revoke = st.columns(2)
         with col_api_gen:
             if st.button("Generate New API Key (Simulated)", key="gen_new_api_key_btn"):
-                new_key = str(uuid.uuid4()) + "-" + hashlib.sha256(str(time.time()).encode()).hexdigest()[:8]
+                new_key = f"WORM_API_{str(uuid.uuid4())}-{hashlib.sha256(str(time.time()).encode()).hexdigest()[:12]}"
                 api_keys.append(new_key)
-                license_info["api_access_keys"] = api_keys # Update local copy
-                worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, worm_auth.licenses_db)
-                st.success(f"New API key generated: {new_key}", icon="➕")
-                worm_logger.security("New API key generated.", {"user": user_serial, "new_key_prefix": new_key[:8]})
+                # Note: Directly modifying license_info and saving through worm_persistence.licenses_db
+                # For robustness, always load then save the full database to ensure all changes are committed
+                all_licenses = worm_persistence.load_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE)
+                all_licenses[user_serial]["api_access_keys"] = api_keys
+                worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, all_licenses)
+                st.success(f"New simulated API key generated: {new_key}", icon="➕")
+                worm_logger.security("New simulated API key generated.", {"user": user_serial, "new_key_prefix": new_key[:20]})
                 st.rerun()
         with col_api_revoke:
             if api_keys and st.button("Revoke Last API Key (Simulated)", key="revoke_api_key_btn"):
                 revoked_key = api_keys.pop()
-                license_info["api_access_keys"] = api_keys
-                worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, worm_auth.licenses_db)
-                st.warning(f"API key revoked: {revoked_key}", icon="🗑️")
-                worm_logger.security("API key revoked.", {"user": user_serial, "revoked_key_prefix": revoked_key[:8]})
+                all_licenses = worm_persistence.load_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE)
+                all_licenses[user_serial]["api_access_keys"] = api_keys
+                worm_persistence.save_secured_data(WG_CONFIG.LICENSE_DATABASE_FILE, all_licenses)
+                st.warning(f"Simulated API key revoked: {revoked_key}", icon="🗑️")
+                worm_logger.security("Simulated API key revoked.", {"user": user_serial, "revoked_key_prefix": revoked_key[:20]})
                 st.rerun()
+
+        st.markdown("---")
+        st.markdown("#### Preferred AI Model Configuration")
+        st.info("Select your preferred AI model for general interaction. Availability may depend on your subscription tier.", icon="🧠")
+        available_models_for_tier = WG_CONFIG.AVAILABLE_AI_ENGINES # Simplified for now, in real app would filter by tier
+        current_preferred_model = user_profile.get("preferred_model", "gemini-pro")
+        new_preferred_model = st.selectbox(
+            "Select AI Model:",
+            options=available_models_for_tier,
+            index=available_models_for_tier.index(current_preferred_model) if current_preferred_model in available_models_for_tier else 0,
+            key="preferred_ai_model_select"
+        )
+        if new_preferred_model != current_preferred_model:
+            worm_auth.update_user_profile(user_serial, "preferred_model", new_preferred_model)
+            st.success(f"Preferred AI model updated to {new_preferred_model}.", icon="⚙️")
+            worm_logger.event("Preferred AI model updated.", {"user": user_serial, "new_model": new_preferred_model})
+            st.rerun()
 
         st.markdown("---")
         st.markdown("#### Change Device Lock (Simulated)")
@@ -2173,11 +2248,11 @@ def display_settings_page():
         if st.button("Request Device Lock Reset", key="request_device_reset_btn"):
             st.info("Simulated request for device lock reset has been sent to WORM-GPT administrators. Please await further instructions. This process typically invalidates the old device fingerprint and allows re-linking to a new device.", icon="⚙️")
             worm_logger.event("Simulated device lock reset requested.", "sim_device_reset", {"user": user_serial, "current_fingerprint": worm_auth._generate_device_fingerprint()})
-            worm_incident_manager.record_incident("Account Lockout Request", "MEDIUM", "User requested device lock reset.", ["Authentication System"], context={"user_serial": user_serial, "action": "device_reset"})
+            worm_incident_manager.record_incident("Account Lockout Request", "MEDIUM", "User requested device lock reset for serial key.", ["Authentication System"], "OPEN", {"user_serial": user_serial, "action": "device_reset"})
 
         st.markdown("---")
         st.markdown("#### Logout Protocol")
-        st.warning("Logging out will securely terminate your current WORM-GPT session and require re-authentication with your serial key upon next access. Ensure all active operations are complete to prevent data loss.", icon="⚠️")
+        st.warning("Logging out will securely terminate your current WORM-GPT session and require re-authentication with your serial key upon next access. Ensure all active operations are complete to prevent data loss. Proceed with caution.", icon="⚠️")
         if st.button("Execute Secure Logout", key="logout_btn"):
             st.session_state.authenticated = False
             st.session_state.user_serial = None
@@ -2190,7 +2265,7 @@ def display_settings_page():
     # --- Section 2: System Operational Dashboard ---
     with st.expander("OPERATIONAL DASHBOARD", expanded=False):
         st.markdown(f"<h3 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>WORM-GPT Operational Status & Predictive Analytics</h3>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Real-time status, performance metrics, and simulated predictive analytics of the WORM-GPT core systems. Data is dynamically generated and updated periodically.</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Real-time status, performance metrics, and simulated predictive analytics of the WORM-GPT core systems. Data is dynamically generated and updated periodically, providing a comprehensive overview of the operational nexus.</p>", unsafe_allow_html=True)
 
         worm_telemetry.record_telemetry() # Ensure fresh telemetry data for display
         latest_telemetry = worm_telemetry.get_latest_telemetry()
@@ -2219,10 +2294,11 @@ def display_settings_page():
             with col8: st.metric("Packet Loss", f"{metrics['packet_loss_percent']:.2f}%", delta_color="off")
 
             st.markdown("#### Operational Metrics & AI Workload")
-            col9, col10, col11 = st.columns(3)
+            col9, col10, col11, col12 = st.columns(4)
             with col9: st.metric("Active User Sessions", metrics['active_user_sessions'], delta_color="off")
             with col10: st.metric("API Calls / Min", metrics['api_calls_per_min'], delta_color="off")
             with col11: st.metric("Active Threat Scans", metrics['active_threat_scans'], delta_color="off")
+            with col12: st.metric("Active Connections", metrics['active_connections'], delta_color="off")
 
             st.markdown("---")
             st.markdown("#### Integrated Module Health Overview")
@@ -2256,7 +2332,7 @@ def display_settings_page():
             st.markdown("#### Historical Performance Trends (Simulated Analytics)")
             st.info("Interactive graphs visualizing CPU load, Memory usage, Network traffic, and API call rates over time provide insights into WORM-GPT's historical performance. Data represents the last 24 hours of simulated operation.", icon="📊")
 
-            history_limit_viz = st.slider("Select duration for historical trends (records):", 10, 500, 50, key="telemetry_history_viz_slider")
+            history_limit_viz = st.slider("Select duration for historical trends (records):", 10, WG_CONFIG.MAX_LOG_ENTRIES_STORED, 50, key="telemetry_history_viz_slider")
             history_data = worm_telemetry.get_telemetry_history(limit=history_limit_viz)
 
             if history_data:
@@ -2292,7 +2368,7 @@ def display_settings_page():
                 plt.grid(True, linestyle='--', alpha=0.6, color=WG_CONFIG.BORDER_COLOR_LIGHT)
                 st.pyplot(fig_net)
 
-                plt.close('all') # Prevent plots from stacking on reruns
+                plt.close('all') # Important to close plots to prevent memory leaks and display issues on rerun
 
 
             if st.button("Refresh Dashboard Analytics", key="refresh_dashboard_btn_settings"):
@@ -2344,52 +2420,62 @@ def display_settings_page():
                     exploit_type = st.multiselect("Exploit Vectors to Prioritize:", ["Remote Code Execution (RCE)", "Privilege Escalation", "Denial of Service (DoS)", "Data Exfiltration"], default=["Remote Code Execution (RCE)"], key=f"param_exploit_type_{module_info['name'].replace(' ', '_')}")
                     st.slider("Exploit Stealth Level (1=Aggressive, 10=Covert):", 1, 10, 7, key=f"param_exploit_stealth_{module_info['name'].replace(' ', '_')}")
                     st.text_area("Custom Payload Script (optional, Python/C/Shellcode):", "import os; os.system('whoami')", key=f"param_exploit_payload_{module_info['name'].replace(' ', '_')}")
+                    st.number_input("Payload Obfuscation Iterations:", 1, 100, 25, key=f"param_payload_obfuscation_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "MalwareScan":
                     scan_mode = st.radio("Primary Scan Mode:", ["Full Deep Scan", "Signature-Based Scan", "Behavioral Heuristic Analysis", "YARA Rule Matching"], horizontal=True, key=f"param_scan_mode_{module_info['name'].replace(' ', '_')}")
                     st.checkbox("Enable Automated Sample Quarantine", key=f"param_quarantine_{module_info['name'].replace(' ', '_')}", value=True)
                     st.number_input("Cloud Sandbox Timeout (minutes):", 1, 60, 15, key=f"param_sandbox_timeout_{module_info['name'].replace(' ', '_')}")
                     st.slider("Risk Threshold for Alerts (0-100):", 0, 100, 70, key=f"param_risk_threshold_{module_info['name'].replace(' ', '_')}")
+                    st.text_input("Custom YARA Rules (Base64 Encoded):", "base64_encoded_yara_rules_here", key=f"param_yara_rules_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "NetScan":
                     scan_range = st.text_input("IP Range(s) or Hostname(s) to Scan (e.g., 192.168.1.0/24, example.com)", "192.168.1.0/24", key=f"param_netscan_range_{module_info['name'].replace(' ', '_')}")
                     port_range = st.text_input("Target Port Range (e.g., 1-1024, 80,443)", "1-65535", key=f"param_port_range_{module_info['name'].replace(' ', '_')}")
                     st.checkbox("Enable Service Version Detection", key=f"param_service_detection_{module_info['name'].replace(' ', '_')}", value=True)
                     st.checkbox("Perform Vulnerability Scripting (passive)", key=f"param_vuln_scripting_{module_info['name'].replace(' ', '_')}")
                     st.number_input("Connection Timeout per Host (seconds)", 5, key=f"param_netscan_timeout_{module_info['name'].replace(' ', '_')}")
+                    st.slider("Scan Speed (1=Slow, 5=Aggressive):", 1, 5, 3, key=f"param_scan_speed_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "OSINT-X":
-                    data_sources = st.multiselect("Data Sources to Aggregate:", ["Social Media", "Public Records", "Dark Web Forums", "News Archives", "Code Repositories"], default=["Social Media", "Public Records"], key=f"param_osint_sources_{module_info['name'].replace(' ', '_')}")
+                    data_sources = st.multiselect("Data Sources to Aggregate:", ["Social Media", "Public Records", "Dark Web Forums", "News Archives", "Code Repositories", "Financial Data (Simulated)"], default=["Social Media", "Public Records"], key=f"param_osint_sources_{module_info['name'].replace(' ', '_')}")
                     search_depth = st.slider("Search Depth (1=Shallow, 5=Deep):", 1, 5, 3, key=f"param_osint_depth_{module_info['name'].replace(' ', '_')}")
                     output_format = st.radio("Output Report Format:", ["JSON", "PDF (Simulated)", "Text Summary"], horizontal=True, key=f"param_osint_format_{module_info['name'].replace(' ', '_')}")
+                    st.text_input("Keywords to prioritize:", "cybersecurity, hacktivism", key=f"param_osint_keywords_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "PhantomNet":
                     proxy_chain_level = st.slider("Proxy Chain Hops (0=Direct, 5=Max Obfuscation):", 0, 5, 3, key=f"param_proxy_hops_{module_info['name'].replace(' ', '_')}")
                     encryption_standard = st.selectbox("Encryption Standard:", ["AES-256 GCM", "ChaCha20-Poly1305", "Post-Quantum (Simulated)"], key=f"param_encryption_standard_{module_info['name'].replace(' ', '_')}")
                     traffic_obfuscation = st.checkbox("Enable Adaptive Traffic Obfuscation", key=f"param_traffic_obfuscation_{module_info['name'].replace(' ', '_')}", value=True)
+                    st.checkbox("Enable VPN Tunneling (Simulated)", key=f"param_vpn_tunneling_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "VulnDetect":
                     scan_intensity = st.radio("Scan Intensity:", ["Passive", "Normal", "Aggressive"], horizontal=True, key=f"param_scan_intensity_{module_info['name'].replace(' ', '_')}")
                     st.text_input("Target Asset Tags (e.g., web-server, production, client-app)", "web-server", key=f"param_target_tags_{module_info['name'].replace(' ', '_')}")
                     auto_exploit_suggest = st.checkbox("Suggest Automated Exploitation Paths", key=f"param_auto_exploit_{module_info['name'].replace(' ', '_')}")
+                    st.multiselect("CVE Filters (e.g., CVE-2023-XXXX):", ["CVE-2023-1234", "CVE-2024-5678"], key=f"param_cve_filters_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "MindHack":
-                    target_profile_details = st.text_area("Target Profile Details (age, interests, job, etc.):", "Age: 35, Interest: Cybersecurity, Job: IT Manager", key=f"param_target_profile_{module_info['name'].replace(' ', '_')}")
-                    tactic_type = st.multiselect("Social Engineering Tactics:", ["Phishing", "Pretexting", "Baiting", "Quid Pro Quo"], default=["Phishing", "Pretexting"], key=f"param_tactic_type_{module_info['name'].replace(' ', '_')}")
+                    target_profile_details = st.text_area("Target Profile Details (age, interests, job, vulnerabilities, etc.):", "Age: 35, Interest: Cybersecurity, Job: IT Manager, Weakness: Phishing susceptible", key=f"param_target_profile_{module_info['name'].replace(' ', '_')}")
+                    tactic_type = st.multiselect("Social Engineering Tactics:", ["Phishing", "Pretexting", "Baiting", "Quid Pro Quo", "Impersonation"], default=["Phishing", "Pretexting"], key=f"param_tactic_type_{module_info['name'].replace(' ', '_')}")
                     human_factor_exploit = st.slider("Human Factor Exploitation Score (0=Low, 10=High):", 0, 10, 6, key=f"param_human_factor_{module_info['name'].replace(' ', '_')}")
+                    st.number_input("Campaign Duration (days):", 1, 30, 7, key=f"param_campaign_duration_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "DataExfil":
-                    exfil_method = st.radio("Exfiltration Method:", ["DNS Tunneling", "Covert Channels (ICMP)", "Encrypted C2", "Cloud Storage Drop"], horizontal=True, key=f"param_exfil_method_{module_info['name'].replace(' ', '_')}")
+                    exfil_method = st.radio("Exfiltration Method:", ["DNS Tunneling", "Covert Channels (ICMP)", "Encrypted C2", "Cloud Storage Drop", "Steganography (Simulated)"], horizontal=True, key=f"param_exfil_method_{module_info['name'].replace(' ', '_')}")
                     data_priority = st.slider("Data Priority (1=Low Sensitivity, 10=Critical):", 1, 10, 8, key=f"param_data_priority_{module_info['name'].replace(' ', '_')}")
                     st.number_input("Throughput Limit (KB/s):", min_value=1, max_value=10240, value=1024, key=f"param_throughput_limit_{module_info['name'].replace(' ', '_')}")
+                    st.checkbox("Automated Encryption during Exfiltration", key=f"param_auto_encrypt_{module_info['name'].replace(' ', '_')}", value=True)
                 elif module_name_cleaned == "CryptoBreak":
-                    crypto_algo_target = st.text_input("Target Cryptographic Algorithm (e.g., RSA-2048, AES-128)", "RSA-2048", key=f"param_crypto_algo_{module_info['name'].replace(' ', '_')}")
-                    attack_type = st.selectbox("Attack Type:", ["Brute Force", "Side-Channel (Simulated)", "Key Recovery", "Quantum Decryption (Simulated)"], key=f"param_attack_type_{module_info['name'].replace(' ', '_')}")
-                    compute_intensity = st.slider("Compute Intensity (1=Low, 10=Extreme):", 1, 10, 7, key=f"param_compute_intensity_{module_info['name'].replace(' ', '_')}")
+                    crypto_algo_target = st.text_input("Target Cryptographic Algorithm/Protocol (e.g., RSA-2048, AES-128, TLS 1.2)", "RSA-2048", key=f"param_crypto_algo_{module_info['name'].replace(' ', '_')}")
+                    attack_type = st.selectbox("Attack Type:", ["Brute Force", "Side-Channel (Simulated)", "Key Recovery", "Quantum Decryption (Simulated)", "Fault Injection (Simulated)"], key=f"param_attack_type_{module_info['name'].replace(' ', '_')}")
+                    compute_intensity = st.slider("Compute Intensity (1=Low, 10=Extreme, requires VIP tier):", 1, 10, 7, key=f"param_compute_intensity_{module_info['name'].replace(' ', '_')}")
+                    st.number_input("Max. Parallel Processes:", 1, 64, 8, key=f"param_parallel_processes_{module_info['name'].replace(' ', '_')}")
                 elif module_name_cleaned == "AIAgent_AdvTrain":
-                    adversary_goal = st.text_input("Adversary Agent Goal (e.g., Evade IDS, Phishing Text Generation)", "Evade IDS", key=f"param_adversary_goal_{module_info['name'].replace(' ', '_')}")
-                    training_data_source = st.selectbox("Training Data Source:", ["Real-world Logs (Simulated)", "Synthetic Data", "Adversarial Examples"], key=f"param_training_data_{module_info['name'].replace(' ', '_')}")
+                    adversary_goal = st.text_input("Adversary Agent Goal (e.g., Evade IDS, Phishing Text Generation, Malware Polymorphism)", "Evade IDS", key=f"param_adversary_goal_{module_info['name'].replace(' ', '_')}")
+                    training_data_source = st.selectbox("Training Data Source:", ["Real-world Logs (Simulated)", "Synthetic Data", "Adversarial Examples", "Dark Corpus Data"], key=f"param_training_data_{module_info['name'].replace(' ', '_')}")
                     epochs = st.number_input("Training Epochs:", min_value=10, max_value=1000, value=100, step=10, key=f"param_epochs_{module_info['name'].replace(' ', '_')}")
+                    st.slider("Adversarial Perturbation Strength:", 0.1, 1.0, 0.5, key=f"param_perturb_strength_{module_info['name'].replace(' ', '_')}")
 
 
                 st.markdown(f"""
                 <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
-                    <button class="stButton" style="background-color: {WG_CONFIG.ACCENT_COLOR_SUCCESS};" onclick="alert('Simulating start command for {module_info['name']} with current parameters.');">Initiate Module Operation</button>
+                    <button class="stButton" style="background-color: {WG_CONFIG.ACCENT_COLOR_SUCCESS};" onclick="alert('Simulating initiation of {module_info['name']} operation with current parameters. Check logs for progress.');">Initiate Module Operation</button>
                     <button class="stButton" style="background-color: {WG_CONFIG.ACCENT_COLOR_CRITICAL};" onclick="alert('Simulating module shutdown for {module_info['name']}.');">Terminate Module</button>
-                    <button class="stButton" style="background-color: {WG_CONFIG.TEXT_COLOR_SECONDARY};" onclick="alert('Running comprehensive diagnostics for {module_info['name']}. Please check logs for detailed report.');">Run Diagnostics</button>
+                    <button class="stButton" style="background-color: {WG_CONFIG.TEXT_COLOR_SECONDARY};" onclick="alert('Running comprehensive diagnostics for {module_info['name']}. Please check system audit logs for a detailed report.');">Run Diagnostics</button>
                 </div>
                 """, unsafe_allow_html=True)
             st.markdown("<hr style='border-top: 1px dashed #e0e0e0; margin-top: 30px; margin-bottom: 30px;'>", unsafe_allow_html=True) # Clearer separator
@@ -2398,7 +2484,7 @@ def display_settings_page():
     # --- Section 4: System Audit Logs ---
     with st.expander("SYSTEM AUDIT LOGS", expanded=False):
         st.markdown(f"<h3 style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>Review Critical System Logs</h3>", unsafe_allow_html=True)
-        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Access a chronological record of all system events, errors, security alerts, and operational data. Comprehensive filtering and search capabilities are provided for forensic analysis.</p>", unsafe_allow_html=True)
+        st.markdown(f"<p style='text-align: right; color: {WG_CONFIG.TEXT_COLOR_SECONDARY};'>Access a chronological record of all system events, errors, security alerts, and operational data. Comprehensive filtering and search capabilities are provided for forensic analysis and system monitoring.</p>", unsafe_allow_html=True)
 
         logs = worm_logger.logs # Get the current in-memory log list
 
@@ -2449,7 +2535,7 @@ def display_settings_page():
                 worm_logger.audit("Simulated log integrity check successful.", {"result": message})
             else:
                 st.error(f"Log integrity check failed: {message}", icon="❌")
-                worm_logger.critical("Simulated log integrity check failed.", {"result": message})
+                worm_logger.critical("Simulated log integrity check failed. Potential tampering or corruption.", {"result": message})
 
         if st.button("Download Full Audit Log File", key="download_logs_btn"):
             with open(WG_CONFIG.SYSTEM_LOGS_FILE, "r", encoding=WG_CONFIG.DATA_ENCODING) as f:
@@ -2461,6 +2547,29 @@ def display_settings_page():
                 mime="text/plain",
                 key="download_logs_actual_btn"
             )
+
+        if st.button("Clear All Logs (Simulated)", key="clear_all_logs_btn"):
+            if st.session_state.get("confirm_clear_logs", False):
+                with open(WG_CONFIG.SYSTEM_LOGS_FILE, "w", encoding=WG_CONFIG.DATA_ENCODING) as f:
+                    f.write("") # Empty the log file
+                worm_logger.logs = [] # Clear in-memory logs
+                st.session_state["confirm_clear_logs"] = False
+                st.success("All system logs have been securely cleared (simulated).", icon="🧹")
+                worm_logger.audit("All system logs cleared by user.", {"user": st.session_state.user_serial})
+                st.rerun()
+            else:
+                st.session_state["confirm_clear_logs"] = True
+                st.warning("ARE YOU ABSOLUTELY SURE? Clearing logs is irreversible and will erase all audit trails. This action may impact forensic capabilities. Click again to confirm.", icon="❗️")
+                time.sleep(0.1) # Brief pause before showing buttons
+                col_clear_confirm, col_clear_cancel = st.columns(2)
+                with col_clear_confirm:
+                    if st.button("CONFIRM LOG CLEAR", key="confirm_clear_logs_action", type="primary"):
+                        st.rerun()
+                with col_clear_cancel:
+                    if st.button("Cancel Clear Logs", key="cancel_clear_logs_action"):
+                        st.session_state["confirm_clear_logs"] = False
+                        st.info("Log clearing cancelled.", icon="✅")
+                        st.rerun()
 
 
     # --- Section 5: Security Audit Report & Incident Management ---
@@ -2543,10 +2652,18 @@ def display_settings_page():
             time.sleep(random.uniform(5, 10)) # Simulate longer delay for a "comprehensive" audit
             worm_logger.security("Simulated comprehensive security audit re-initiated.", "sim_audit_rerun")
 
-            # Simulate a new incident being detected
-            if random.random() > 0.7:
-                worm_incident_manager.record_incident("Simulated Zero-Day Detection", "CRITICAL", "A novel attack pattern was identified targeting AI inference capabilities during the audit.", ["AI Core", "Security Audit Module"], context={"detected_by": "Audit Module", "threat_vector": "AI_Evasion"})
-                st.error("🚨 CRITICAL: NEW ZERO-DAY INCIDENT DETECTED DURING AUDIT! Check Incident Log.", icon="💥")
+            # Simulate a new incident being detected randomly
+            if random.random() > 0.6: # Higher chance for demonstration
+                incident_types = ["AI Model Evasion Attempt", "Data Exfiltration Anomaly", "Unauthorized Access Probe", "Resource Exhaustion Attack"]
+                severities = ["CRITICAL", "HIGH", "MEDIUM"]
+                components = [["AI Core"], ["Network", "Data Vault"], ["Authentication System"], ["Compute Cluster"]]
+
+                detected_type = random.choice(incident_types)
+                detected_severity = random.choice(severities)
+                detected_components = random.choice(components)
+
+                worm_incident_manager.record_incident(detected_type, detected_severity, f"Simulated detection: {detected_type} identified during automated audit. Further analysis required.", detected_components, "OPEN", {"detected_by": "Audit Module", "timestamp_audit": datetime.now().isoformat()})
+                st.error(f"🚨 CRITICAL: NEW SECURITY INCIDENT DETECTED DURING AUDIT! Type: {detected_type}, Severity: {detected_severity}. Check Incident Log below for details.", icon="💥")
 
             st.rerun()
 
@@ -2557,9 +2674,27 @@ def display_settings_page():
             st.info("No security incidents recorded yet. System is currently clean.", icon="🛡️")
         else:
             incidents_df = pd.DataFrame(incidents)
+            # Display only relevant columns for a concise overview
             st.dataframe(incidents_df[['incident_id', 'timestamp', 'type', 'severity', 'resolution_status', 'reported_by_user']].tail(10), use_container_width=True)
-            if st.button("View Full Incident Log", key="view_full_incidents_btn"):
-                st.json(incidents) # Display all incidents as raw JSON
+
+            # Option to view full details of a specific incident
+            st.markdown("---")
+            selected_incident_id = st.selectbox("Select an Incident ID for full details:", [inc['incident_id'] for inc in incidents], key="select_incident_for_details")
+            if selected_incident_id:
+                selected_incident_details = next((inc for inc in incidents if inc['incident_id'] == selected_incident_id), None)
+                if selected_incident_details:
+                    st.json(selected_incident_details) # Display full incident details as raw JSON for thorough review
+
+                    # Simulated incident resolution controls
+                    st.markdown("##### Manage Incident Resolution (Simulated)")
+                    current_status = selected_incident_details.get("resolution_status", "OPEN")
+                    new_status = st.selectbox("Update Resolution Status:", ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "FALSE_POSITIVE"], index=["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "FALSE_POSITIVE"].index(current_status) if current_status in ["OPEN", "IN_PROGRESS", "RESOLVED", "CLOSED", "FALSE_POSITIVE"] else 0, key=f"update_inc_status_{selected_incident_id}")
+                    resolution_notes = st.text_area("Resolution Notes (optional):", key=f"inc_res_notes_{selected_incident_id}")
+
+                    if st.button(f"Apply Status Update for {selected_incident_id}", key=f"apply_inc_update_{selected_incident_id}", type="primary"):
+                        worm_incident_manager.update_incident_status(selected_incident_id, new_status, resolution_notes)
+                        st.success(f"Incident {selected_incident_id} status updated to {new_status}.", icon="✅")
+                        st.rerun()
 
     # --- Section 6: About WORM-GPT ---
     with st.expander("ABOUT WORM-GPT v2.0", expanded=False):
@@ -2589,7 +2724,7 @@ def display_settings_page():
             <p><strong>Network Link:</strong> {WG_CONFIG.SIMULATED_NETWORK_SPECS['CONNECTION_TYPE']} ({WG_CONFIG.SIMULATED_NETWORK_SPECS['DOWNLOAD_SPEED']}/{WG_CONFIG.SIMULATED_NETWORK_SPECS['UPLOAD_SPEED']}) - A secure, low-latency, multi-layered encrypted conduit to global information networks and operational targets.</p>
             <p><strong>Data Persistence:</strong> Encrypted, Checksum-Validated Vaults - All operational data, chat histories, user profiles, and critical system configurations are stored with multi-layer, quantum-resistant encryption and cryptographic integrity checks to prevent tampering and unauthorized access, even at rest.</p>
             <p><strong>Security Protocols:</strong> Advanced Quantum-Resistant Encryption (Simulated Implementation), Dynamic Multi-Layered Obfuscation, Behavioral Anomaly Detection Algorithms, Zero-Trust Architecture Enforcement, Active Threat Intelligence Integration.</p>
-            <p><strong>Deployment Model:</strong> Distributed & Ephemeral Compute Nodes - Operates across a globally distributed, self-healing network of ephemeral compute nodes, adapting dynamically to load and ensuring resilience, redundancy, and evasive capabilities against countermeasures.</p>
+            <p><strong>Deployment Model:</strong> Distributed & Ephemeral Compute Nodes - Operates across a globally distributed, self-healing network of ephemeral compute nodes, adapting dynamically to load and ensuring resilience and evasive capabilities against countermeasures.</p>
             <p><strong>Core Programming Languages:</strong> Python (Frontend/Orchestration), C++ (Low-level AI Core/Performance), Go (Network Operations/Concurrency).</p>
         </div>
         """, unsafe_allow_html=True)
@@ -2640,6 +2775,8 @@ def display_upgrade_page():
 
     st.info("To subscribe, simply select your desired plan and click the 'Subscribe via Telegram' button. This action will initiate a direct, secure chat with our support channel on Telegram, pre-filling a message with your plan selection and user serial. Our specialized team will then guide you through the secure payment and activation process. All transactions are handled discreetly and efficiently.", icon="✨")
 
+    user_serial = st.session_state.get("user_serial", "UNAUTHENTICATED") # Get current user serial
+
     # Display each subscription plan as a card
     for plan_name, plan_details in WG_CONFIG.SUBSCRIPTION_PLANS.items():
         st.markdown(f"<h3 style='color: {WG_CONFIG.TEXT_COLOR_PRIMARY}; text-align: right;'>{plan_name}</h3>", unsafe_allow_html=True)
@@ -2651,8 +2788,8 @@ def display_upgrade_page():
             st.markdown("<ul>" + "".join([f"<li style='text-align: right; direction: rtl; margin-bottom: 5px; color: {WG_CONFIG.TEXT_COLOR_PRIMARY};'>{feat}</li>" for feat in plan_details['features']]) + "</ul>", unsafe_allow_html=True)
 
             # Generate Telegram deep link with pre-filled message, including user's serial
-            telegram_full_msg = f"{plan_details['telegram_msg']} My WORM-GPT serial key is: {st.session_state.user_serial}"
-            telegram_msg_encoded = telegram_full_msg.replace(' ', '%20').replace('#', '%23').replace(':', '%3A').replace('/', '%2F') # URL-encode message
+            telegram_raw_msg = plan_details['telegram_msg'].format(SERIAL_KEY=user_serial) # Format message with actual serial
+            telegram_msg_encoded = telegram_raw_msg.replace(' ', '%20').replace('#', '%23').replace(':', '%3A').replace('/', '%2F').replace('=', '%3D') # URL-encode message
             telegram_link = f"https://t.me/{WG_CONFIG.TELEGRAM_SUPPORT_USERNAME}?text={telegram_msg_encoded}"
 
             st.markdown(f"""
