@@ -663,9 +663,9 @@ def cyber_engine(history, user_plan):
         persona = base_persona
 
     # Define actual available models that best fit the "flash" concept
-    AVAILABLE_FLASH_MODEL = "gemini-1.5-flash-latest"
-    AVAILABLE_PRO_MODEL = "gemini-pro"
-    AVAILABLE_BASIC_MODEL = "gemini-1.0-pro"
+    AVAILABLE_FLASH_MODEL = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+    AVAILABLE_PRO_MODEL = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+    AVAILABLE_BASIC_MODEL = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
 
     if user_plan == "ELITE":
         # Simulate higher-tier flash models with the best available flash model
