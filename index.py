@@ -5,7 +5,7 @@ import os
 import random
 from datetime import datetime, timedelta
 import uuid # For unique chat IDs
-from streamlit-cookies-manager import CookiesManager # For persistent login
+from streamlit_cookies_manager import CookiesManager # For persistent login
 
 # Initialize Cookies Manager early
 cookies = CookiesManager()
