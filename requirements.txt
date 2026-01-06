@@ -1,5 +1,4 @@
-google-genai
-streamlit
+openai
 streamlit
 bcrypt
 streamlit-cookies-manager
