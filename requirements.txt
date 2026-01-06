@@ -6,3 +6,4 @@ pypdf
 python-docx
 google-generativeai
 matplotlib
+streamlit-cookies-manager
