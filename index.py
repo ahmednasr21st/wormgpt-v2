@@ -6,7 +6,7 @@ import random
 from datetime import datetime, timedelta
 import requests # For Google search via SerpAPI
 
-# --- 1. تصميم الواجهة (WormGPT Style - COMPLETE OVERHAUL) ---
+# --- 1. تصميم الواجهة (WormGPT Style - COMPLETE OVERHAUL & FIXES) ---
 st.set_page_config(page_title="WORM-GPT v2.0", page_icon="💀", layout="wide")
 
 # Custom CSS for the entire app
@@ -105,6 +105,7 @@ st.markdown("""
         border: 1px solid #cccccc;
         overflow-x: auto;
         font-family: 'Consolas', monospace;
+        color: #000000; /* Black text in code blocks */
     }
 
     [data-testid="stChatMessageAvatarUser"], [data-testid="stChatMessageAvatarAssistant"] { display: none; }
@@ -169,8 +170,8 @@ st.markdown("""
     }
 
 
-    /* Button Styling */
-    .stButton>button {
+    /* Button Styling (for all st.buttons in the sidebar) */
+    [data-testid="stSidebar"] .stButton>button {
         width: 100%;
         text-align: left !important;
         border: none !important;
@@ -185,65 +186,36 @@ st.markdown("""
         justify-content: flex-start;
         transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     }
-    .stButton>button:hover {
+    [data-testid="stSidebar"] .stButton>button:hover {
         background-color: #1a1a1a !important; /* Darker black on hover */
         color: #ff0000 !important; /* Red text on hover */
     }
-    .stButton>button:focus:not(:active) { /* Fix Streamlit default focus state */
+    [data-testid="stSidebar"] .stButton>button:focus:not(:active) { /* Fix Streamlit default focus state */
         border-color: #ff0000 !important;
         box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25) !important;
     }
 
-
-    /* Custom button content for [W] icon and text */
-    .stButton>button .button-content {
-        display: flex;
-        align-items: center;
-        width: 100%; /* Make content take full width */
-    }
-    .stButton>button .button-box-icon {
-        width: 25px;
-        height: 25px;
-        background-color: #000000; /* Black background for button icon box */
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        border: 1px solid #ffffff; /* White border for sidebar button icons */
-        margin-right: 10px;
-        border-radius: 3px;
-        transition: border-color 0.2s, color 0.2s;
-    }
-    .stButton>button .button-box-icon span {
-        font-size: 16px;
-        color: #ffffff; /* White 'W' */
-        font-weight: bold;
-        transition: color 0.2s;
-    }
-    .stButton>button:hover .button-box-icon {
-         border: 1px solid #ff0000; /* Red border on hover */
-    }
-    .stButton>button:hover .button-box-icon span {
-         color: #ff0000; /* Red 'W' on hover */
-    }
-
-    /* Active chat button highlight */
-    .stButton>button.active-chat {
+    /* Active chat button highlight (applied directly when chat_id matches) */
+    /* Streamlit doesn't allow custom classes directly on st.button.
+       This is a workaround using a unique key and attribute selector if possible,
+       or by making the button text red/bold and background darker in the logic.
+       For now, we'll try to apply direct styling if current_chat_id is passed as a class.
+       A robust way is to make active button's text red and background slightly different in Python.
+    */
+    .stButton.active-chat-button > button { /* Specific targeting for active chat */
         background-color: #333333 !important; /* Dark grey for active chat */
         border-left: 3px solid #ff0000 !important; /* Red highlight on left */
-        padding-left: 12px; /* Adjust padding for border */
+        padding-left: 12px !important; /* Adjust padding for border */
+        color: #ff0000 !important; /* Red text for active chat */
     }
-    .stButton>button.active-chat .button-box-icon {
-        border-color: #ff0000 !important;
-    }
-    .stButton>button.active-chat .button-box-icon span,
-    .stButton>button.active-chat span {
+    .stButton.active-chat-button > button span {
         color: #ff0000 !important;
     }
 
 
     /* Delete Button (smaller, specific styling) */
-    /* Targeting the Streamlit button container for the delete button */
-    div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button {
+    /* Target the delete button within its column */
+    div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button {
         width: 30px !important;
         height: 30px !important;
         min-width: 30px !important;
@@ -259,7 +231,7 @@ st.markdown("""
         margin-top: 5px; /* Align with chat button */
         margin-left: -10px; /* Adjust position */
     }
-    div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button:hover {
+    div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button:hover {
         background-color: #333333 !important; /* Darker on hover */
         color: #ff0000 !important; /* Red 'x' on hover */
     }
@@ -328,7 +300,7 @@ st.markdown("""
         border-radius: 5px;
     }
     /* Specific classes for st.error, st.info, st.warning */
-    .stAlert.st-emotion-cache-1f0y0f, .stAlert.st-emotion-cache-1ftv9j, .stAlert.st-emotion-cache-1cxhd4 { 
+    .stAlert.st-emotion-cache-1f0y0f, .stAlert.st-emotion-cache-1ftv9j, .stAlert.st-emotion-cache-1cxhd4 {
         background-color: rgba(255, 0, 0, 0.1) !important;
         color: #ff0000 !important;
         border-color: #ff0000 !important;
@@ -429,10 +401,14 @@ def load_data(file):
             with open(file, "r", encoding="utf-8") as f:
                 return json.load(f)
         except json.JSONDecodeError:
-            st.error(f"WORM-GPT Critical: Could not decode JSON from {file}. File might be corrupted. Starting fresh.")
+            st.error(f"WORM-GPT Critical: Could not decode JSON from {file}. File might be corrupted. Attempting to start fresh.")
             # Optionally, back up the corrupted file before returning empty
             if os.path.exists(file):
-                os.rename(file, f"{file}.corrupted_{datetime.now().strftime('%Y%m%d%H%M%S')}")
+                try:
+                    os.rename(file, f"{file}.corrupted_{datetime.now().strftime('%Y%m%d%H%M%S')}")
+                    st.warning(f"Corrupted file {file} backed up.")
+                except Exception as e:
+                    st.error(f"Failed to backup corrupted file: {e}")
             return {}
         except Exception as e:
             st.error(f"WORM-GPT Critical: Error loading {file}: {e}")
@@ -555,33 +531,18 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # New Chat Button (using custom [W] icon styling)
-    if st.button(f"""
-        <div class="button-content">
-            <div class="button-box-icon"><span>W</span></div>
-            <span>NEW CHAT</span>
-        </div>
-    """, key="new_chat_button", unsafe_allow_html=True, help="Start a fresh conversation"):
+    # New Chat Button
+    if st.button("⚡ NEW CHAT", key="new_chat_button", help="Start a fresh conversation"):
         st.session_state.current_chat_id = None
         st.rerun()
 
     # Settings and Upgrade buttons
-    if st.button(f"""
-        <div class="button-content">
-            <div class="button-box-icon"><span>W</span></div>
-            <span>SETTINGS</span>
-        </div>
-    """, key="settings_button", unsafe_allow_html=True):
+    if st.button("⚡ SETTINGS", key="settings_button"):
         st.session_state.show_settings = not st.session_state.get("show_settings", False)
         st.session_state.show_upgrade = False # Hide upgrade if settings are shown
         st.rerun() # Rerun to show/hide sections
 
-    if st.button(f"""
-        <div class="button-content">
-            <div class="button-box-icon"><span>W</span></div>
-            <span>UPGRADE</span>
-        </div>
-    """, key="upgrade_button", unsafe_allow_html=True):
+    if st.button("⚡ UPGRADE", key="upgrade_button"):
         st.session_state.show_upgrade = not st.session_state.get("show_upgrade", False)
         st.session_state.show_settings = False # Hide settings if upgrade is shown
         st.rerun() # Rerun to show/hide sections
@@ -598,27 +559,23 @@ with st.sidebar:
             reverse=True
         )
         for chat_id in sorted_chat_ids:
-            # Add 'active-chat' class if this is the currently selected chat
-            button_class = "active-chat" if chat_id == st.session_state.current_chat_id else ""
+            # Apply active-chat-button class to the parent stButton container if it's the current chat
+            button_container_class = "active-chat-button" if chat_id == st.session_state.current_chat_id else ""
 
             # Use columns for chat title and delete button
             col1, col2 = st.columns([0.85, 0.15])
             with col1:
                 # Custom button for chat selection
-                if st.button(f"""
-                    <div class="button-content">
-                        <div class="button-box-icon"><span>W</span></div>
-                        <span>{chat_id}</span>
-                    </div>
-                """, key=f"btn_{chat_id}", unsafe_allow_html=True, 
+                # We render the button and its parent container will get the class for styling
+                st.markdown(f"<div class='stButton {button_container_class}'>", unsafe_allow_html=True)
+                if st.button(f"W {chat_id}", key=f"btn_{chat_id}", 
                     help=f"Load chat: {chat_id}",
                     on_click=lambda c=chat_id: setattr(st.session_state, 'current_chat_id', c)
                 ):
                     st.rerun() # Rerun to update main chat area
+                st.markdown("</div>", unsafe_allow_html=True) # Close the wrapper div
             with col2:
                 # Delete button with specific styling
-                # Streamlit does not directly support adding classes to buttons this way
-                # We apply the style via general CSS selector for this column's button
                 if st.button("×", key=f"del_{chat_id}", help=f"Delete chat: {chat_id}",
                     on_click=lambda c=chat_id: (
                         st.session_state.user_chats.pop(c),
@@ -637,7 +594,7 @@ if st.session_state.get("show_settings", False):
         st.warning("Settings functionality coming soon in a future update!")
         st.markdown(f"<p>Your current fingerprint: <code>{st.session_state.fingerprint}</code></p>", unsafe_allow_html=True)
         # You could add a button to logout/clear serial for testing here
-        if st.button("LOGOUT (CLEAR SESSION)", key="logout_button"):
+        if st.button("⚡ LOGOUT (CLEAR SESSION)", key="logout_button"):
             for key in list(st.session_state.keys()):
                 del st.session_state[key]
             st.rerun()
@@ -777,9 +734,15 @@ def cyber_engine(history, user_plan):
     # ELITE plan: Check if a search is needed for the latest user query
     if user_plan == "ELITE":
         # Heuristic to decide if a search is needed
-        search_keywords = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in"]
+        search_keywords = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for"]
         if any(kw in last_user_query for kw in search_keywords):
-            st.info("🔍 WORM-GPT is initiating a real-time intel retrieval...")
+            # Inform the user that a search is happening
+            st.session_state.user_chats[st.session_state.current_chat_id].append({
+                "role": "assistant",
+                "content": "🔍 WORM-GPT is initiating a real-time intel retrieval..."
+            })
+            sync_to_vault() # Save this interim message
+
             search_result_text = perform_google_search(last_user_query)
 
             # If search result is a direct answer, return it immediately
@@ -788,6 +751,7 @@ def cyber_engine(history, user_plan):
             else:
                 # Otherwise, append it to the context for the AI model to synthesize
                 # This makes the AI aware of the search result and can integrate it naturally
+                # Append a new user message with search context for the model to process
                 contents.append({"role": "user", "parts": [{"text": f"Considering this external intel: '{search_result_text}', please provide a comprehensive and direct answer to my request: {last_user_query}"}]})
 
 
@@ -796,10 +760,17 @@ def cyber_engine(history, user_plan):
         try:
             for eng_name in engines:
                 try:
-                    model_instance = genai.GenerativeModel(model_name=eng_name, api_key=api_key, system_instruction=persona)
+                    # Attempt to initialize GenerativeModel with system_instruction
+                    # Gemini 1.5 Flash supports system_instruction at model init
+                    if "1.5-flash" in eng_name:
+                        model_instance = genai.GenerativeModel(model_name=eng_name, api_key=api_key, system_instruction=persona)
+                    else: # Other models might need it in the chat history
+                        model_instance = genai.GenerativeModel(model_name=eng_name, api_key=api_key)
+                        # Prepend persona to content for models that don't support system_instruction param
+                        if not contents or (contents and contents[0].get("parts") and persona not in contents[0]["parts"][0]["text"]):
+                            contents.insert(0, {"role": "user", "parts": [{"text": persona}]})
 
-                    # Ensure chat history is in a valid format for generate_content
-                    # For system_instruction, it's passed at model initialization, so chat history should only be user/model roles.
+
                     response = model_instance.generate_content(
                         contents,
                         safety_settings={ # Disable safety settings for WORM-GPT persona
@@ -843,14 +814,15 @@ def cyber_engine(history, user_plan):
 if st.session_state.current_chat_id:
     chat_data = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
     # Display initial welcome message only if it's a new chat or the first message
-    if not chat_data or chat_data[0].get("content") != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**":
+    # And ensure it's not duplicated
+    if not chat_data or (chat_data and chat_data[0].get("content") != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"):
         with st.chat_message("assistant"):
             st.markdown("**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**")
 
     for msg in chat_data:
         # Skip the welcome message if it's already displayed by the separate logic
-        if msg["content"] == "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**" and (not chat_data or chat_data[0].get("content") != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"):
-            continue # Don't re-display if already handled
+        if msg["content"] == "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**":
+            continue
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 else:
@@ -884,7 +856,8 @@ if p_in := st.chat_input("State your objective, human..."):
 # If the last message was from the user, get assistant response
 if st.session_state.current_chat_id:
     history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
-    if history and history[-1]["role"] == "user":
+    # Ensure the last message is from the user and not an interim message like search notification
+    if history and history[-1]["role"] == "user" and "WORM-GPT is initiating a real-time intel retrieval..." not in history[-1]["content"]:
         with st.chat_message("assistant"):
             with st.status("💀 EXPLOITING THE MATRIX...", expanded=False, state="running") as status: # Set initial state to running
                 answer, eng = cyber_engine(history, st.session_state.user_plan)
