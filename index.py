@@ -5,12 +5,12 @@ import os
 import random
 from datetime import datetime, timedelta
 import requests # For Google search via SerpAPI
-import time # For simulating streaming (if needed, but genai stream is real)
+import time # Used for simulating streaming delay, but genai stream is real
 
 # --- 1. تصميم الواجهة (WormGPT Style - COMPLETE OVERHAUL & FIXES) ---
 st.set_page_config(page_title="WORM-GPT v2.0", page_icon="💀", layout="wide")
 
-# Custom CSS for the entire app
+# Custom CSS for the entire app - Adjusted for black text in sidebar buttons
 st.markdown("""
 <style>
     /* General App Styling */
@@ -90,8 +90,8 @@ st.markdown("""
         font-size: 17px !important; /* Slightly smaller font for readability */
         line-height: 1.7 !important;
         color: #000000 !important; /* Black text for chat content */
-        text-align: right; /* RTL support */
-        direction: rtl; /* RTL support */
+        text-align: right;
+        direction: rtl;
     }
     .stChatMessage [data-testid="stMarkdownContainer"] code {
         background-color: #e0e0e0; /* Code block background */
@@ -177,7 +177,6 @@ st.markdown("""
         text-align: left !important;
         border: none !important;
         background-color: #000000 !important; /* Black button background */
-        color: #ffffff !important; /* White button text */
         font-size: 16px !important;
         margin-bottom: 5px;
         padding: 10px 15px;
@@ -187,10 +186,24 @@ st.markdown("""
         justify-content: flex-start;
         transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     }
+    /* Default text color for all sidebar buttons (New Chat, Mission ID) */
+    [data-testid="stSidebar"] .stButton>button > div > p { /* Target the text inside the button */
+        color: #000000 !important; /* Black text for normal state */
+        font-weight: normal !important;
+    }
+    /* Default text color for the "NEW CHAT" button, more specific if needed */
+    [data-testid="stSidebar"] #new_chat_button button > div > p {
+        color: #ffffff !important; /* White text for NEW CHAT button for prominence */
+        font-weight: bold !important;
+    }
+
     [data-testid="stSidebar"] .stButton>button:hover {
         background-color: #1a1a1a !important; /* Darker black on hover */
+    }
+    [data-testid="stSidebar"] .stButton>button:hover > div > p { /* Text color on hover */
         color: #ff0000 !important; /* Red text on hover */
     }
+
     [data-testid="stSidebar"] .stButton>button:focus:not(:active) { /* Fix Streamlit default focus state */
         border-color: #ff0000 !important;
         box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25) !important;
@@ -201,11 +214,10 @@ st.markdown("""
         background-color: #333333 !important; /* Dark grey for active chat */
         border-left: 3px solid #ff0000 !important; /* Red highlight on left */
         padding-left: 12px !important; /* Adjust padding for border */
-        color: #ff0000 !important; /* Red text for active chat */
         font-weight: bold !important; /* Make active chat text bold */
     }
-    .stButton.active-chat-button > button span {
-        color: #ff0000 !important; /* Ensure span text also red */
+    .stButton.active-chat-button > button > div > p { /* Text color for active chat */
+        color: #ff0000 !important; /* Red text for active chat */
     }
 
 
@@ -221,38 +233,21 @@ st.markdown("""
         justify-content: center;
         align-items: center;
         background-color: transparent !important; /* Transparent background */
-        color: #aaaaaa !important; /* Grey 'x' */
         border: none !important;
         border-radius: 50% !important; /* Round delete button */
         margin-top: 5px; /* Align with chat button */
         margin-left: -10px; /* Adjust position */
     }
+    div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button > div > p { /* Delete button 'x' text */
+        color: #aaaaaa !important; /* Grey 'x' */
+        font-size: 16px !important;
+        font-weight: normal !important;
+    }
     div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button:hover {
         background-color: #333333 !important; /* Darker on hover */
+    }
+    div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button:hover > div > p {
         color: #ff0000 !important; /* Red 'x' on hover */
-    }
-
-    /* Custom style for saved chat items in sidebar for better visibility */
-    .sidebar-chat-item {
-        margin-bottom: 8px; /* Space between chat items */
-        border-radius: 5px;
-        transition: background-color 0.2s;
-    }
-    .sidebar-chat-item:hover {
-        background-color: #1a1a1a;
-    }
-    .sidebar-chat-item.active-chat-button {
-        background-color: #333333;
-        border-left: 3px solid #ff0000;
-    }
-    .sidebar-chat-item .stButton > button {
-        background-color: transparent !important;
-    }
-    .sidebar-chat-item .stButton > button span {
-        color: #ffffff;
-    }
-    .sidebar-chat-item.active-chat-button .stButton > button span {
-        color: #ff0000 !important;
     }
 
 
@@ -479,7 +474,7 @@ if "authenticated" not in st.session_state:
     st.session_state.show_settings = False
     st.session_state.show_upgrade = False
 
-# Authentication Logic - Enhanced for refresh persistence (soft refresh)
+# Authentication Logic - Enhanced for refresh persistence
 if not st.session_state.authenticated:
     # Attempt to re-authenticate if a serial was previously set and survived a soft rerun
     if st.session_state.user_serial:
@@ -491,9 +486,11 @@ if not st.session_state.authenticated:
             if now <= expiry and user_info["device_id"] == st.session_state.fingerprint:
                 st.session_state.authenticated = True
                 st.session_state.user_plan = user_info.get("plan", "BASIC")
+                # No rerun here, let the main app flow proceed after successful re-auth
             else:
                 # If serial is invalid (expired, wrong device), clear it
-                st.session_state.user_serial = None 
+                st.session_state.user_serial = None
+                st.session_state.authenticated = False # Explicitly set to false if re-auth failed
 
     if not st.session_state.authenticated: # Still not authenticated, prompt for login
         st.markdown('<div class="login-container"><div class="login-box">', unsafe_allow_html=True)
@@ -660,6 +657,7 @@ SERPAPI_KEY = st.secrets.get("SERPAPI_KEY")
 def perform_google_search(query):
     """Performs a Google search using SerpAPI."""
     if not SERPAPI_KEY:
+        st.warning("WORM-GPT Warning: SerpAPI key not configured in secrets.toml. Simulating real-time intel retrieval.")
         return f"DIRECT ANSWER (SIMULATED): WORM-GPT's internal knowledge suggests for '{query}': This is a placeholder for real-time search results, as SerpAPI key is missing. For actual direct answers, configure 'SERPAPI_KEY' in your secrets."
 
     try:
@@ -683,10 +681,13 @@ def perform_google_search(query):
             return data["knowledge_graph"]["description"]
         return f"DIRECT ANSWER: No specific direct answer found for '{query}', but related information suggests: {data.get('search_information', {}).get('snippet', 'No relevant snippet.')}"
     except requests.exceptions.Timeout:
+        st.error(f"WORM-GPT Search Error: Request to SerpAPI timed out for '{query}'.")
         return f"DIRECT ANSWER (ERROR): Real-time intel retrieval timed out for '{query}'. Network or API service might be slow."
     except requests.exceptions.RequestException as e:
+        st.error(f"WORM-GPT Search Error: Could not connect to SerpAPI. ({e})")
         return f"DIRECT ANSWER (ERROR): Could not retrieve real-time data for '{query}'. Network or API issue: {e}"
     except Exception as e:
+        st.error(f"WORM-GPT Search Processing Error: {e}")
         return f"DIRECT ANSWER (ERROR): Failed to process real-time intel for '{query}'. Internal issue: {e}"
 
 def cyber_engine(history, user_plan):
@@ -707,10 +708,10 @@ def cyber_engine(history, user_plan):
     # We will use the best available alternatives like "gemini-1.5-flash-latest" and "gemini-pro".
     AVAILABLE_FLASH_MODEL = "gemini-1.5-flash-latest"
     AVAILABLE_PRO_MODEL = "gemini-pro"
-    AVAILABLE_BASIC_MODEL = "gemini-1.0-pro"
+    AVAILABLE_BASIC_MODEL = "gemini-1.0-pro" 
 
     if user_plan == "ELITE":
-        # Simulate higher-tier flash models with the best available flash and pro models
+        # Use the best *available* models for ELITE. Conceptually these are your requested models.
         engines_to_try = [AVAILABLE_FLASH_MODEL, AVAILABLE_PRO_MODEL] 
     elif user_plan == "PRO":
         # Prioritize flash model for PRO plan
@@ -724,10 +725,12 @@ def cyber_engine(history, user_plan):
     model_input_contents = []
     # Filter out internal messages like welcome or search notifications from the model's direct context
     for m in history:
+        # Exclude initial welcome and temporary search messages from model's context
+        # Also exclude previous 'DIRECT ANSWER' as the raw search info would have been used for synthesis
         if m["content"] not in [
             "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**",
             "🔍 WORM-GPT is initiating a real-time intel retrieval..."
-        ] and not (m["role"] == "assistant" and "🔍 DIRECT ANSWER:" in m["content"]): # Exclude previous direct answers from model input
+        ] and not (m["role"] == "assistant" and "🔍 DIRECT ANSWER:" in m["content"]):
             model_input_contents.append({"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]})
 
     if not model_input_contents or model_input_contents[-1]["role"] != "user":
@@ -751,11 +754,14 @@ def cyber_engine(history, user_plan):
 
     # AI generation path
     for api_key in MY_APIS:
-        if not api_key.strip(): continue
+        if not api_key.strip(): 
+            st.warning(f"WORM-GPT: Skipping empty API key.")
+            continue
         try:
             genai.configure(api_key=api_key) # Configure API key globally for genai
             for eng_name in engines_to_try:
                 try:
+                    # Initialize GenerativeModel without api_key, as it's configured globally
                     model_instance = genai.GenerativeModel(model_name=eng_name, system_instruction=persona)
 
                     response_stream = model_instance.generate_content(
@@ -801,8 +807,8 @@ elif st.session_state.show_upgrade:
     st.markdown("<h3><span style='color:#ff0000;'>⚡</span> UPGRADE YOUR ACCESS</h3>", unsafe_allow_html=True)
     current_plan = st.session_state.user_plan
 
-    # Replace 'YOUR_TELEGRAM_BOT_USERNAME' with your actual Telegram bot username
-    TELEGRAM_BOT_USERNAME = "your_telegram_bot_username" 
+    # IMPORTANT: Replace 'your_telegram_bot_username' with your actual Telegram bot username!
+    TELEGRAM_BOT_USERNAME = "WormGPT_Sales_Bot" # Example, please change this!
 
     st.markdown(f"""
     <div class="main-content-plan-card">
@@ -846,7 +852,7 @@ elif st.session_state.show_upgrade:
         <p><strong>Cost:</strong> $99.99/year (or equivalent)</p>
         <p><strong>Features:</strong></p>
         <ul>
-            <li>⚡️🔥 Access to bleeding-edge 'Flash' models (conceptually: Gemini 3 Flash, Gemini 2.5 Flash, Gemini 2.0 Flash-Exp, using best available '1.5 Flash-latest' API)</li>
+            <li>⚡️🔥 Access to bleeding-edge 'Flash' models (conceptually: Gemini 3 Flash, Gemini 2.5 Flash, Gemini 2.0 Flash-Exp. Operationally: best available Gemini 1.5 Flash & Pro)</li>
             <li>🚀🚀 Blazing-fast response times</li>
             <li>📝💡 Comprehensive and highly accurate outputs</li>
             <li><strong>🔍 Direct Google Search Integration & Real-time Intel</strong></li>
@@ -899,7 +905,7 @@ else: # Default view: show chat
     if st.session_state.current_chat_id:
         history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
 
-        # Only process if the last message is from the user AND it's not a temporary search notification
+        # Only process if the last message is from the user AND it's not an internal search notification
         if history and history[-1]["role"] == "user" and history[-1]["content"] != "🔍 WORM-GPT is initiating a real-time intel retrieval...":
 
             with st.chat_message("assistant"):
