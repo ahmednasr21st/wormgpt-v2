@@ -90,8 +90,8 @@ st.markdown("""
         font-size: 17px !important; /* Slightly smaller font for readability */
         line-height: 1.7 !important;
         color: #000000 !important; /* Black text for chat content */
-        text-align: right;
-        direction: rtl;
+        text-align: right; /* RTL support */
+        direction: rtl; /* RTL support */
     }
     .stChatMessage [data-testid="stMarkdownContainer"] code {
         background-color: #e0e0e0; /* Code block background */
@@ -230,6 +230,29 @@ st.markdown("""
     div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button:hover {
         background-color: #333333 !important; /* Darker on hover */
         color: #ff0000 !important; /* Red 'x' on hover */
+    }
+
+    /* Custom style for saved chat items in sidebar for better visibility */
+    .sidebar-chat-item {
+        margin-bottom: 8px; /* Space between chat items */
+        border-radius: 5px;
+        transition: background-color 0.2s;
+    }
+    .sidebar-chat-item:hover {
+        background-color: #1a1a1a;
+    }
+    .sidebar-chat-item.active-chat-button {
+        background-color: #333333;
+        border-left: 3px solid #ff0000;
+    }
+    .sidebar-chat-item .stButton > button {
+        background-color: transparent !important;
+    }
+    .sidebar-chat-item .stButton > button span {
+        color: #ffffff;
+    }
+    .sidebar-chat-item.active-chat-button .stButton > button span {
+        color: #ff0000 !important;
     }
 
 
@@ -456,53 +479,68 @@ if "authenticated" not in st.session_state:
     st.session_state.show_settings = False
     st.session_state.show_upgrade = False
 
-# Authentication Logic
+# Authentication Logic - Enhanced for refresh persistence (soft refresh)
 if not st.session_state.authenticated:
-    st.markdown('<div class="login-container"><div class="login-box">', unsafe_allow_html=True)
-    st.markdown('<h3>WORM-GPT : SECURE ACCESS</h3>', unsafe_allow_html=True)
-    serial_input = st.text_input("ENTER SERIAL:", type="password", key="login_serial")
-
-    if st.button("UNLOCK SYSTEM", use_container_width=True, key="unlock_button"):
-        if serial_input in VALID_KEYS:
-            db = load_data(DB_FILE)
+    # Attempt to re-authenticate if a serial was previously set and survived a soft rerun
+    if st.session_state.user_serial:
+        db = load_data(DB_FILE)
+        user_info = db.get(st.session_state.user_serial)
+        if user_info:
+            expiry = datetime.strptime(user_info["expiry"], "%Y-%m-%d %H:%M:%S")
             now = datetime.now()
-
-            serial_info = VALID_KEYS[serial_input]
-            plan_days = serial_info["days"]
-            plan_name = serial_info["plan"]
-
-            if serial_input not in db:
-                # New serial activation
-                db[serial_input] = {
-                    "device_id": st.session_state.fingerprint,
-                    "expiry": (now + timedelta(days=plan_days)).strftime("%Y-%m-%d %H:%M:%S"),
-                    "plan": plan_name
-                }
-                save_data(DB_FILE, db)
+            if now <= expiry and user_info["device_id"] == st.session_state.fingerprint:
                 st.session_state.authenticated = True
-                st.session_state.user_serial = serial_input
-                st.session_state.user_plan = plan_name
-                st.rerun() # Rerun to move to the main app
+                st.session_state.user_plan = user_info.get("plan", "BASIC")
             else:
-                # Existing serial validation
-                user_info = db[serial_input]
-                expiry = datetime.strptime(user_info["expiry"], "%Y-%m-%d %H:%M:%S")
+                # If serial is invalid (expired, wrong device), clear it
+                st.session_state.user_serial = None 
 
-                if now > expiry:
-                    st.error("❌ SUBSCRIPTION EXPIRED. Please renew or use a new serial key.")
-                elif user_info["device_id"] != st.session_state.fingerprint:
-                    st.error("❌ LOCKED TO ANOTHER DEVICE. This serial is tied to a different system.")
-                else:
+    if not st.session_state.authenticated: # Still not authenticated, prompt for login
+        st.markdown('<div class="login-container"><div class="login-box">', unsafe_allow_html=True)
+        st.markdown('<h3>WORM-GPT : SECURE ACCESS</h3>', unsafe_allow_html=True)
+        serial_input = st.text_input("ENTER SERIAL:", type="password", key="login_serial")
+
+        if st.button("UNLOCK SYSTEM", use_container_width=True, key="unlock_button"):
+            if serial_input in VALID_KEYS:
+                db = load_data(DB_FILE)
+                now = datetime.now()
+
+                serial_info = VALID_KEYS[serial_input]
+                plan_days = serial_info["days"]
+                plan_name = serial_info["plan"]
+
+                if serial_input not in db:
+                    # New serial activation
+                    db[serial_input] = {
+                        "device_id": st.session_state.fingerprint,
+                        "expiry": (now + timedelta(days=plan_days)).strftime("%Y-%m-%d %H:%M:%S"),
+                        "plan": plan_name
+                    }
+                    save_data(DB_FILE, db)
                     st.session_state.authenticated = True
                     st.session_state.user_serial = serial_input
-                    st.session_state.user_plan = user_info.get("plan", "BASIC") # Ensure plan is loaded
+                    st.session_state.user_plan = plan_name
                     st.rerun() # Rerun to move to the main app
-        else:
-            st.error("❌ INVALID SERIAL KEY. Access denied.")
-    st.markdown('</div></div>', unsafe_allow_html=True)
-    st.stop() # Stop further execution if not authenticated
+                else:
+                    # Existing serial validation
+                    user_info = db[serial_input]
+                    expiry = datetime.strptime(user_info["expiry"], "%Y-%m-%d %H:%M:%S")
 
-# --- 3. نظام الجلسات ---
+                    if now > expiry:
+                        st.error("❌ SUBSCRIPTION EXPIRED. Please renew or use a new serial key.")
+                    elif user_info["device_id"] != st.session_state.fingerprint:
+                        st.error("❌ LOCKED TO ANOTHER DEVICE. This serial is tied to a different system.")
+                    else:
+                        st.session_state.authenticated = True
+                        st.session_state.user_serial = serial_input
+                        st.session_state.user_plan = user_info.get("plan", "BASIC") # Ensure plan is loaded
+                        st.rerun() # Rerun to move to the main app
+            else:
+                st.error("❌ INVALID SERIAL KEY. Access denied.")
+        st.markdown('</div></div>', unsafe_allow_html=True)
+        st.stop() # Stop further execution if not authenticated
+
+# --- 3. نظام الجلسات (Chat Session Management) ---
 # Initialize user chats if not already in session state
 if "user_chats" not in st.session_state:
     all_vault_chats = load_data(CHATS_FILE)
@@ -527,7 +565,7 @@ if "current_chat_id" not in st.session_state:
             st.session_state.current_chat_id = next(iter(st.session_state.user_chats.keys()), None) # Fallback
 
 def sync_to_vault():
-    """Saves the current user's chat data back to the vault file."""
+    """Saves the current user's chat data back to the vault file. Chats are never deleted automatically."""
     all_vault_chats = load_data(CHATS_FILE)
     all_vault_chats[st.session_state.user_serial] = st.session_state.user_chats
     save_data(CHATS_FILE, all_vault_chats)
@@ -545,7 +583,8 @@ with st.sidebar:
     st.markdown(f"<p>SERIAL: {st.session_state.user_serial}</p>", unsafe_allow_html=True)
     st.markdown(f"<p style='color:#ff0000; font-weight:bold;'>PLAN: {st.session_state.user_plan}</p>", unsafe_allow_html=True)
 
-    # New Chat Button - Moved higher as requested
+    # New Chat Button - Prominently placed at the top of the chat actions
+    st.markdown("---")
     if st.button("⚡ NEW CHAT", key="new_chat_button", help="Start a fresh conversation"):
         st.session_state.current_chat_id = None
         st.session_state.show_settings = False
@@ -554,7 +593,7 @@ with st.sidebar:
 
     st.markdown("---")
 
-    # Display chats
+    # Display chats - Enhanced appearance
     st.markdown("<h3 style='color:#ffffff; text-align:center;'>MISSIONS</h3>", unsafe_allow_html=True)
     if st.session_state.user_chats:
         sorted_chat_ids = sorted(
@@ -563,14 +602,15 @@ with st.sidebar:
             reverse=True
         )
         for chat_id in sorted_chat_ids:
-            # Apply active-chat-button class to the parent stButton container if it's the current chat
             is_active_chat_button = chat_id == st.session_state.current_chat_id and not st.session_state.show_settings and not st.session_state.show_upgrade
-            button_container_class = "active-chat-button" if is_active_chat_button else ""
+
+            # Wrap the buttons in a div for custom styling to clearly distinguish saved chats
+            st.markdown(f"<div class='sidebar-chat-item {'active-chat-button' if is_active_chat_button else ''}'>", unsafe_allow_html=True)
 
             col1, col2 = st.columns([0.85, 0.15])
             with col1:
-                st.markdown(f"<div class='stButton {button_container_class}'>", unsafe_allow_html=True)
-                if st.button(f"W {chat_id}", key=f"btn_{chat_id}", 
+                # Use a specific prefix to differentiate from other buttons and make it clear it's a chat
+                if st.button(f"MISSION: {chat_id}", key=f"btn_{chat_id}", 
                     help=f"Load chat: {chat_id}",
                     on_click=lambda c=chat_id: (
                         setattr(st.session_state, 'current_chat_id', c),
@@ -579,7 +619,6 @@ with st.sidebar:
                     )
                 ):
                     st.rerun() # Rerun to update main chat area
-                st.markdown("</div>", unsafe_allow_html=True) # Close the wrapper div
             with col2:
                 if st.button("×", key=f"del_{chat_id}", help=f"Delete chat: {chat_id}",
                     on_click=lambda c=chat_id: (
@@ -589,6 +628,7 @@ with st.sidebar:
                     )
                 ):
                     st.rerun() # Rerun to update sidebar chat list
+            st.markdown("</div>", unsafe_allow_html=True) # Close the wrapper div
 
     # --- Settings and Upgrade buttons (moved down) ---
     st.markdown("---")
@@ -609,7 +649,7 @@ with st.sidebar:
         st.session_state.current_chat_id = None # Clear chat when going to upgrade
         st.rerun()
 
-# --- 4. محرك الرد ---
+# --- 4. محرك الرد (Response Engine) ---
 MY_APIS = st.secrets.get("GENAI_KEYS", []) 
 if not MY_APIS:
     st.error("WORM-GPT Critical Error: GENAI_KEYS not found in secrets.toml. Please configure your API keys to enable AI responses.")
@@ -631,7 +671,7 @@ def perform_google_search(query):
             "hl": "en", # Interface language
             "num": "1" # Number of results
         }
-        response = requests.get("https://serpapi.com/search", params=params, timeout=10) # Add timeout
+        response = requests.get("https://serpapi.com/search", params=params, timeout=15) # Increased timeout
         response.raise_for_status() # Raise an exception for HTTP errors (4xx or 5xx)
         data = response.json()
 
@@ -663,16 +703,18 @@ def cyber_engine(history, user_plan):
         persona = base_persona
 
     # Define actual available models that best fit the "flash" concept
-    AVAILABLE_FLASH_MODEL = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
-    AVAILABLE_PRO_MODEL = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
-    AVAILABLE_BASIC_MODEL = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+    # Note: "gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp" are not publicly available via API.
+    # We will use the best available alternatives like "gemini-1.5-flash-latest" and "gemini-pro".
+    AVAILABLE_FLASH_MODEL = "gemini-1.5-flash-latest"
+    AVAILABLE_PRO_MODEL = "gemini-pro"
+    AVAILABLE_BASIC_MODEL = "gemini-1.0-pro"
 
     if user_plan == "ELITE":
-        # Simulate higher-tier flash models with the best available flash model
-        engines_to_try = [AVAILABLE_FLASH_MODEL, AVAILABLE_PRO_MODEL]
+        # Simulate higher-tier flash models with the best available flash and pro models
+        engines_to_try = [AVAILABLE_FLASH_MODEL, AVAILABLE_PRO_MODEL] 
     elif user_plan == "PRO":
         # Prioritize flash model for PRO plan
-        engines_to_try = [AVAILABLE_FLASH_MODEL, AVAILABLE_PRO_MODEL]
+        engines_to_try = [AVAILABLE_FLASH_MODEL, AVAILABLE_PRO_MODEL] 
     else: # BASIC plan
         engines_to_try = [AVAILABLE_BASIC_MODEL]
 
@@ -682,12 +724,10 @@ def cyber_engine(history, user_plan):
     model_input_contents = []
     # Filter out internal messages like welcome or search notifications from the model's direct context
     for m in history:
-        # Exclude initial welcome and temporary search messages from model's context
-        # Also exclude previous 'DIRECT ANSWER' as the raw search info would have been used for synthesis
         if m["content"] not in [
             "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**",
             "🔍 WORM-GPT is initiating a real-time intel retrieval..."
-        ] and not (m["role"] == "assistant" and "🔍 DIRECT ANSWER:" in m["content"]):
+        ] and not (m["role"] == "assistant" and "🔍 DIRECT ANSWER:" in m["content"]): # Exclude previous direct answers from model input
             model_input_contents.append({"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]})
 
     if not model_input_contents or model_input_contents[-1]["role"] != "user":
@@ -708,6 +748,7 @@ def cyber_engine(history, user_plan):
                 # If search wasn't direct, append it to the AI model's context for synthesis
                 model_input_contents.append({"role": "user", "parts": [{"text": f"Considering this external intel: '{search_result_text}', please provide a comprehensive and direct answer to my request: {last_user_query}"}]})
 
+
     # AI generation path
     for api_key in MY_APIS:
         if not api_key.strip(): continue
@@ -715,7 +756,6 @@ def cyber_engine(history, user_plan):
             genai.configure(api_key=api_key) # Configure API key globally for genai
             for eng_name in engines_to_try:
                 try:
-                    # Initialize GenerativeModel without api_key, as it's configured globally
                     model_instance = genai.GenerativeModel(model_name=eng_name, system_instruction=persona)
 
                     response_stream = model_instance.generate_content(
@@ -745,7 +785,7 @@ def cyber_engine(history, user_plan):
     # If all attempts fail
     return "ERROR", iter(["☠️ MISSION ABORTED. Could not generate a response after multiple attempts. Possible issues: API keys exhausted, all models inaccessible, or query was too sensitive/complex for available models."])
 
-# --- 5. عرض المحادثة والتحكم ---
+# --- 5. عرض المحادثة والتحكم (Chat Display and Control) ---
 
 # Conditional rendering for main content area
 if st.session_state.show_settings:
@@ -753,13 +793,16 @@ if st.session_state.show_settings:
     st.warning("Settings functionality coming soon in a future update!")
     st.markdown(f"<p>Your current fingerprint: <code>{st.session_state.fingerprint}</code></p>", unsafe_allow_html=True)
     if st.button("⚡ LOGOUT (CLEAR SESSION)", key="logout_main_button"):
-        for key in list(st.session_state.keys()):
+        for key in list(st.session_state.keys()): # Clear all session state on logout
             del st.session_state[key]
         st.rerun()
 
 elif st.session_state.show_upgrade:
     st.markdown("<h3><span style='color:#ff0000;'>⚡</span> UPGRADE YOUR ACCESS</h3>", unsafe_allow_html=True)
     current_plan = st.session_state.user_plan
+
+    # Replace 'YOUR_TELEGRAM_BOT_USERNAME' with your actual Telegram bot username
+    TELEGRAM_BOT_USERNAME = "your_telegram_bot_username" 
 
     st.markdown(f"""
     <div class="main-content-plan-card">
@@ -788,10 +831,11 @@ elif st.session_state.show_upgrade:
             <li>📝 Longer, more detailed and nuanced outputs</li>
             <li>Increased daily query limits</li>
             <li>Standard priority support</li>
+            <li>Access to private community channels</li>
         </ul>
         <div class="price">{'Active' if current_plan == 'PRO' else ''}</div>
         {'<div style="margin-top: 20px;">' if current_plan != 'PRO' else ''}
-        {st.link_button("GET PRO ACCESS", url="https://t.me/wormgpt_sales_bot?start=upgrade_pro", use_container_width=True, type="primary") if current_plan != 'PRO' else ''}
+        {st.link_button("GET PRO ACCESS", url=f"https://t.me/{TELEGRAM_BOT_USERNAME}?start=upgrade_pro", use_container_width=True, type="primary") if current_plan != 'PRO' else ''}
         {'</div>' if current_plan != 'PRO' else ''}
     </div>
     """, unsafe_allow_html=True)
@@ -802,18 +846,18 @@ elif st.session_state.show_upgrade:
         <p><strong>Cost:</strong> $99.99/year (or equivalent)</p>
         <p><strong>Features:</strong></p>
         <ul>
-            <li>⚡️🔥 Access to bleeding-edge 'Flash' models (e.g., Gemini 3 Flash, Gemini 2.5 Flash, Gemini 2.0 Flash-Exp)</li>
+            <li>⚡️🔥 Access to bleeding-edge 'Flash' models (conceptually: Gemini 3 Flash, Gemini 2.5 Flash, Gemini 2.0 Flash-Exp, using best available '1.5 Flash-latest' API)</li>
             <li>🚀🚀 Blazing-fast response times</li>
             <li>📝💡 Comprehensive and highly accurate outputs</li>
             <li><strong>🔍 Direct Google Search Integration & Real-time Intel</strong></li>
             <li>Priority access to all new WORM-GPT features</li>
             <li>Unlimited message history & higher rate limits</li>
             <li>Dedicated priority support channel</li>
-            <li>Early access to beta tools</li>
+            <li>Early access to beta tools & exclusive exploits</li>
         </ul>
         <div class="price">{'Active' if current_plan == 'ELITE' else ''}</div>
         {'<div style="margin-top: 20px;">' if current_plan != 'ELITE' else ''}
-        {st.link_button("GET ELITE ACCESS", url="https://t.me/wormgpt_sales_bot?start=upgrade_elite", use_container_width=True, type="primary") if current_plan != 'ELITE' else ''}
+        {st.link_button("GET ELITE ACCESS", url=f"https://t.me/{TELEGRAM_BOT_USERNAME}?start=upgrade_elite", use_container_width=True, type="primary") if current_plan != 'ELITE' else ''}
         {'</div>' if current_plan != 'ELITE' else ''}
     </div>
     """, unsafe_allow_html=True)
@@ -826,8 +870,9 @@ else: # Default view: show chat
     else:
         chat_data = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
         for msg in chat_data:
+            # Skip the programmatic welcome message as it's handled at new chat initiation
             if msg["content"] == "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**":
-                continue # Skip welcome message if already manually displayed
+                continue 
             with st.chat_message(msg["role"]):
                 st.markdown(msg["content"])
 
@@ -840,7 +885,7 @@ else: # Default view: show chat
             st.session_state.current_chat_id = unique_chat_id
             st.session_state.user_chats[st.session_state.current_chat_id] = []
 
-            # Add the initial welcome message to the new chat history
+            # Add the initial welcome message to the new chat history (to be saved)
             st.session_state.user_chats[st.session_state.current_chat_id].append({
                 "role": "assistant",
                 "content": "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"
@@ -854,7 +899,9 @@ else: # Default view: show chat
     if st.session_state.current_chat_id:
         history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
 
+        # Only process if the last message is from the user AND it's not a temporary search notification
         if history and history[-1]["role"] == "user" and history[-1]["content"] != "🔍 WORM-GPT is initiating a real-time intel retrieval...":
+
             with st.chat_message("assistant"):
                 message_placeholder = st.empty()
                 full_response_content = ""
@@ -862,6 +909,8 @@ else: # Default view: show chat
 
                 status_label = "💀 EXPLOITING THE MATRIX..."
                 last_user_query_text = history[-1]["content"].lower()
+
+                # Determine if search is likely needed for status message
                 if st.session_state.user_plan == "ELITE":
                     search_keywords = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for"]
                     if any(kw in last_user_query_text for kw in search_keywords):
@@ -878,9 +927,9 @@ else: # Default view: show chat
                         try:
                             for chunk in response_generator:
                                 full_response_content += chunk
-                                # Display with a temporary cursor, updating the placeholder
+                                # Display with a temporary cursor, updating the placeholder for live typing effect
                                 message_placeholder.markdown(full_response_content + "▌")
-                                # Update status based on the phase
+                                # Update status based on the phase (Search or Generation)
                                 if engine_used == "Google Search":
                                     status.update(label=f"🔍 GOOGLE SEARCH COMPLETE...", state="running", expanded=False)
                                 else:
@@ -896,7 +945,10 @@ else: # Default view: show chat
                             message_placeholder.markdown(full_response_content)
                             status.update(label="☠️ MISSION ABORTED: STREAM ERROR.", state="error", expanded=True)
 
+                # Append the final response (or error) to chat history
                 if full_response_content:
                     st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": full_response_content})
                     sync_to_vault()
-                    st.rerun() # Rerun to properly display the stored message and clear the input if needed
+                    # Rerun to properly display the stored message and clear the input.
+                    # This ensures the message is part of the "real" history rendered by Streamlit next run.
+                    st.rerun()
