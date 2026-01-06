@@ -646,7 +646,7 @@ def cyber_engine_grok(history, user_plan):
         messages[-1]['content'] += f"\n[SYSTEM INJECTED LIVE DATA]: {search_context}\nUse this data to enhance the answer."
 
     # 5. Select Model
-    model_id = "grok-beta" # or "grok-2" if available to your key
+    model_id = "grok-4-latest" # or "grok-2" if available to your key
 
     try:
         stream = client.chat.completions.create(
