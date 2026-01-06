@@ -710,11 +710,11 @@ def cyber_engine(history, user_plan):
 
     # Model selection based on plan
     if user_plan == "ELITE":
-        engines = ["gemini-1.5-flash-latest", "gemini-pro"] # Prioritize latest flash for Elite
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Prioritize latest flash for Elite
     elif user_plan == "PRO":
-        engines = ["gemini-pro", "gemini-1.5-flash-latest"] # Pro can use gemini-pro or latest flash
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Pro can use gemini-pro or latest flash
     else: # BASIC plan
-        engines = ["gemini-1.0-pro"] # Standard model for basic plan
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Standard model for basic plan
 
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing
 
