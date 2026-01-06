@@ -8,10 +8,60 @@ import logging
 from datetime import datetime, timedelta
 from typing import Dict, Any, List, Optional, Union, Tuple
 
-# --- 0. WORM-GPT v2.0 Configuration and Setup ---
-# This section initializes global configurations, logging, and foundational utilities
-# required for the entire application. It ensures a consistent environment and provides
-# centralized control over various application parameters.
+# --- Optional: Google Search API Integration (for Elite Annual Plan) ---
+# This feature requires a Google Custom Search Engine (CSE) API key and a Search Engine ID (CX).
+# These should be stored securely in Streamlit secrets.
+import requests
+
+def perform_google_search(query: str, api_key: Optional[str], cse_id: Optional[str], num_results: int = 3) -> Optional[str]:
+    """
+    Performs a Google search using the Custom Search API and returns a formatted string of results.
+    Args:
+        query (str): The search query.
+        api_key (str): Google Custom Search API key.
+        cse_id (str): Google Programmable Search Engine ID.
+        num_results (int): Number of top results to return.
+    Returns:
+        Optional[str]: A formatted string of search results, or None if search fails or keys are missing.
+    """
+    if not api_key or not cse_id:
+        app_logger.warning("Google Search API key or CSE ID is missing. Skipping search.")
+        return None
+
+    search_url = "https://www.googleapis.com/customsearch/v1"
+    params = {
+        "key": api_key,
+        "cx": cse_id,
+        "q": query,
+        "num": num_results
+    }
+
+    app_logger.info(f"Attempting Google search for query: '{query[:50]}...'")
+    try:
+        response = requests.get(search_url, params=params, timeout=5)
+        response.raise_for_status() # Raise an HTTPError for bad responses (4xx or 5xx)
+        search_data = response.json()
+
+        if "items" in search_data:
+            results_list = []
+            for item in search_data["items"]:
+                title = item.get("title", "No Title")
+                link = item.get("link", "#")
+                snippet = item.get("snippet", "No snippet available.")
+                results_list.append(f"Title: {title}\nLink: {link}\nSnippet: {snippet}\n---")
+            formatted_results = "\n".join(results_list)
+            app_logger.info(f"Google search successful for '{query[:50]}...'. Found {len(search_data['items'])} results.")
+            return f"**[Google Search Results for '{query}']:**\n{formatted_results}"
+        else:
+            app_logger.warning(f"No search items found for '{query[:50]}...'. Full response: {search_data}")
+            return f"**[Google Search]:** No relevant results found for '{query}'."
+    except requests.exceptions.RequestException as e:
+        app_logger.error(f"Error during Google Search API call for '{query[:50]}...': {e}")
+        return f"**[Google Search Error]:** Could not perform search due to an API error."
+    except Exception as e:
+        app_logger.critical(f"An unexpected error occurred in perform_google_search for '{query[:50]}...': {e}")
+        return f"**[Google Search Error]:** An unexpected error occurred."
+
 
 # --- Global Logger Configuration ---
 # Setting up a robust logging system to monitor application behavior, debug issues,
@@ -35,7 +85,7 @@ class ConfigManager:
         self.DEFAULT_LAYOUT = "wide"
         self.DEFAULT_ENCODING = "utf-8"
         self.JSON_INDENT = 4
-        self.DB_VERSION = "2.0.7" # Updated version for database schema management
+        self.DB_VERSION = "2.0.8" # Updated version for database schema management
 
         # --- File Paths ---
         # Centralized file paths for persistent storage. These files store user data,
@@ -95,29 +145,33 @@ class ConfigManager:
                 "plan_free_feature_3": "Standard Response Times",
                 "plan_free_feature_4": "Chat History Retention (Max 10 chats)",
                 "no_chats_yet": "No chats started yet. Click 'New Chat' to begin.", 
+                "daily_limit_reached": "You have reached your daily message limit. Please upgrade your plan or try again tomorrow.",
 
                 "plan_pro_monthly_feature_1": "Unlimited WORM-GPT Model Access (Enhanced Models)",
                 "plan_pro_monthly_feature_2": "Unlimited Messages & Chats",
-                "plan_pro_monthly_feature_3": "Faster Responses",
-                "plan_pro_monthly_feature_4": "Premium Technical Support",
-                "plan_pro_monthly_feature_5": "Priority Access to New Features",
+                "plan_pro_monthly_feature_3": "Faster Response Times (Priority API Access)",
+                "plan_pro_monthly_feature_4": "Advanced Code Generation & Malware Analysis",
+                "plan_pro_monthly_feature_5": "Premium Technical Support (24/7)",
 
                 "plan_elite_monthly_feature_1": "All Pro Monthly Features",
-                "plan_elite_monthly_feature_2": "Exclusive Model Access (Experimental/Tier 1)",
-                "plan_elite_monthly_feature_3": "Hyper-Fast Processing (Dedicated Resources)",
-                "plan_elite_monthly_feature_4": "Early Beta Program Access",
-                "plan_elite_monthly_feature_5": "Highest Uptime SLA (99.9%)",
+                "plan_elite_monthly_feature_2": "Exclusive Model Access (Gemini Ultra-Pro Experimental)",
+                "plan_elite_monthly_feature_3": "Hyper-Fast Processing (Dedicated Cloud Resources)",
+                "plan_elite_monthly_feature_4": "Early Access to Beta Features & Tools",
+                "plan_elite_monthly_feature_5": "Highest Uptime SLA (99.99%) & Priority Queue",
+                "plan_elite_monthly_feature_6": "Advanced Exploit Development Assistance",
 
                 "plan_pro_annual_feature_1": "All Pro Monthly Features",
-                "plan_pro_annual_feature_2": "Significant Annual Discount",
-                "plan_pro_annual_feature_3": "Enhanced Model Priority",
-                "plan_pro_annual_feature_4": "Access to Annual-Only Features",
+                "plan_pro_annual_feature_2": "Significant Annual Discount (Save 20%)",
+                "plan_pro_annual_feature_3": "Enhanced Model Priority & Uptime",
+                "plan_pro_annual_feature_4": "Extended Data Retention (1 Year Chat History)",
+                "plan_pro_annual_feature_5": "Access to Exclusive Community Forum",
 
                 "plan_elite_annual_feature_1": "All Elite Monthly Features",
-                "plan_elite_annual_feature_2": "Maximum Annual Savings",
-                "plan_elite_annual_feature_3": "Exclusive Alpha/Beta Access",
-                "plan_elite_annual_feature_4": "Dedicated Account Manager",
-                "plan_elite_annual_feature_5": "Custom Integration Support",
+                "plan_elite_annual_feature_2": "Maximum Annual Savings (Save 25%)",
+                "plan_elite_annual_feature_3": "Exclusive Alpha Program Access & Direct Feedback Channel",
+                "plan_elite_annual_feature_4": "Dedicated Account Manager & Personalized Support",
+                "plan_elite_annual_feature_5": "Real-time Google Search Integration for Contextual Responses", # New feature
+                "plan_elite_annual_feature_6": "On-demand Malware Sandbox Analysis Integration (Coming Soon)",
 
 
                 "pro_monthly_price": "$40 / Month",
@@ -139,7 +193,7 @@ class ConfigManager:
         self.SUBSCRIPTION_PLANS = {
             "WORM-FREE-TRIAL": {"type": "Free", "duration_days": 30, "description": "Basic Access", "max_chats": 10, "daily_msg_limit": 50, "models": ["gemini-3-flash", "gemini-2.5-flash"]},
 
-            "PRO-MONTHLY-KEY": {"type": "Pro-Monthly", "duration_days": 30, "description": "Pro Monthly Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental", "gemini-ultra-pro-exp"]},
+            "PRO-MONTHLY-KEY": {"type": "Pro-Monthly", "duration_days": 30, "description": "Pro Monthly Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental"]},
             "ELITE-MONTHLY-KEY": {"type": "Elite-Monthly", "duration_days": 30, "description": "Elite Monthly Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental", "gemini-ultra-pro-exp"]}, 
 
             "PRO-ANNUAL-KEY": {"type": "Pro-Annual", "duration_days": 365, "description": "Pro Annual Access", "max_chats": -1, "daily_msg_limit": -1, "models": ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-experimental", "gemini-ultra-pro-exp"]},
@@ -150,11 +204,9 @@ class ConfigManager:
         # Links to external services, such as the Telegram channel for subscriptions.
         self.TELEGRAM_SUBSCRIPTION_LINK = "https://t.me/your_telegram_channel_for_subscriptions" # TODO: Replace with actual Telegram link
 
-        # --- GenAI API Keys (Loaded from Streamlit Secrets) ---
-        # It's crucial not to expose API keys directly in the codebase.
-        # Streamlit's `st.secrets` provides a secure way to manage these.
-        self._genai_keys = None # Will be loaded dynamically
-
+        # --- Google Search API Keys (Loaded from Streamlit Secrets) ---
+        self._google_search_api_key = None
+        self._google_cse_id = None
         app_logger.debug("ConfigManager: Configuration loaded successfully.")
 
     def get_text(self, key: str) -> str:
@@ -184,6 +236,26 @@ class ConfigManager:
                 app_logger.critical(f"Unexpected error loading GenAI API keys: {e}")
                 self._genai_keys = []
         return self._genai_keys
+
+    def get_google_search_credentials(self) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Retrieves Google Custom Search API key and CSE ID from Streamlit secrets.
+        """
+        if self._google_search_api_key is None or self._google_cse_id is None:
+            try:
+                self._google_search_api_key = st.secrets["GOOGLE_SEARCH_API_KEY"]
+                self._google_cse_id = st.secrets["GOOGLE_CSE_ID"]
+                app_logger.info("Google Search API credentials loaded.")
+            except KeyError:
+                app_logger.warning("GOOGLE_SEARCH_API_KEY or GOOGLE_CSE_ID not found in Streamlit secrets. Google Search feature will be disabled.")
+                self._google_search_api_key = None
+                self._google_cse_id = None
+            except Exception as e:
+                app_logger.critical(f"Unexpected error loading Google Search credentials: {e}")
+                self._google_search_api_key = None
+                self._google_cse_id = None
+        return self._google_search_api_key, self._google_cse_id
+
 
 # Initialize the configuration manager globally
 config = ConfigManager()
@@ -509,6 +581,7 @@ class SubscriptionService:
                         self.config.get_text("plan_elite_monthly_feature_3"),
                         self.config.get_text("plan_elite_monthly_feature_4"),
                         self.config.get_text("plan_elite_monthly_feature_5"),
+                        self.config.get_text("plan_elite_monthly_feature_6"),
                     ],
                     "serial_key": serial,
                     "type": "Elite-Monthly",
@@ -524,6 +597,7 @@ class SubscriptionService:
                         self.config.get_text("plan_pro_annual_feature_2"),
                         self.config.get_text("plan_pro_annual_feature_3"),
                         self.config.get_text("plan_pro_annual_feature_4"),
+                        self.config.get_text("plan_pro_annual_feature_5"),
                     ],
                     "serial_key": serial,
                     "type": "Pro-Annual",
@@ -540,6 +614,7 @@ class SubscriptionService:
                         self.config.get_text("plan_elite_annual_feature_3"),
                         self.config.get_text("plan_elite_annual_feature_4"),
                         self.config.get_text("plan_elite_annual_feature_5"),
+                        self.config.get_text("plan_elite_annual_feature_6"),
                     ],
                     "serial_key": serial,
                     "type": "Elite-Annual",
@@ -953,12 +1028,12 @@ class StylingManager:
                 font-size: 13px !important;
             }}
 
-            /* ALL Button Styling (Consistent Dark Green Background / White Text) */
+            /* ALL Button Styling (Consistent Black Background / White Text) */
             .stButton>button {{
                 width: 100%;
                 text-align: center !important; /* Center text for general buttons */
                 border: none !important;
-                background-color: #28a745 !important; /* Dark Green background */
+                background-color: #000000 !important; /* Black background */
                 color: #FFFFFF !important; /* White text */
                 font-size: 16px !important;
                 padding: 10px 15px;
@@ -971,12 +1046,12 @@ class StylingManager:
                 gap: 10px; /* Space between icon and text */
             }}
             .stButton>button:hover {{
-                background-color: #218838 !important; /* Darker Green on hover */
+                background-color: #333333 !important; /* Darker gray on hover */
                 color: #FFFFFF !important; /* Keep white text */
             }}
             /* Active/Selected state for sidebar buttons (specific targeting) */
             div[data-testid="stSidebar"] .stButton>button.active-sidebar-button {{ /* Custom class for active state */
-                background-color: #218838 !important; /* Active dark green */
+                background-color: #333333 !important; /* Active dark gray */
                 font-weight: bold !important;
                 color: #FFFFFF !important;
             }}
@@ -1097,7 +1172,7 @@ class StylingManager:
                 box-shadow: 0 2px 8px rgba(0,0,0,0.05);
                 text-align: center;
                 transition: all 0.3s ease;
-                min-height: 480px; /* Ensure cards have consistent height for multiple features */
+                min-height: 520px; /* Ensure cards have consistent height for new features */
                 display: flex;
                 flex-direction: column;
                 justify-content: space-between;
@@ -1142,14 +1217,15 @@ class StylingManager:
 
             /* Adjust padding for columns in plans page */
             /* Streamlit specific classes, may change across versions. Using current known ones. */
-            .st-emotion-cache-1uj4tfl, .st-emotion-cache-1jmveo0, .st-emotion-cache-vk33n5, .st-emotion-cache-1r6dm1x {{ 
-                padding: 1rem 0.5rem !important; /* Consistent padding for columns */
+            .st-emotion-cache-1uj4tfl, .st-emotion-cache-1jmveo0, .st-emotion-cache-vk33n5, .st-emotion-cache-1r6dm1x,
+            div[data-testid="stHorizontalBlock"] > div:first-child {{ 
+                padding: 1rem 0.5rem !important; /* Consistent padding for columns and their containers */
             }}
 
 
             /* Custom styling for HTML anchor tags used as link buttons (matching other buttons) */
             .plan-card .subscribe-link-button {{
-                background-color: #28a745 !important; /* Dark Green for plan buttons */
+                background-color: #000000 !important; /* Black for plan buttons */
                 color: white !important;
                 border-radius: 10px !important;
                 padding: 10px 20px !important;
@@ -1164,7 +1240,7 @@ class StylingManager:
                 line-height: 1.5; /* Adjust line height for button text */
             }}
             .plan-card .subscribe-link-button:hover {{
-                background-color: #218838 !important; /* Darker Green on hover */
+                background-color: #333333 !important; /* Darker gray on hover */
                 text-decoration: none !important;
             }}
 
@@ -1178,7 +1254,7 @@ class StylingManager:
                 /* Removed border-bottom: 1px solid #E0E0E0; to remove horizontal line */
             }}
             .plan-type-selector-button {{
-                background-color: #28a745 !important; /* Dark Green for selector buttons */
+                background-color: #000000 !important; /* Black for selector buttons */
                 color: white !important;
                 border: none !important;
                 padding: 12px 25px !important;
@@ -1188,7 +1264,7 @@ class StylingManager:
                 transition: background-color 0.3s ease, transform 0.2s ease;
             }}
             .plan-type-selector-button:hover {{
-                background-color: #218838 !important; /* Darker Green on hover */
+                background-color: #333333 !important; /* Darker gray on hover */
                 transform: translateY(-2px);
             }}
             .plan-type-selector-button.active {{
@@ -1306,7 +1382,7 @@ class UIRenderer:
             st.markdown(f"""
             <style>
                 div[data-testid="stSidebar"] .stButton>button[key='{key}'] {{ 
-                    background-color: #218838 !important; /* Active dark green */
+                    background-color: #333333 !important; /* Active dark gray (matches hover) */
                     font-weight: bold !important; 
                     color: #FFFFFF !important;
                 }}
@@ -1328,7 +1404,7 @@ class UIRenderer:
             st.markdown(f"""
             <style>
                 div[data-testid="stSidebar"] .stButton>button[key='new_chat_button'] {{ 
-                    background-color: #218838 !important; 
+                    background-color: #333333 !important; /* Active dark gray (matches hover) */
                     font-weight: bold !important; 
                     color: #FFFFFF !important;
                 }}
@@ -1363,13 +1439,14 @@ class UIRenderer:
                 st.markdown(f"""
                 <style>
                     div[data-testid="stSidebar"] .stButton>button[key='{select_key}'] {{ 
-                        background-color: #218838 !important; /* Active dark green */
+                        background-color: #333333 !important; /* Active dark gray (matches hover) */
                         font-weight: bold !important; 
                         color: #FFFFFF !important;
                     }}
                 </style>
                 """, unsafe_allow_html=True)
         with col2:
+            # Delete button is red to stand out
             if st.button("×", key=delete_key, help=f"Delete '{chat_id}'"):
                 delete_clicked = True
                 app_logger.info(f"UIRenderer: Delete button clicked for chat '{chat_id}'.")
@@ -1552,9 +1629,9 @@ class SettingsPage:
         """Renders the user's profile information section."""
         st.header(self.config.get_text("profile_info"))
         user_entitlements = self.subscription_service.get_user_entitlements(st.session_state.user_serial)
-        user_plan_info = self.security_module.get_user_plan_details(st.session_state.user_serial)
+        # user_plan_info = self.security_module.get_user_plan_details(st.session_state.user_serial) # Redundant with entitlements
 
-        if user_plan_info:
+        if user_entitlements: # Use user_entitlements directly
             col1, col2 = st.columns(2)
             with col1:
                 st.write(f"**{self.config.get_text('current_serial')}** `{st.session_state.user_serial}`")
@@ -1562,9 +1639,7 @@ class SettingsPage:
             with col2:
                 expiry_display = datetime.strptime(user_entitlements['expiry_date'], "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d %H:%M") if user_entitlements['expiry_date'] != "N/A" else "N/A"
                 st.write(f"**{self.config.get_text('expiry_date')}** `{expiry_display}`")
-                # Removed original device_id display to simplify, if needed, can add back.
-                # It was showing st.session_state.user_serial's device_id, which is correct.
-                st.write(f"**Device ID:** `{user_entitlements['device_id'][:12]}...`") # Show device ID
+                st.write(f"**Device ID:** `{user_entitlements['device_id'][:12]}...`") 
             st.info(f"Your plan allows: **{user_entitlements['daily_msg_limit'] if user_entitlements['daily_msg_limit'] != -1 else 'Unlimited'} messages/day**, "
                     f"and **{user_entitlements['max_chats'] if user_entitlements['max_chats'] != -1 else 'Unlimited'} chats**.")
         else:
@@ -1637,27 +1712,35 @@ class UpgradePage:
         col_month, col_year = st.columns(2)
         with col_month:
             monthly_button_label = self.config.get_text("view_monthly_plans")
-            if st.button(monthly_button_label, key="view_monthly_plans_button", use_container_width=True):
-                st.session_state.upgrade_plan_view = "Monthly"
-                app_logger.info("UpgradePage: Switched to 'Monthly' plan view.")
-                st.rerun() # Rerun to apply the new filter
-            # Manually inject CSS to make this button black if active
-            if st.session_state.upgrade_plan_view == "Monthly":
-                st.markdown(f"<style>div[data-testid='stHorizontalBlock'] div.st-emotion-cache-k3g6t1.e1f1d6z03 button[key='view_monthly_plans_button'] {{ background-color: #000000 !important; color: white !important; }}</style>", unsafe_allow_html=True)
-
+            # Using st.markdown for the button to apply custom classes more easily
+            # This is a hacky way to ensure Streamlit buttons are fully styled by CSS
+            monthly_button_html = f"""
+                <button class="plan-type-selector-button {'active' if st.session_state.upgrade_plan_view == 'Monthly' else ''}" 
+                        key="view_monthly_plans_button_html">
+                    {monthly_button_label}
+                </button>
+            """
+            if st.markdown(monthly_button_html, unsafe_allow_html=True, key="view_monthly_plans_html_wrapper"):
+                if st.session_state.upgrade_plan_view != "Monthly": # Only rerender if actually changing
+                    st.session_state.upgrade_plan_view = "Monthly"
+                    app_logger.info("UpgradePage: Switched to 'Monthly' plan view via HTML button.")
+                    st.rerun()
 
         with col_year:
             annual_button_label = self.config.get_text("view_annual_plans")
-            if st.button(annual_button_label, key="view_annual_plans_button", use_container_width=True):
-                st.session_state.upgrade_plan_view = "Annual"
-                app_logger.info("UpgradePage: Switched to 'Annual' plan view.")
-                st.rerun() # Rerun to apply the new filter
-            # Manually inject CSS to make this button black if active
-            if st.session_state.upgrade_plan_view == "Annual":
-                st.markdown(f"<style>div[data-testid='stHorizontalBlock'] div.st-emotion-cache-k3g6t1.e1f1d6z03 button[key='view_annual_plans_button'] {{ background-color: #000000 !important; color: white !important; }}</style>", unsafe_allow_html=True)
+            annual_button_html = f"""
+                <button class="plan-type-selector-button {'active' if st.session_state.upgrade_plan_view == 'Annual' else ''}" 
+                        key="view_annual_plans_button_html">
+                    {annual_button_label}
+                </button>
+            """
+            if st.markdown(annual_button_html, unsafe_allow_html=True, key="view_annual_plans_html_wrapper"):
+                if st.session_state.upgrade_plan_view != "Annual": # Only rerender if actually changing
+                    st.session_state.upgrade_plan_view = "Annual"
+                    app_logger.info("UpgradePage: Switched to 'Annual' plan view via HTML button.")
+                    st.rerun()
 
-        # Removed the extra spacer div, as column padding should manage it.
-        # Ensure the styling for the column containers removes unwanted margins.
+        st.markdown('<div style="margin-bottom: 20px;"></div>', unsafe_allow_html=True) # Spacer after selector
 
         # Fetch all plans, then filter based on selection
         all_plans = self.subscription_service.get_all_plans_display_info()
@@ -1717,8 +1800,9 @@ class UpgradePage:
         st.markdown('<div style="flex-grow: 1;"></div>', unsafe_allow_html=True) 
 
         if plan_info["type"] == "Free":
+            # "Learn More" button, styled consistently
             st.button(self.config.get_text("learn_more"), key=f"learn_more_{plan_info['type']}", use_container_width=True)
-            st.markdown("<p style='font-size: 12px; color: #777;'>*This is the plan you are likely on now.</p>", unsafe_allow_html=True)
+            st.markdown("<p style='font-size: 12px; color: #777;'>*This is the plan you are currently on.</p>", unsafe_allow_html=True)
             app_logger.debug(f"UpgradePage: Free plan card rendered.")
         else:
             # For paid plans, redirect to Telegram using a custom styled HTML anchor (bypassing st.link_button)
@@ -1962,7 +2046,7 @@ class MainApplicationRunner:
 
             # Check daily message limit
             if not self.subscription_service.check_message_limit(st.session_state.user_serial):
-                st.error("You have reached your daily message limit. Please upgrade your plan or try again tomorrow.")
+                st.error(self.config.get_text("daily_limit_reached"))
                 app_logger.warning(f"ChatInterface: User {st.session_state.user_serial[:8]}... hit daily message limit. Message denied.")
                 return # Stop processing this input further
 
@@ -1989,9 +2073,33 @@ class MainApplicationRunner:
 
                         user_entitlements = self.subscription_service.get_user_entitlements(st.session_state.user_serial)
                         models_for_plan = user_entitlements["models"]
-                        app_logger.debug(f"ChatInterface: Models available for plan '{user_entitlements['plan_type']}': {models_for_plan}")
+                        current_plan_type = user_entitlements["plan_type"]
+                        app_logger.debug(f"ChatInterface: Models available for plan '{current_plan_type}': {models_for_plan}")
 
-                        answer, eng = cyber_engine(current_chat_history, models_for_plan)
+                        # --- Google Search Integration for Elite Annual Plan ---
+                        augmented_history_for_ai = list(current_chat_history) # Create a copy
+                        if current_plan_type == "Elite-Annual" and user_input_prompt:
+                            google_api_key, google_cse_id = self.config.get_google_search_credentials()
+                            if google_api_key and google_cse_id:
+                                # Simple heuristic to decide if search is needed
+                                # In a real app, this would be more sophisticated (e.g., model decides tool use)
+                                if "search" in user_input_prompt.lower() or \
+                                   "find" in user_input_prompt.lower() or \
+                                   "latest" in user_input_prompt.lower() or \
+                                   "what is" in user_input_prompt.lower():
+
+                                    search_results = perform_google_search(user_input_prompt, google_api_key, google_cse_id)
+                                    if search_results:
+                                        # Prepend search results as an "assistant" thought process or context.
+                                        # The GenAI model is expected to integrate this context.
+                                        app_logger.info(f"ChatInterface: Elite Annual plan: Injecting Google Search results into history.")
+                                        augmented_history_for_ai.insert(-1, {"role": "assistant", "content": f"**(Internal Search Complete)**\n{search_results}"})
+                                else:
+                                    app_logger.debug(f"ChatInterface: Elite Annual plan: Query '{user_input_prompt[:50]}...' not deemed suitable for automatic search.")
+                            else:
+                                app_logger.warning("ChatInterface: Elite Annual plan enabled but Google Search API credentials missing. Skipping search.")
+
+                        answer, eng = cyber_engine(augmented_history_for_ai, models_for_plan)
 
                         if answer:
                             status.update(label=f"{self.config.get_text('obj_complete')} {eng.upper()}", state="complete")
