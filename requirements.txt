@@ -1,7 +1,7 @@
 openai
 streamlit
 bcrypt
-streamlit-cookies-manager
+pillow
 python-docx
 google-generativeai
 matplotlib
