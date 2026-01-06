@@ -12,3 +12,4 @@ cryptography
 psutil
 networkx
 streamlit-agraph
+qrcode
