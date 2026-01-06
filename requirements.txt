@@ -2,7 +2,7 @@ google-genai
 streamlit
 streamlit
 bcrypt
-streamlit_cookies_manager
+streamlit-cookies-manager
 python-docx
 google-generativeai
 matplotlib
