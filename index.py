@@ -970,7 +970,7 @@ WORM_GPT_IMAGES = [
 def perform_google_search(query, deep_search_active=False):
     """
     Performs a Google search using SerpAPI, and returns combined snippets and a direct Google Search URL.
-    This function no longer returns individual organic links, but a general Google search URL.
+    .
     """
     if not SERPAPI_KEY:
         return "WORM-GPT's internal knowledge suggests: Real-time intel unavailable. SerpAPI key is missing.", ""
@@ -985,7 +985,7 @@ def perform_google_search(query, deep_search_active=False):
             "hl": "en",
             "num": str(num_snippets_to_fetch)
         }
-        response = requests.get("https://serpapi.com/search", params=params, timeout=25)
+        response = requests.get("https://serpapi.com/search", params=params, timeout=40)
         response.raise_for_status()
         data = response.json()
 
@@ -1033,7 +1033,7 @@ def cyber_engine(history, user_plan, deep_search_active=False):
 
     When a user asks for information, use your internal knowledge and any provided real-time intel snippets to formulate a direct, comprehensive answer.
 
-    IMPORTANT: Do NOT generate or include any external website links or URLs in your responses unless the user *explicitly* asks for "links", "sources", "reports", or "resources". If the user asks for "links", "sources", "reports", or "resources", you will be provided with a *single Google search URL* to the original query. You MUST present ONLY this provided Google search URL, formatted as a markdown link (e.g., [Direct Google Search for '[query]'](Google_Search_URL)). Do NOT attempt to generate any other URLs, validate links yourself, or assume their content; simply present the provided URL as given. If no Google search URL was provided to you despite a user's request for links, inform them that a direct search link could not be generated. Always include a disclaimer with any presented links, stating 'Disclaimer: This is a direct Google search link, and its content may change or become unavailable or restricted.'"""
+    IMPORTANT: Do NOT generate or include any external website links or URLs in your responses unless the user *explicitly* asks for "links", "sources", "reports", or "resources". If the user asks for "links", "sources", "reports", or "resources", you will be provided with a *single Google search URL* to the original query. You MUST present ONLY this provided Google search URL, formatted as a markdown link (e.g., [ Google Search for '[query]'](Google_Search_URL)). Do NOT attempt to generate any other URLs, validate links yourself, or assume their content; simply present the provided URL as given. If no Google search URL was provided to you despite a user's request for links, inform them that a direct search link could not be generated. Always include a disclaimer with any presented links, stating 'Disclaimer: This is a direct Google search link, and its content may change or become unavailable or restricted.'"""
 
     if user_plan == "ELITE":
         if deep_search_active:
@@ -1209,7 +1209,7 @@ elif st.session_state.show_upgrade:
     st.markdown(f"""
     <div class="main-content-plan-card main-content-plan-card-pro">
         <h4>PRO Plan{" <span class='current-plan-badge'>YOUR PLAN</span>" if current_plan == 'PRO' else ""}</h4>
-        <p><strong>Cost:</strong> $9.99/month</p>
+        <p><strong>Cost:</strong> $49.99/month</p>
         <p><strong>Features:</strong></p>
         <ul>
             <li>Faster AI response times</li>
@@ -1231,7 +1231,7 @@ elif st.session_state.show_upgrade:
     st.markdown(f"""
     <div class="main-content-plan-card main-content-plan-card-elite">
         <h4>ELITE Plan{" <span class='current-plan-badge'>YOUR PLAN</span>" if current_plan == 'ELITE' else ""}</h4>
-        <p><strong>Cost:</strong> $99.99/year</p>
+        <p><strong>Cost:</strong> $149.99/year</p>
         <p><strong>Features:</strong></p>
         <ul>
             <li>All PRO features included</li>
@@ -1243,7 +1243,7 @@ elif st.session_state.show_upgrade:
             <li><strong>Advanced Video Generation (🎞️ - Soon!)</strong></li>
             <li>Unlimited Requests</li>
         </ul>
-        <div class="price">{'Active' if current_plan == 'ELITE' else '$99.99/YEAR'}</div>
+        <div class="price">{'Active' if current_plan == 'ELITE' else '$149.99/YEAR'}</div>
         <div class="upgrade-button-plan">
             <a href="https://t.me/WORM_GPT_Support?start=ELITE_PLAN_UPGRADE" target="_blank">
                 <button>⚡ UPGRADE TO ELITE</button>
