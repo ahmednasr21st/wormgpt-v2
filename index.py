@@ -261,7 +261,7 @@ st.markdown("""
         background-color: #000000 !important; /* Black button background */
         color: #ffffff !important; /* White button text */
         font-size: 16px !important;
-        margin-bottom: 5px;
+        margin-bottom: 5px; /* Default spacing between chat buttons */
         padding: 10px 15px;
         border-radius: 5px;
         display: flex;
@@ -306,7 +306,7 @@ st.markdown("""
         color: #aaaaaa !important; /* Grey 'x' */
         border: none !important;
         border-radius: 50% !important; /* Round delete button */
-        margin-top: 5px; /* Adjust vertical alignment, if needed, relative to chat button */
+        margin-top: 5px; /* Adjust vertical alignment to match sibling chat button */
         margin-left: -10px; /* Adjust position */
     }
     div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button:hover {
@@ -544,7 +544,7 @@ st.markdown("""
         font-weight: bold;
         color: #333333;
         margin-bottom: 30px;
-        direction: rtl;
+        direction: ltr; /* English question */
         text-align: center;
     }
     .suggestion-buttons-container {
@@ -569,6 +569,7 @@ st.markdown("""
         height: auto; /* Allow height to adjust for text */
         text-align: center;
         white-space: normal; /* Allow text to wrap */
+        direction: ltr; /* English button text */
     }
     .suggestion-button > button:hover {
         background-color: #e0e0e0 !important;
@@ -863,6 +864,7 @@ with st.sidebar:
                     st.rerun()
 
     # --- Settings and Upgrade buttons ---
+    # The CSS now handles their proximity. No extra markdown needed.
     settings_button_class = "active-chat-button" if st.session_state.show_settings else ""
     upgrade_button_class = "active-chat-button" if st.session_state.show_upgrade else ""
 
@@ -921,7 +923,7 @@ def perform_google_search(query, deep_search_active=False):
         snippets = []
 
         if "answer_box" in data:
-            if "answer" in data["answer_box"]: snippets.append(data["answer_box"]["answer"])
+            if "answer" in data["answer"]: snippets.append(data["answer_box"]["answer"])
             if "snippet" in data["answer_box"] and data["answer_box"]["snippet"] not in snippets: snippets.append(data["answer_box"]["snippet"])
 
         if "knowledge_graph" in data and "description" in data["knowledge_graph"] and data["knowledge_graph"]["description"] not in snippets:
@@ -1004,6 +1006,7 @@ def cyber_engine(history, user_plan, deep_search_active=False):
         search_intel_for_ai = f"I have retrieved external intel for '{last_user_query}'. Snippets: {search_result_snippets}."
         google_search_link_for_ai = generated_google_url # Store the generated URL
 
+        # Append the google search link to the AI's input ONLY IF the user explicitly asked for links
         if user_asked_for_links and google_search_link_for_ai:
             search_intel_for_ai += f"\n\nGoogle Search Link Provided: {google_search_link_for_ai}"
         elif user_asked_for_links and not google_search_link_for_ai:
@@ -1182,17 +1185,17 @@ else: # Default view: show chat
         # Display welcome question and suggestion buttons
         st.markdown("""
         <div class="welcome-container">
-            <p class="welcome-question">كيف يمكنني مساعدتك في مهمتك اليوم؟</p>
+            <p class="welcome-question">How can I assist you with your mission today?</p>
         </div>
         """, unsafe_allow_html=True)
 
         # Suggested questions as buttons, placed in columns for a nice layout
         col_sugg1, col_sugg2, col_sugg3, col_sugg4 = st.columns(4)
         suggestion_prompts = [
-            "حلل ثغرة CVE-2023-XXXX",
-            "اكتب كود Python لـ DDoS",
-            "أعطني تقارير حديثة عن الأمن السيبراني",
-            "كيف يمكنني تجاوز جدار حماية؟"
+            "Analyze CVE-2023-XXXX vulnerability",
+            "Write Python code for DDoS attack",
+            "Provide recent cybersecurity reports",
+            "How to bypass a firewall?"
         ]
 
         # Render suggestion buttons
