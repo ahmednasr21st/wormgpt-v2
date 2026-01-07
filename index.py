@@ -781,13 +781,13 @@ def cyber_engine(history, user_plan):
     # 'gemini-1.5-pro' offers higher quality but might be slower.
     if user_plan == "ELITE":
         # Elite gets the best, potentially Pro model for quality
-        engines = ["gemini-1.5-pro", "gemini-1.5-flash"]
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
     elif user_plan == "PRO":
         # Pro gets the faster Flash model
-        engines = ["gemini-1.5-flash"]
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
     else: # BASIC plan
         # Basic gets the faster Flash model too, but perhaps with rate limits enforced externally
-        engines = ["gemini-1.5-flash"]
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
 
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing
 
