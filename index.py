@@ -277,13 +277,14 @@ st.markdown("""
         color: #ffffff !important;
         border: 1px solid #ff0000 !important; /* Red border for New Chat */
         font-weight: bold !important;
+        margin-bottom: 10px !important; /* More space below NEW CHAT */
     }
     [data-testid="stSidebar"] .stButton #new_chat_button:hover {
         background-color: #1a1a1a !important;
         color: #ff0000 !important;
         border-color: #ff0000 !important;
     }
-    /* Specific styles for SETTINGS and UPGRADE buttons */
+    /* Specific styles for SETTINGS and UPGRADE buttons - BLACK */
     [data-testid="stSidebar"] .stButton #settings_button,
     [data-testid="stSidebar"] .stButton #upgrade_button {
         background-color: #000000 !important; /* Black for these two buttons */
@@ -878,7 +879,7 @@ with st.sidebar:
     if st.session_state.user_chats:
         sorted_chat_ids = sorted(
             st.session_state.user_chats.keys(),
-            key=lambda x: datetime.strptime(x.split("-")[-1], "%H%M%S") if "-" in x and len(x.split("-")[-1]) == 6 else datetime.min,
+            key=lambda x: datetime.strptime(x.split("-")[-1].split('-')[-1], "%H%M%S") if "-" in x and len(x.split("-")[-1].split('-')[-1]) == 6 else datetime.min, # Corrected sort key
             reverse=True
         )
         for chat_id in sorted_chat_ids:
@@ -889,8 +890,8 @@ with st.sidebar:
 
             col1, col2 = st.columns([0.85, 0.15])
             with col1:
-                # Display user-friendly part of ID in sidebar button
-                display_chat_name = chat_id.replace('_', ' ').split('-')[0]
+                # Display user-friendly title stored in chat metadata
+                display_chat_name = st.session_state.user_chats[chat_id].get("title", chat_id.split('-')[0].replace('_', ' '))
                 st.markdown(f"<div class='stButton {button_container_class}'>", unsafe_allow_html=True)
                 if st.button(f"W {display_chat_name}", key=f"btn_{chat_id}",
                     help=f"Load chat: {chat_id}",
@@ -916,7 +917,7 @@ with st.sidebar:
                             try:
                                 sorted_chat_ids_after_delete = sorted(
                                     st.session_state.user_chats.keys(),
-                                    key=lambda x: datetime.strptime(x.split("-")[-1], "%H%M%S") if "-" in x and len(x.split("-")[-1]) == 6 else datetime.min,
+                                    key=lambda x: datetime.strptime(x.split("-")[-1].split('-')[-1], "%H%M%S") if "-" in x and len(x.split("-")[-1].split('-')[-1]) == 6 else datetime.min,
                                     reverse=True
                                 )
                                 st.session_state.current_chat_id = sorted_chat_ids_after_delete[0] if sorted_chat_ids_after_delete else None
@@ -1252,23 +1253,23 @@ elif st.session_state.show_upgrade:
     """, unsafe_allow_html=True)
 
 else: # Default view: show chat
-    chat_data = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
+    chat_data = st.session_state.user_chats.get(st.session_state.current_chat_id, {})
 
     # Handle initial welcome message for a new or empty chat
     if not st.session_state.current_chat_id: # If no active chat ID at all (fresh start after login or 'NEW CHAT')
-        temp_chat_id = f"Welcome_Chat-{datetime.now().strftime('%H%M%S')}" # Create a temporary ID
+        temp_chat_id = f"Welcome_Chat-{datetime.now().strftime('%Y%m%d%H%M%S')}" # Create a temporary ID
         st.session_state.current_chat_id = temp_chat_id
-        st.session_state.user_chats.setdefault(temp_chat_id, []) # Ensure it exists in user_chats
+        st.session_state.user_chats.setdefault(temp_chat_id, {"title": "New Mission", "messages": []}) # Initialize with title
 
-        st.session_state.user_chats[st.session_state.current_chat_id].append({
+        st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
             "role": "assistant",
             "content": WELCOME_MESSAGE
         })
         sync_to_vault()
         update_query_params_chat_id(st.session_state.current_chat_id) # Update URL for temp chat
         st.rerun()
-    elif chat_data and chat_data[0].get("content") != WELCOME_MESSAGE:
-        st.session_state.user_chats[st.session_state.current_chat_id].insert(0, {
+    elif chat_data.get("messages") and chat_data["messages"][0].get("content") != WELCOME_MESSAGE:
+        st.session_state.user_chats[st.session_state.current_chat_id]["messages"].insert(0, {
             "role": "assistant",
             "content": WELCOME_MESSAGE
         })
@@ -1280,8 +1281,8 @@ else: # Default view: show chat
     is_welcome_screen_state = (
         st.session_state.current_chat_id.startswith("Welcome_Chat") or
         (st.session_state.current_chat_id in st.session_state.user_chats and
-         len(st.session_state.user_chats[st.session_state.current_chat_id]) == 1 and
-         st.session_state.user_chats[st.session_state.current_chat_id][0].get("content") == WELCOME_MESSAGE)
+         len(st.session_state.user_chats[st.session_state.current_chat_id].get("messages", [])) == 1 and
+         st.session_state.user_chats[st.session_state.current_chat_id]["messages"][0].get("content") == WELCOME_MESSAGE)
     )
 
     if is_welcome_screen_state:
@@ -1311,22 +1312,23 @@ else: # Default view: show chat
 
                     is_temp_chat_id_for_sugg = st.session_state.current_chat_id and st.session_state.current_chat_id.startswith("Welcome_Chat")
                     if not st.session_state.current_chat_id or is_temp_chat_id_for_sugg:
-                        chat_id_prefix = re.sub(r'[^a-zA-Z0-9_]', '', prompt.strip().replace(" ", "_"))[:20]
-                        if not chat_id_prefix: chat_id_prefix = "New_Mission"
-                        unique_chat_id = f"{chat_id_prefix}-{datetime.now().strftime('%H%M%S')}"
+                        chat_title = prompt.strip() # Use full prompt as title
+                        slugified_title = re.sub(r'[^a-zA-Z0-9_]', '', chat_title.replace(" ", "_"))[:20]
+                        if not slugified_title: slugified_title = "New_Mission"
+                        unique_chat_id = f"{slugified_title}-{datetime.now().strftime('%Y%m%d%H%M%S')}" # Include date for robust uniqueness
 
                         if is_temp_chat_id_for_sugg:
-                            temp_history = st.session_state.user_chats.pop(st.session_state.current_chat_id, [])
-                            st.session_state.user_chats[unique_chat_id] = temp_history
+                            temp_chat_data = st.session_state.user_chats.pop(st.session_state.current_chat_id)
+                            st.session_state.user_chats[unique_chat_id] = {"title": chat_title, "messages": temp_chat_data["messages"]}
                         else:
-                            st.session_state.user_chats[unique_chat_id] = []
-                            st.session_state.user_chats[unique_chat_id].insert(0, {"role": "assistant", "content": WELCOME_MESSAGE})
+                            st.session_state.user_chats[unique_chat_id] = {"title": chat_title, "messages": []}
+                            st.session_state.user_chats[unique_chat_id]["messages"].insert(0, {"role": "assistant", "content": WELCOME_MESSAGE})
 
                         st.session_state.current_chat_id = unique_chat_id
                         sync_to_vault()
                         update_query_params_chat_id(st.session_state.current_chat_id)
 
-                    st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "user", "content": prompt})
+                    st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({"role": "user", "content": prompt})
                     st.session_state.last_user_msg_processed_hash = None
                     sync_to_vault()
                     st.rerun()
@@ -1334,7 +1336,7 @@ else: # Default view: show chat
         st.markdown("</div>", unsafe_allow_html=True) # Close suggestion-buttons-container div
     else:
         # Display actual chat history if not a new/empty chat
-        for msg in st.session_state.user_chats.get(st.session_state.current_chat_id, []):
+        for msg in st.session_state.user_chats.get(st.session_state.current_chat_id, {}).get("messages", []):
             if msg["role"] == "user":
                 st.chat_message("user", avatar="👤").markdown(msg["content"])
             else:
@@ -1360,29 +1362,30 @@ else: # Default view: show chat
 
         is_temp_chat_id = st.session_state.current_chat_id and st.session_state.current_chat_id.startswith("Welcome_Chat")
         if not st.session_state.current_chat_id or is_temp_chat_id:
-            chat_id_prefix = re.sub(r'[^a-zA-Z0-9_]', '', p_in.strip().replace(" ", "_"))[:20]
-            if not chat_id_prefix: chat_id_prefix = "New_Mission"
-            unique_chat_id = f"{chat_id_prefix}-{datetime.now().strftime('%H%M%S')}"
+            chat_title = p_in.strip() # Use full prompt as title
+            slugified_title = re.sub(r'[^a-zA-Z0-9_]', '', chat_title.replace(" ", "_"))[:20]
+            if not slugified_title: slugified_title = "New_Mission"
+            unique_chat_id = f"{slugified_title}-{datetime.now().strftime('%Y%m%d%H%M%S')}" # Include date for robust uniqueness
 
             if is_temp_chat_id:
-                temp_history = st.session_state.user_chats.pop(st.session_state.current_chat_id, [])
-                st.session_state.user_chats[unique_chat_id] = temp_history
+                temp_chat_data = st.session_state.user_chats.pop(st.session_state.current_chat_id)
+                st.session_state.user_chats[unique_chat_id] = {"title": chat_title, "messages": temp_chat_data["messages"]}
             else:
-                st.session_state.user_chats[unique_chat_id] = []
-                st.session_state.user_chats[unique_chat_id].insert(0, {"role": "assistant", "content": WELCOME_MESSAGE})
+                st.session_state.user_chats[unique_chat_id] = {"title": chat_title, "messages": []}
+                st.session_state.user_chats[unique_chat_id]["messages"].insert(0, {"role": "assistant", "content": WELCOME_MESSAGE})
 
             st.session_state.current_chat_id = unique_chat_id
             sync_to_vault()
             update_query_params_chat_id(st.session_state.current_chat_id)
 
-        st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "user", "content": p_in})
+        st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({"role": "user", "content": p_in})
         st.session_state.last_user_msg_processed_hash = None # Clear hash to allow processing of new message
         sync_to_vault()
         st.rerun()
 
     # --- AI Response Generation Logic ---
     if st.session_state.current_chat_id:
-        history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
+        history = st.session_state.user_chats.get(st.session_state.current_chat_id, {}).get("messages", [])
 
         current_user_msg_hash = None
         if history and history[-1]["role"] == "user":
@@ -1409,14 +1412,14 @@ else: # Default view: show chat
                     should_add_search_notification = True
 
             if should_add_search_notification:
-                st.session_state.user_chats[st.session_state.current_chat_id].append({
+                st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({
                     "role": "assistant",
                     "content": "🔍 WORM-GPT is initiating a real-time intel retrieval..."
                 })
                 sync_to_vault()
                 st.rerun()
 
-            updated_history_for_engine = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
+            updated_history_for_engine = st.session_state.user_chats.get(st.session_state.current_chat_id, {}).get("messages", [])
 
             with st.spinner("💀 EXPLOITING THE MATRIX..."):
                 # Simulate a brief delay for AI processing
@@ -1424,7 +1427,7 @@ else: # Default view: show chat
                 answer, eng = cyber_engine(updated_history_for_engine, st.session_state.user_plan, st.session_state.deep_search_active)
 
             if answer:
-                st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": answer})
+                st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({"role": "assistant", "content": answer})
                 # Decrement free requests for BASIC users
                 if st.session_state.user_plan == "BASIC":
                     st.session_state.free_requests_remaining -= 1
@@ -1438,7 +1441,7 @@ else: # Default view: show chat
                 sync_to_vault()
             else:
                 error_msg = "☠️ MISSION ABORTED. Unable to generate a response. Possible issues: API keys exhausted, model inaccessible, internal error, or query was too sensitive/complex for available models."
-                st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": error_msg})
+                st.session_state.user_chats[st.session_state.current_chat_id]["messages"].append({"role": "assistant", "content": error_msg})
                 sync_to_vault()
 
             st.session_state.ai_processing_started = False
