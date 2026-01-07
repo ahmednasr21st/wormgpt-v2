@@ -116,6 +116,8 @@ st.markdown("""
         padding: 2px 5px;
         font-family: 'Consolas', monospace;
         font-size: 0.9em; /* Slightly smaller inline code */
+        direction: ltr; /* Code should be LTR */
+        text-align: left;
     }
     .stChatMessage [data-testid="stMarkdownContainer"] pre {
         background-color: #eeeeee; /* Preformatted code block background */
@@ -126,6 +128,8 @@ st.markdown("""
         font-family: 'Consolas', monospace;
         color: #000000; /* Black text in code blocks */
         font-size: 0.95em; /* Slightly smaller block code */
+        direction: ltr; /* Code blocks should be LTR */
+        text-align: left;
     }
     .stChatMessage [data-testid="stMarkdownContainer"] h1,
     .stChatMessage [data-testid="stMarkdownContainer"] h2,
@@ -424,27 +428,23 @@ st.markdown("""
         background-color: #ff0000;
     }
 
-    /* Style for the st.status box */
-    div[data-testid="stStatusContainer"] {
-        background-color: #f0f0f0; /* Match chat background */
-        border: 1px solid #e0e0e0;
-        border-radius: 8px;
-        padding: 10px 15px;
-        margin-bottom: 10px;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-        color: #000000;
-        text-align: right;
-        direction: rtl;
+    /* Style for st.spinner */
+    div[data-testid="stSpinner"] {
+        margin-top: 20px;
+        margin-bottom: 20px;
+        color: #ff0000 !important; /* Red spinner */
+        text-align: center;
+        direction: ltr; /* Spinner text can be LTR */
     }
-    div[data-testid="stStatusContainer"] .st-emotion-cache-czkpy3 { /* Target specific icon/spinner */
-        color: #ff0000 !important; /* Make spinner red */
+    div[data-testid="stSpinner"] > div { /* Target the spinner icon */
+        border-color: #ff0000 !important;
+        border-right-color: transparent !important;
     }
-    div[data-testid="stStatusContainer"] .st-emotion-cache-1mxbj7c { /* Target status text */
-        color: #000000 !important;
+    div[data-testid="stSpinner"] span { /* Target the spinner text */
+        color: #000000 !important; /* Black text */
+        font-size: 1.1em;
         font-weight: bold;
-    }
-    div[data-testid="stStatusContainer"][data-expanded="true"] {
-        background-color: #e8e8e8; /* Slightly darker when expanded */
+        margin-left: 10px;
     }
 
 </style>
@@ -503,6 +503,8 @@ if "authenticated" not in st.session_state:
     st.session_state.show_settings = False
     st.session_state.show_upgrade = False
     st.session_state.current_chat_id = None # Initialize here to prevent issues on first run
+    st.session_state.last_user_msg_processed_hash = None # To prevent duplicate AI calls
+    st.session_state.ai_processing_started = False # Flag to manage spinner and AI call flow
 
 # Authentication Logic
 if not st.session_state.authenticated:
@@ -627,11 +629,10 @@ with st.sidebar:
         st.session_state.current_chat_id = None
         st.session_state.show_settings = False
         st.session_state.show_upgrade = False
+        st.session_state.last_user_msg_processed_hash = None # Reset hash for new chat
+        st.session_state.ai_processing_started = False # Reset flag
         st.rerun()
 
-    st.markdown("---")
-
-    # Display chats
     st.markdown("<h3 style='color:#ffffff; text-align:center;'>MISSIONS</h3>", unsafe_allow_html=True)
     if st.session_state.user_chats:
         sorted_chat_ids = sorted(
@@ -656,7 +657,9 @@ with st.sidebar:
                     on_click=lambda c=chat_id: ( # Use lambda to capture chat_id for on_click
                         setattr(st.session_state, 'current_chat_id', c),
                         setattr(st.session_state, 'show_settings', False),
-                        setattr(st.session_state, 'show_upgrade', False)
+                        setattr(st.session_state, 'show_upgrade', False),
+                        setattr(st.session_state, 'last_user_msg_processed_hash', None), # Reset hash when switching chats
+                        setattr(st.session_state, 'ai_processing_started', False) # Reset flag
                     )
                 ):
                     st.rerun() # Rerun to update main chat area
@@ -669,7 +672,9 @@ with st.sidebar:
                         sync_to_vault(),
                         # If the deleted chat was the current one, clear current_chat_id
                         # Then try to load the next most recent, or set to None
-                        setattr(st.session_state, 'current_chat_id', None if st.session_state.current_chat_id == c else st.session_state.current_chat_id)
+                        setattr(st.session_state, 'current_chat_id', None if st.session_state.current_chat_id == c else st.session_state.current_chat_id),
+                        setattr(st.session_state, 'last_user_msg_processed_hash', None), # Reset hash
+                        setattr(st.session_state, 'ai_processing_started', False) # Reset flag
                     )
                 ):
                     # After deletion, re-evaluate current_chat_id to load another chat or none
@@ -690,7 +695,7 @@ with st.sidebar:
 
 
     # --- Settings and Upgrade buttons (moved down) ---
-    st.markdown("---")
+    # Removed st.markdown("---") here to bring them closer to the chat list and each other.
 
     # Apply active-chat-button class if settings/upgrade is active
     settings_button_class = "active-chat-button" if st.session_state.show_settings else ""
@@ -701,6 +706,8 @@ with st.sidebar:
         st.session_state.show_settings = True
         st.session_state.show_upgrade = False
         st.session_state.current_chat_id = None # Clear chat when going to settings
+        st.session_state.last_user_msg_processed_hash = None # Reset hash
+        st.session_state.ai_processing_started = False # Reset flag
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -709,6 +716,8 @@ with st.sidebar:
         st.session_state.show_upgrade = True
         st.session_state.show_settings = False
         st.session_state.current_chat_id = None # Clear chat when going to upgrade
+        st.session_state.last_user_msg_processed_hash = None # Reset hash
+        st.session_state.ai_processing_started = False # Reset flag
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
@@ -724,7 +733,7 @@ SERPAPI_KEY = st.secrets.get("SERPAPI_KEY")
 def perform_google_search(query):
     """Performs a Google search using SerpAPI."""
     if not SERPAPI_KEY:
-        return f"🔍 DIRECT ANSWER (SIMULATED): WORM-GPT's internal knowledge suggests for '{query}': This is a placeholder for real-time search results, as SerpAPI key is missing. For actual direct answers, configure 'SERPAPI_KEY' in your secrets."
+        return f"WORM-GPT's internal knowledge suggests for '{query}': This is a placeholder for real-time search results, as SerpAPI key is missing. For actual direct answers, configure 'SERPAPI_KEY' in your secrets."
 
     try:
         params = {
@@ -751,17 +760,17 @@ def perform_google_search(query):
             return data["knowledge_graph"]["description"]
         elif "search_information" in data and "snippet" in data["search_information"]: # General search snippet
              return data["search_information"]["snippet"]
-        return f"No specific direct answer found for '{query}'. Search returned: {json.dumps(data.get('search_information', {}), ensure_ascii=False, indent=2)}" # Fallback with more info
+        return f"No specific direct answer found for '{query}'. Search returned no definitive snippet."
 
     except requests.exceptions.Timeout:
         st.error(f"WORM-GPT Search Error: Request to SerpAPI timed out for '{query}'.")
-        return f"DIRECT ANSWER (ERROR): Real-time intel retrieval timed out for '{query}'. Network or API service might be slow."
+        return f"Real-time intel retrieval timed out for '{query}'. Network or API service might be slow."
     except requests.exceptions.RequestException as e:
         st.error(f"WORM-GPT Search Error: Could not connect to SerpAPI or API error. ({e})")
-        return f"DIRECT ANSWER (ERROR): Could not retrieve real-time data for '{query}'. Network or API issue: {e}"
+        return f"Could not retrieve real-time data for '{query}'. Network or API issue: {e}"
     except Exception as e:
         st.error(f"WORM-GPT Search Processing Error: {e}")
-        return f"DIRECT ANSWER (ERROR): Failed to process real-time intel for '{query}'. Internal issue: {e}"
+        return f"Failed to process real-time intel for '{query}'. Internal issue: {e}"
 
 def cyber_engine(history, user_plan):
     """
@@ -777,17 +786,16 @@ def cyber_engine(history, user_plan):
         persona = base_persona
 
     # Model selection based on plan.
-    # Assuming 'gemini-1.5-flash' is the most performant and widely available 'flash' model.
-    # 'gemini-1.5-pro' offers higher quality but might be slower.
+    # Using 'gemini-1.5-flash' and 'gemini-1.5-pro' for optimal performance and quality.
     if user_plan == "ELITE":
         # Elite gets the best, potentially Pro model for quality
-        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+        engines = ["gemini-1.5-pro", "gemini-1.5-flash"]
     elif user_plan == "PRO":
         # Pro gets the faster Flash model
-        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+        engines = ["gemini-1.5-flash"]
     else: # BASIC plan
-        # Basic gets the faster Flash model too, but perhaps with rate limits enforced externally
-        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+        # Basic gets the faster Flash model too.
+        engines = ["gemini-1.5-flash"]
 
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing
 
@@ -809,17 +817,20 @@ def cyber_engine(history, user_plan):
     last_user_query = contents[-1]["parts"][0]["text"] # Keep original casing for search
 
     # ELITE plan: Check if a search is needed for the latest user query
-    search_needed = False
-    search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on"]
-    if user_plan == "ELITE" and any(kw in last_user_query.lower() for kw in search_query_phrases):
-        search_needed = True
-
+    # The search notification logic is handled in the main app block to allow for rerunning.
+    # Here, we only perform the search if it was identified as needed AND the search result isn't
+    # ALREADY the last message (which means it was added in a previous rerun).
     final_model_input_contents = list(contents) # Copy to potentially modify for search results
 
-    if search_needed:
-        search_result = perform_google_search(last_user_query)
+    search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on"]
+    should_perform_search = st.session_state.user_plan == "ELITE" and any(kw in last_user_query.lower() for kw in search_query_phrases)
+
+    # If search is needed, perform it and append results to model input
+    if should_perform_search:
+        search_result_text = perform_google_search(last_user_query)
         # Append search result as an internal "user" message to provide context to the model.
-        final_model_input_contents.append({"role": "user", "parts": [{"text": f"I have performed a real-time search for '{last_user_query}'. The intel retrieved is: {search_result}. Please use this information to formulate your response."}]})
+        # This will be processed by the model without being directly displayed as a separate user message.
+        final_model_input_contents.append({"role": "user", "parts": [{"text": f"I have retrieved external intel for '{last_user_query}': {search_result_text}. Use this information to formulate your comprehensive and direct answer."}]})
 
 
     for api_key in MY_APIS:
@@ -936,23 +947,21 @@ else: # Default view: show chat
     # Display existing messages for the current chat
     chat_data = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
 
-    # Display initial welcome message only if it's a new chat or if the chat history is empty
+    # Handle initial welcome message for a new or empty chat
     if not st.session_state.current_chat_id or not chat_data or chat_data[0].get("content") != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**":
-        if not st.session_state.current_chat_id: # If there's no active chat, create a placeholder ID for welcome message
-            # This case happens right after login if no chats exist, or after "NEW CHAT" is clicked before first prompt
-            temp_chat_id = f"Welcome_Chat-{datetime.now().strftime('%H%M%S')}"
-            st.session_state.user_chats.setdefault(temp_chat_id, [])
-            st.session_state.current_chat_id = temp_chat_id # Temporarily set it
+        if not st.session_state.current_chat_id: # If no active chat (e.g., after new chat button or fresh login with no previous chats)
+            temp_chat_id = f"Welcome_Chat-{datetime.now().strftime('%H%M%S')}" # Create a temporary ID
+            st.session_state.current_chat_id = temp_chat_id
+            st.session_state.user_chats.setdefault(temp_chat_id, []) # Ensure it exists in user_chats
 
-            # Add welcome message
             st.session_state.user_chats[st.session_state.current_chat_id].append({
                 "role": "assistant",
                 "content": "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"
             })
-            sync_to_vault() # Save the new chat structure and welcome message
+            sync_to_vault()
             st.rerun() # Rerun to display the welcome message and setup chat_input properly
 
-        # If current_chat_id exists but welcome message is missing (e.g., corrupted chat), re-add it
+        # If current_chat_id exists but welcome message is missing (e.g., corrupted chat, or chat reloaded without it)
         elif chat_data and chat_data[0].get("content") != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**":
             st.session_state.user_chats[st.session_state.current_chat_id].insert(0, {
                 "role": "assistant",
@@ -961,14 +970,16 @@ else: # Default view: show chat
             sync_to_vault()
             st.rerun() # Rerun to display the re-added welcome message
 
-    # Now render the history (which includes the welcome message if present)
+    # Now render the full history
     for msg in st.session_state.user_chats.get(st.session_state.current_chat_id, []):
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
 
 
-    # Handle user input only when showing chat
+    # Handle user input
     if p_in := st.chat_input("State your objective, human..."):
+        st.session_state.ai_processing_started = False # Reset flag for next turn
+
         # If current_chat_id is a temporary one (like "Welcome_Chat") or is truly None,
         # create a proper new chat ID based on the first prompt.
         is_temp_chat_id = st.session_state.current_chat_id and "Welcome_Chat" in st.session_state.current_chat_id
@@ -984,60 +995,67 @@ else: # Default view: show chat
                 st.session_state.user_chats[unique_chat_id] = temp_history
             else:
                 st.session_state.user_chats[unique_chat_id] = []
-                # Add welcome message to the new chat's history upon creation if not present
-                st.session_state.user_chats[unique_chat_id].append({
-                    "role": "assistant",
-                    "content": "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"
-                })
+                # Ensure welcome message is present in new chat's history
+                if not st.session_state.user_chats[unique_chat_id] or st.session_state.user_chats[unique_chat_id][0].get("content") != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**":
+                    st.session_state.user_chats[unique_chat_id].insert(0, {
+                        "role": "assistant",
+                        "content": "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"
+                    })
 
             st.session_state.current_chat_id = unique_chat_id
             sync_to_vault() # Save the new chat structure and welcome message
 
 
-        # Add user's new message
+        # Add user's new message to history
         st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "user", "content": p_in})
+        st.session_state.last_user_msg_processed_hash = None # Clear hash to allow processing of new message
         sync_to_vault()
         st.rerun() # Rerun to display the user's message immediately
 
+    # --- AI Response Generation Logic ---
     if st.session_state.current_chat_id:
         history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
 
-        # Check if the last message is from the user and we haven't already initiated a search for it
-        if history and history[-1]["role"] == "user":
-            last_msg_content = history[-1]["content"].lower()
+        # Check if the last message is from the user AND AI hasn't started processing it yet
+        current_user_msg_hash = hash(history[-1]["content"]) if history and history[-1]["role"] == "user" else None
+
+        if current_user_msg_hash and current_user_msg_hash != st.session_state.last_user_msg_processed_hash and not st.session_state.ai_processing_started:
+            st.session_state.ai_processing_started = True # Set flag to prevent re-entry for this message
+            st.session_state.last_user_msg_processed_hash = current_user_msg_hash
+
+            # 1. Handle search notification for ELITE if needed.
+            should_add_search_notification = False
             search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on"]
+            last_user_msg_lower = history[-1]["content"].lower()
 
-            should_perform_search = st.session_state.user_plan == "ELITE" and any(kw in last_msg_content for kw in search_query_phrases)
+            if st.session_state.user_plan == "ELITE" and any(kw in last_user_msg_lower for kw in search_query_phrases):
+                # Check if the *immediately preceding* message (if any) was already the search initiation notice
+                if not (len(history) >= 2 and history[-2]["role"] == "assistant" and "🔍 WORM-GPT is initiating a real-time intel retrieval..." in history[-2]["content"]):
+                    should_add_search_notification = True
 
-            # Check if the *immediately preceding* message (if any) was already the search initiation notice
-            search_notification_present = (len(history) >= 2 and
-                                           history[-2]["role"] == "assistant" and
-                                           history[-2]["content"] == "🔍 WORM-GPT is initiating a real-time intel retrieval...")
-
-            # If search is needed and the notification isn't already present, add it and rerun
-            if should_perform_search and not search_notification_present:
+            if should_add_search_notification:
                 st.session_state.user_chats[st.session_state.current_chat_id].append({
                     "role": "assistant",
                     "content": "🔍 WORM-GPT is initiating a real-time intel retrieval..."
                 })
                 sync_to_vault()
-                st.rerun() # Rerun to display the search notification immediately
+                st.rerun() # Rerun to display the search notification immediately, then continue AI generation
 
-            # Only proceed to call cyber_engine if the last message is from the user
-            # AND it's not the internal search notification (if that was the *last* message displayed)
-            if history and history[-1]["role"] == "user":
-                with st.chat_message("assistant"):
-                    with st.status("💀 EXPLOITING THE MATRIX...", expanded=False, state="running") as status:
-                        answer, eng = cyber_engine(history, st.session_state.user_plan) # Pass the full history to cyber_engine
-                        if answer:
-                            status.update(label=f"OBJ COMPLETE via {eng.upper()}", state="complete", expanded=False)
-                            st.markdown(answer) # Display the response
-                            st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": answer})
-                            sync_to_vault()
-                            # No rerun here, let the next chat_input handle it or wait for user interaction
-                        else:
-                            status.update(label="☠️ MISSION ABORTED. Could not generate a response.", state="error", expanded=True)
-                            error_msg = "☠️ MISSION ABORTED. Could not generate a response. Possible issues: API keys exhausted, model inaccessible, internal error, or query was too sensitive/complex for available models. Check logs for details."
-                            st.markdown(error_msg)
-                            st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": error_msg})
-                            sync_to_vault()
+            # 2. Get the most up-to-date history after potential search notification rerun
+            updated_history_for_engine = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
+
+            # Use st.spinner for visual feedback while AI is processing
+            with st.spinner("💀 EXPLOITING THE MATRIX..."):
+                answer, eng = cyber_engine(updated_history_for_engine, st.session_state.user_plan)
+
+            # After the spinner, append the actual AI response to the chat history
+            if answer:
+                st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": answer})
+                sync_to_vault()
+            else:
+                error_msg = "☠️ MISSION ABORTED. Could not generate a response. Possible issues: API keys exhausted, model inaccessible, internal error, or query was too sensitive/complex for available models. Check logs for details."
+                st.session_state.user_chats[st.session_state.current_chat_id].append({"role": "assistant", "content": error_msg})
+                sync_to_vault()
+
+            st.session_state.ai_processing_started = False # Reset flag for next user prompt
+            st.rerun() # Rerun to display the newly added assistant message(s)
