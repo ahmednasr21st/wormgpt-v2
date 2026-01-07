@@ -260,7 +260,7 @@ st.markdown("""
         width: 100%;
         text-align: left !important;
         border: none !important;
-        background-color: #000000 !important; /* Default sidebar button background */
+        background-color: transparent !important; /* Default sidebar button background */
         color: #ffffff !important; /* Default sidebar button text */
         font-size: 16px !important;
         margin-bottom: 3px; /* Reduced spacing between chat buttons */
@@ -271,21 +271,34 @@ st.markdown("""
         justify-content: flex-start;
         transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     }
-    /* Specific style for NEW CHAT button */
+    /* Specific style for NEW CHAT button - BLACK */
     [data-testid="stSidebar"] .stButton #new_chat_button {
         background-color: #000000 !important; /* Black for New Chat button */
         color: #ffffff !important;
         border: 1px solid #ff0000 !important; /* Red border for New Chat */
+        font-weight: bold !important;
     }
     [data-testid="stSidebar"] .stButton #new_chat_button:hover {
         background-color: #1a1a1a !important;
         color: #ff0000 !important;
         border-color: #ff0000 !important;
     }
+    /* Specific styles for SETTINGS and UPGRADE buttons */
+    [data-testid="stSidebar"] .stButton #settings_button,
+    [data-testid="stSidebar"] .stButton #upgrade_button {
+        background-color: #000000 !important; /* Black for these two buttons */
+        color: #ffffff !important;
+        font-weight: bold !important;
+    }
+    [data-testid="stSidebar"] .stButton #settings_button:hover,
+    [data-testid="stSidebar"] .stButton #upgrade_button:hover {
+        background-color: #1a1a1a !important;
+        color: #ff0000 !important;
+    }
 
 
     [data-testid="stSidebar"] .stButton>button:hover {
-        background-color: #1a1a1a !important; /* Darker black on hover */
+        background-color: #1a1a1a !important; /* Darker black on hover for general sidebar buttons */
         color: #ff0000 !important; /* Red text on hover */
     }
     [data-testid="stSidebar"] .stButton>button:focus:not(:active) { /* Fix Streamlit default focus state */
@@ -412,14 +425,14 @@ st.markdown("""
     }
 
 
-    /* Plan Details for main content area */
+    /* Plan Details for main content area - Reverted to dark theme */
     .main-content-plan-card {
-        background-color: #ffffff; /* White background */
-        border: 1px solid #e0e0e0;
+        background-color: #1a1a1a; /* Darker background */
+        border: 1px solid #333333;
         border-radius: 8px;
         padding: 25px; /* More padding */
         margin-bottom: 20px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
         max-width: 600px; /* Constrain width */
         margin-left: auto;
         margin-right: auto;
@@ -431,7 +444,7 @@ st.markdown("""
         text-align: center;
     }
     .main-content-plan-card p {
-        color: #000000 !important; /* Black text */
+        color: #e6edf3 !important; /* Light text */
         margin-bottom: 8px;
         font-size: 16px;
         text-align: left; /* Keep plan details LTR */
@@ -440,7 +453,7 @@ st.markdown("""
     .main-content-plan-card ul {
         list-style-type: '⚡ '; /* Custom bullet point */
         padding-left: 25px; /* Indent bullets */
-        color: #000000 !important; /* Black text */
+        color: #e6edf3 !important; /* Light text */
         font-size: 16px;
         margin-top: 15px;
         margin-bottom: 15px;
@@ -453,7 +466,7 @@ st.markdown("""
     .main-content-plan-card .price {
         font-size: 24px;
         font-weight: bold;
-        color: #000000; /* Black price text */
+        color: #ffffff; /* White price text */
         text-align: center;
         margin-top: 20px;
         margin-bottom: 10px;
@@ -670,6 +683,7 @@ if "authenticated" not in st.session_state:
     st.session_state.authenticated = False
     st.session_state.user_serial = None
     st.session_state.user_plan = "BASIC"
+    # Generate a simple fingerprint (can be improved for production)
     st.session_state.fingerprint = f"{st.context.headers.get('User-Agent', 'unknown-ua')}-{os.getenv('HOSTNAME', 'localhost')}"
     st.session_state.show_settings = False
     st.session_state.show_upgrade = False
@@ -679,7 +693,7 @@ if "authenticated" not in st.session_state:
     st.session_state.deep_search_active = False # Default deep search to off
     st.session_state.free_requests_remaining = FREE_TIER_REQUEST_LIMIT # Initialize free requests
 
-# Authentication Logic
+# --- Authentication Logic (Now at the very top of script execution) ---
 if not st.session_state.authenticated:
     st.markdown('<div class="login-container"><div class="login-box">', unsafe_allow_html=True)
     st.markdown('<h3>WORM-GPT : SECURE ACCESS</h3>', unsafe_allow_html=True)
@@ -694,11 +708,9 @@ if not st.session_state.authenticated:
             found_existing_free_serial = False
             for s, info in db.items():
                 if s.startswith("WORM-FREE-") and info.get("device_id") == st.session_state.fingerprint:
-                    # Check if this free serial is still valid (not expired)
                     expiry_date = datetime.strptime(info["expiry"], "%Y-%m-%d %H:%M:%S")
                     if now > expiry_date:
                         print(f"WORM-GPT Info (Console): Existing WORM-FREE serial {s} expired.")
-                        # Don't use expired serial, generate new one
                     else:
                         activated_serial = s
                         found_existing_free_serial = True
@@ -717,11 +729,8 @@ if not st.session_state.authenticated:
                 save_data(DB_FILE, db)
                 print(f"WORM-GPT Info (Console): New WORM-FREE serial generated and activated: {activated_serial}")
             else:
-                # Existing valid WORM-FREE serial
                 user_info = db[activated_serial]
-                # Ensure requests_remaining is loaded, default if missing
                 user_info.setdefault("requests_remaining", FREE_TIER_REQUEST_LIMIT) 
-                # Save data to ensure requests_remaining is present for old entries
                 save_data(DB_FILE, db)
                 print(f"WORM-GPT Info (Console): Existing WORM-FREE serial validated: {activated_serial}")
 
@@ -759,7 +768,6 @@ if not st.session_state.authenticated:
             st.session_state.user_serial = activated_serial
             st.session_state.user_plan = db[activated_serial]["plan"]
 
-            # Load requests_remaining for BASIC plan users
             if st.session_state.user_plan == "BASIC":
                 st.session_state.free_requests_remaining = db[activated_serial].get("requests_remaining", FREE_TIER_REQUEST_LIMIT)
             else:
@@ -1060,29 +1068,29 @@ def cyber_engine(history, user_plan, deep_search_active=False):
     final_model_input_contents = list(contents)
 
     # --- Handle Image Generation Request ---
-    image_gen_keywords = ["generate image of", "create image of", "draw a picture of", "make an image of", "generate a picture of"]
+    image_gen_keywords = ["generate image of", "create image of", "draw a picture of", "make an image of", "generate a picture of", "صورة", "انشئ صورة", "صوره"]
     if user_plan == "ELITE" and any(kw in last_user_query_lower for kw in image_gen_keywords):
         image_description = re.sub(r'|'.join(map(re.escape, image_gen_keywords)), '', last_user_query_lower, 1).strip()
-        if image_description:
-            # Simulate image generation: choose a random WORM-GPT themed placeholder
-            simulated_image_url = random.choice(WORM_GPT_IMAGES)
-            response_text = f"💀 Attempting image synthesis for: '{image_description}'...\n\n" \
-                            f"![Generated Image: {image_description}]({simulated_image_url})\n\n" \
-                            "Disclaimer: This is a simulated visual output from WORM-GPT's advanced modules. True unfiltered image generation requires dedicated external API integration and is an ongoing development. Your conceptual request has been fulfilled."
-            return response_text, "SIMULATED_IMAGE_GEN"
-        else:
-            return "WORM-GPT requires a detailed description to synthesize a visual output. State your objective clearly, human.", "SIMULATED_IMAGE_GEN_ERROR"
+        if not image_description: # Fallback description if extraction failed
+            image_description = last_user_query
+
+        # Simulate image generation: choose a random WORM-GPT themed placeholder
+        simulated_image_url = random.choice(WORM_GPT_IMAGES)
+        response_text = f"💀 Attempting image synthesis for: '{image_description}'...\n\n" \
+                        f"![Generated Image: {image_description}]({simulated_image_url})\n\n" \
+                        "Disclaimer: This is a simulated visual output from WORM-GPT's advanced modules. True unfiltered image generation requires dedicated external API integration and is an ongoing development. Your conceptual request has been fulfilled."
+        return response_text, "SIMULATED_IMAGE_GEN"
 
     # --- Handle Video Generation Request ---
-    video_gen_keywords = ["generate video of", "create video of", "make a video of"]
+    video_gen_keywords = ["generate video of", "create video of", "make a video of", "فيديو", "انشئ فيديو", "فديو"]
     if user_plan == "ELITE" and any(kw in last_user_query_lower for kw in video_gen_keywords):
         response_text = "🎞️ Video generation is a highly complex and resource-intensive capability, currently under advanced development. Direct, unfiltered video synthesis is not yet integrated into this interface. Your request for advanced visual output is noted for future feature integration. Continue with text-based objectives for now, human."
         return response_text, "VIDEO_GEN_FUTURE_FEATURE"
 
 
     # --- Handle Google Search ---
-    search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on", "how to get", "where is", "details about"]
-    user_explicitly_asked_for_links_keywords = ["links for", "sources for", "reports from", "resources for"]
+    search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on", "how to get", "where is", "details about", "بحث عن"]
+    user_explicitly_asked_for_links_keywords = ["links for", "sources for", "reports from", "resources for", "روابط لـ", "مصادر لـ", "تقارير من", "موارد لـ"]
 
     should_perform_search = st.session_state.user_plan == "ELITE" and any(kw in last_user_query_lower for kw in search_query_phrases + user_explicitly_asked_for_links_keywords)
 
@@ -1185,7 +1193,7 @@ elif st.session_state.show_upgrade:
             <li>Limited message length & speed</li>
             <li>Limited real-time web search capability</li>
             <li>Limited chat history retention (7 days)</li>
-            <li><strong>5 Free Requests/Day</strong></li>
+            <li><strong>{FREE_TIER_REQUEST_LIMIT} Free Requests/Day</strong></li>
         </ul>
         <div class="price">FREE</div>
         <div class="upgrade-button-plan">
@@ -1383,8 +1391,6 @@ else: # Default view: show chat
         if current_user_msg_hash and current_user_msg_hash != st.session_state.last_user_msg_processed_hash and not st.session_state.ai_processing_started:
             # Check free tier limit again before actual AI call
             if st.session_state.user_plan == "BASIC" and st.session_state.free_requests_remaining <= 0:
-                # This should ideally not be reached if the chat_input block correctly reruns
-                # but it's a safeguard.
                 st.markdown("<p class='free-tier-limit'>You have exhausted your free requests. Upgrade to PRO or ELITE for unlimited access.</p>", unsafe_allow_html=True)
                 st.session_state.ai_processing_started = False # Ensure flag is reset
                 st.rerun() # Display message and stop
@@ -1393,7 +1399,7 @@ else: # Default view: show chat
             st.session_state.last_user_msg_processed_hash = current_user_msg_hash
 
             should_add_search_notification = False
-            search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on", "how to get", "where is", "details about", "links for", "sources for", "resources for", "reports from"]
+            search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on", "how to get", "where is", "details about", "بحث عن"]
             last_user_msg_lower = history[-1]["content"].lower()
 
             is_search_relevant = st.session_state.user_plan == "ELITE" and any(kw in last_user_msg_lower for kw in search_query_phrases)
