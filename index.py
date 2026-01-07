@@ -935,11 +935,11 @@ def cyber_engine(history, user_plan, deep_search_active=False):
         persona = base_persona
 
     if user_plan == "ELITE":
-        engines = ["gemini-1.5-pro", "gemini-1.5-flash"] # Prefer Pro for Elite
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Prefer Pro for Elite
     elif user_plan == "PRO":
-        engines = ["gemini-1.5-flash"]
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
     else: # BASIC plan
-        engines = ["gemini-1.5-flash"]
+        engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
 
     random.shuffle(MY_APIS)
 
