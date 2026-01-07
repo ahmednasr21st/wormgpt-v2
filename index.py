@@ -1340,7 +1340,7 @@ else: # Default view: show chat
             if msg["role"] == "user":
                 st.chat_message("user", avatar="👤").markdown(msg["content"])
             else:
-                st.chat_message("assistant", avatar="💀").markdown(msg["content"])
+                st.chat_message("assistant", avatar="logo.jpg").markdown(msg["content"])
 
 
     # Deep Search Checkbox for ELITE users (appears below chat history, before input)
