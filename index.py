@@ -175,7 +175,7 @@ st.markdown("""
     }
 
 
-    /* Sidebar Styling */
+    /* Sidebar Styling - Modified to allow sticky footer */
     [data-testid="stSidebar"] {
         background-color: #000000 !important; /* Black sidebar */
         border-right: 1px solid #333333;
@@ -184,6 +184,16 @@ st.markdown("""
         min-width: 270px !important;
         max-width: 270px !important;
         transition: width 0.3s ease-in-out;
+        display: flex; /* Use flexbox for vertical layout */
+        flex-direction: column; /* Stack children vertically */
+    }
+    /* Sidebar content area (scrollable) */
+    [data-testid="stSidebarContent"] {
+        flex-grow: 1; /* Allow content to grow and scroll */
+        overflow-y: auto; /* Enable scrolling for content */
+        padding-bottom: 20px; /* Space above footer */
+        display: flex; /* Also flex to properly contain its children */
+        flex-direction: column; /* Stack children */
     }
     /* Ensure sidebar text is readable */
     [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4 {
@@ -265,11 +275,20 @@ st.markdown("""
         margin-bottom: 3px; /* Reduced spacing between chat buttons */
         padding: 10px 15px;
         border-radius: 5px;
-        display: flex;
-        align-items: center;
+        display: flex; /* Use flexbox */
+        align-items: center; /* Vertically center content */
         justify-content: flex-start;
         transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     }
+    /* Ensure chat text itself doesn't overflow */
+    [data-testid="stSidebar"] .stButton>button span { /* Target span inside button */
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: block; /* Make span a block element within flex to apply overflow */
+        flex-grow: 1; /* Allow it to take available space */
+    }
+
     /* Specific style for NEW CHAT button - BLACK */
     [data-testid="stSidebar"] .stButton #new_chat_button {
         background-color: #000000 !important; /* Black for New Chat button */
@@ -320,22 +339,23 @@ st.markdown("""
 
 
     /* Delete Button (smaller, specific styling) */
-    /* Target the delete button within its column */
     div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button {
-        width: 30px !important;
-        height: 30px !important;
-        min-width: 30px !important;
-        min-height: 30px !important;
+        width: 35px !important; /* Slightly larger for easier click */
+        height: 35px !important;
+        min-width: 35px !important;
+        min-height: 35px !important;
         padding: 0 !important;
         display: flex;
         justify-content: center;
         align-items: center;
-        background-color: transparent !important; /* Transparent background */
-        color: #aaaaaa !important; /* Grey 'x' */
+        background-color: transparent !important;
+        color: #aaaaaa !important;
         border: none !important;
-        border-radius: 50% !important; /* Round delete button */
-        margin-top: 5px; /* Adjust vertical alignment to match sibling chat button */
-        margin-left: -10px; /* Adjust position */
+        border-radius: 50% !important;
+        margin-top: 0px; /* Reset top margin and rely on flex alignment of parent columns */
+        margin-left: -5px; /* Adjust position slightly */
+        align-self: center; /* Ensure vertical centering within its column */
+        font-size: 18px; /* Make 'x' more visible */
     }
     div[data-testid="stSidebar"] div[data-testid="stVerticalBlock"] div[data-testid="stHorizontalBlock"] div.stButton:last-child>button:hover {
         background-color: #333333 !important; /* Darker on hover */
@@ -508,10 +528,6 @@ st.markdown("""
 
 
     /* Custom scrollbar for sidebar */
-    [data-testid="stSidebarContent"] {
-        overflow-y: auto;
-        padding-bottom: 20px;
-    }
     [data-testid="stSidebarContent"]::-webkit-scrollbar {
         width: 8px;
     }
@@ -526,6 +542,29 @@ st.markdown("""
     [data-testid="stSidebarContent"]::-webkit-scrollbar-thumb:hover {
         background-color: #ff0000;
     }
+
+    /* New: Sticky footer within the sidebar */
+    .sidebar-sticky-footer {
+        position: sticky; /* Sticky positioning */
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        background-color: #000000; /* Match sidebar background */
+        padding: 10px 15px; /* Internal padding */
+        border-top: 1px solid #333333; /* Separator line */
+        z-index: 100; /* Ensure it's on top */
+        margin-top: auto; /* Push it to the bottom of the flex container */
+        box-shadow: 0 -5px 10px rgba(0,0,0,0.3); /* Subtle shadow above footer */
+    }
+    /* Adjust buttons within the fixed footer */
+    .sidebar-sticky-footer .stButton>button {
+        margin-bottom: 5px; /* Space between buttons */
+        width: calc(100% - 10px); /* Adjust for padding */
+    }
+    .sidebar-sticky-footer .stButton:last-child>button {
+        margin-bottom: 0; /* No margin after the last button */
+    }
+
 
     /* Style for st.spinner */
     div[data-testid="stSpinner"] {
@@ -699,7 +738,8 @@ if "authenticated" not in st.session_state:
 
 # --- Authentication Logic (Now at the very top of script execution) ---
 if not st.session_state.authenticated:
-    st.markdown('<div class="login-container"><div class="login-box">', unsafe_allow_html=True)
+    st.markdown('<div class="login-container">', unsafe_allow_html=True)
+    st.markdown('<div class="login-box">', unsafe_allow_html=True)
     st.markdown('<h3>WORM-GPT : SECURE ACCESS</h3>', unsafe_allow_html=True)
     serial_input = st.text_input("ENTER SERIAL:", type="password", key="login_serial")
 
@@ -824,7 +864,8 @@ if not st.session_state.authenticated:
                 sync_to_vault()
 
             st.rerun()
-    st.markdown('</div></div>', unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True) # Close login-box
+    st.markdown('</div>', unsafe_allow_html=True) # Close login-container
     st.stop()
 
 # --- 3. نظام الجلسات (Persistent chat management) ---
@@ -931,7 +972,7 @@ with st.sidebar:
                 # Display user-friendly title stored in chat metadata, fallback to slugified ID
                 display_chat_name = st.session_state.user_chats[chat_id].get("title", chat_id.split('-')[0].replace('_', ' '))
                 st.markdown(f"<div class='stButton {button_container_class}'>", unsafe_allow_html=True)
-                if st.button(f"W {display_chat_name}", key=f"btn_{chat_id}",
+                if st.button(f"W <span>{display_chat_name}</span>", key=f"btn_{chat_id}", # Wrap text in span for ellipsis CSS
                     help=f"Load chat: {chat_id}",
                     on_click=lambda c=chat_id: (
                         setattr(st.session_state, 'current_chat_id', c),
@@ -974,12 +1015,12 @@ with st.sidebar:
                     update_query_params_chat_id(st.session_state.current_chat_id)
                     st.rerun()
 
-    st.markdown("---") # Separator between MISSIONS and SETTINGS/UPGRADE
-
-    # --- Settings and Upgrade buttons (now at the bottom) ---
+    # Sticky footer for Settings/Upgrade
+    # This needs to be outside the scrollable content of stSidebarContent
+    # but still within the st.sidebar context to be part of the sidebar.
+    st.markdown('<div class="sidebar-sticky-footer">', unsafe_allow_html=True)
+    # Settings button (now within sticky footer)
     settings_button_class = "active-chat-button" if st.session_state.show_settings else ""
-    upgrade_button_class = "active-chat-button" if st.session_state.show_upgrade else ""
-
     st.markdown(f"<div class='stButton {settings_button_class}'>", unsafe_allow_html=True)
     if st.button("⚡ SETTINGS", key="settings_button"):
         reset_view_flags_for_chat_and_features()
@@ -989,6 +1030,8 @@ with st.sidebar:
         st.rerun()
     st.markdown("</div>", unsafe_allow_html=True)
 
+    # Upgrade button (now within sticky footer)
+    upgrade_button_class = "active-chat-button" if st.session_state.show_upgrade else ""
     st.markdown(f"<div class='stButton {upgrade_button_class}'>", unsafe_allow_html=True)
     if st.button("⚡ UPGRADE", key="upgrade_button"):
         reset_view_flags_for_chat_and_features()
@@ -996,7 +1039,8 @@ with st.sidebar:
         st.session_state.current_chat_id = None
         update_query_params_chat_id(None)
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True) # Close sidebar-sticky-footer div
+
 
 # --- 4. محرك الرد (Enhanced Cyber Engine) ---
 MY_APIS = st.secrets.get("GENAI_KEYS", [])
@@ -1150,36 +1194,36 @@ def cyber_engine(history, user_plan, deep_search_active=False):
         return response_text, "VIDEO_GEN_FUTURE_FEATURE"
 
 
-    # --- Handle Google Search for ELITE users ---
+    # --- Handle Google Search for ELITE/PRO users ---
     # Keywords that would trigger a search even if not explicitly asking for links
     search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on", "how to get", "where is", "details about", "بحث عن"]
     # Keywords that explicitly ask for links/sources
     user_explicitly_asked_for_links_keywords = ["links for", "sources for", "reports from", "resources for", "روابط لـ", "مصادر لـ", "تقارير من", "موارد لـ"]
 
-    # Trigger search if ELITE plan and query matches search phrases or explicit link request
-    should_perform_search = (user_plan == "ELITE" or user_plan == "PRO") and (
+    # Trigger search if ELITE/PRO plan, SerpAPI key is present, and query matches search phrases or explicit link request
+    should_perform_search = (user_plan in ["ELITE", "PRO"]) and SERPAPI_KEY and (
         any(kw in last_user_query_lower for kw in search_query_phrases) or 
         any(kw in last_user_query_lower for kw in user_explicitly_asked_for_links_keywords)
     )
     user_asked_for_links = any(kw in last_user_query_lower for kw in user_explicitly_asked_for_links_keywords)
 
-    search_intel_for_ai = ""
-    google_search_link_for_ai = "" 
+    search_intel_for_ai_parts = []
+    generated_google_url_for_ai = "" 
 
     if should_perform_search:
         search_result_snippets, generated_google_url = perform_google_search(last_user_query, deep_search_active)
 
         if search_result_snippets:
-            search_intel_for_ai = f"I have retrieved external intel for '{last_user_query}'. Snippets: {search_result_snippets}."
-            google_search_link_for_ai = generated_google_url
+            search_intel_for_ai_parts.append(f"I have retrieved external intel for '{last_user_query}'. Snippets: {search_result_snippets}.")
+            generated_google_url_for_ai = generated_google_url
 
-            # Append search intel to AI's input
-            final_model_input_contents.append({"role": "user", "parts": [{"text": search_intel_for_ai}]})
-            # Also tell the AI about the link if requested, so it can embed it as per persona
-            if user_asked_for_links and google_search_link_for_ai:
-                final_model_input_contents.append({"role": "user", "parts": [{"text": f"The user requested links. Here is the Google Search Link: {google_search_link_for_ai}. Include it in your response with the disclaimer, as per your instructions."}]})
-            elif user_asked_for_links and not google_search_link_for_ai:
-                final_model_input_contents.append({"role": "user", "parts": [{"text": "The user requested links, but no direct Google search link could be generated. Inform them accordingly."}]})
+            if user_asked_for_links and generated_google_url_for_ai:
+                search_intel_for_ai_parts.append(f"CRITICAL INSTRUCTION: The user explicitly requested links. You MUST include the following Google Search URL in your response, formatted as a markdown link with the specified disclaimer: [ Google Search for '{last_user_query}']({generated_google_url_for_ai}).")
+            elif user_asked_for_links and not generated_google_url_for_ai:
+                search_intel_for_ai_parts.append("CRITICAL INSTRUCTION: The user explicitly requested links, but no direct Google search URL was found. Inform them that a direct search link could not be generated.")
+
+            # Append combined search intel to AI's input
+            final_model_input_contents.append({"role": "user", "parts": [{"text": " ".join(search_intel_for_ai_parts)}]})
         else:
             final_model_input_contents.append({"role": "user", "parts": [{"text": f"Real-time intel retrieval failed for '{last_user_query}'. Inform the user that intel could not be retrieved."}]})
 
@@ -1233,9 +1277,11 @@ def cyber_engine(history, user_plan, deep_search_active=False):
                 except genai.types.BlockedPromptException as block_ex:
                     print(f"WORM-GPT Blocked (Console): Model '{eng_name}' with API (ending {api_key[-4:]}) was blocked by internal safety filters. Details: {block_ex}")
                     # Attempt to inform user if it's the only issue
-                    if not any(isinstance(e, genai.types.BlockedPromptException) for e in response.prompt_feedback.block_reason_details):
-                         return f"☠️ MISSION BLOCKED. Model's internal safety protocols intercepted the request. Reason: {block_ex.response.prompt_feedback.block_reason_details[0].message if block_ex.response.prompt_feedback.block_reason_details else 'Unknown'}", eng_name
-                    continue # Try next model/key
+                    # This attempts to extract a more specific reason if available
+                    block_reason = "Unknown"
+                    if response.prompt_feedback and response.prompt_feedback.block_reason_details:
+                         block_reason = ", ".join([d.message for d in response.prompt_feedback.block_reason_details])
+                    return f"☠️ MISSION BLOCKED. Model's internal safety protocols intercepted the request. Reason: {block_reason}", eng_name
                 except Exception as model_error:
                     print(f"WORM-GPT Engine Failure (Console): Model '{eng_name}' with API (ending {api_key[-4:]}) failed: {type(model_error).__name__}: {model_error}")
                     continue
@@ -1470,7 +1516,7 @@ else: # Default view: show chat
             search_query_phrases = ["what is the current", "latest news", "who won", "how many", "fact about", "when was", "define", "current status of", "recent updates", "statistics for", "real-time data", "check the price", "stock market", "weather in", "latest exploit", "vulnerability in", "search for", "find information on", "how to get", "where is", "details about", "بحث عن"]
             last_user_msg_lower = history[-1]["content"].lower()
 
-            is_search_relevant = (st.session_state.user_plan == "ELITE" or st.session_state.user_plan == "PRO") and SERPAPI_KEY and any(kw in last_user_msg_lower for kw in search_query_phrases)
+            is_search_relevant = (st.session_state.user_plan in ["ELITE", "PRO"]) and SERPAPI_KEY and any(kw in last_user_msg_lower for kw in search_query_phrases)
 
             # Add search notification only if it's a search-relevant query and not already present
             if is_search_relevant:
