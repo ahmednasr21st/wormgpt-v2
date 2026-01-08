@@ -239,7 +239,7 @@ st.markdown("""
         padding: 20px;
         margin-top: -10px; /* Adjust to be higher */
         margin-bottom: 0px; /* Remove bottom margin for tight fit */
-        border-bottom: 1px solid #333333; /* Separator */
+        border-bottom: 0px solid #333333; /* No separator here, moved below core functions */
     }
     .sidebar-logo-text {
         font-size: 24px;
@@ -280,22 +280,20 @@ st.markdown("""
         justify-content: flex-start;
         transition: background-color 0.2s, color 0.2s, border-color 0.2s;
     }
-    /* Special styling for top nav buttons */
-    [data-testid="stSidebar"] .stButton #sidebar_chats_btn,
-    [data-testid="stSidebar"] .stButton #sidebar_projects_btn,
-    [data-testid="stSidebar"] .stButton #sidebar_codes_btn,
-    [data-testid="stSidebar"] .stButton #sidebar_shared_btn,
-    [data-testid="stSidebar"] .stButton #sidebar_api_btn {
+    /* Specific styles for core navigation buttons */
+    .core-nav-button-group .stButton>button {
         margin-bottom: 0px !important; /* No margin between these buttons */
         border-radius: 0px !important; /* Square corners */
+        border-top: 1px solid #1a1a1a !important; /* Subtle separator between nav items */
     }
-    /* Bottom border for the group of 5 buttons */
-    [data-testid="stSidebar"] .stButton #sidebar_api_btn {
-        border-bottom: 1px solid #333333 !important;
+    .core-nav-button-group .stButton:last-child>button {
+        border-bottom: 1px solid #333333 !important; /* Stronger separator after group */
         padding-bottom: 15px !important; /* Add space below line */
-        margin-bottom: 15px !important; /* More margin */
+        margin-bottom: 15px !important; /* More margin below the group */
     }
-
+    .core-nav-button-group .stButton:first-child>button {
+        border-top: none !important; /* No top border for the first button */
+    }
 
     /* Ensure chat text itself doesn't overflow */
     [data-testid="stSidebar"] .stButton>button span { /* Target span inside button */
@@ -305,11 +303,8 @@ st.markdown("""
         display: block; /* Make span a block element within flex to apply overflow */
         flex-grow: 1; /* Allow it to take available space */
     }
-    [data-testid="stSidebar"] .stButton>button .icon { /* Style for icons next to text */
-        margin-right: 10px; /* Space between icon and text */
-        color: #aaaaaa; /* Default icon color */
-        font-size: 1.2em; /* Slightly larger icon */
-    }
+    /* Removed .icon class targeting as button labels are now simple strings */
+    /* [data-testid="stSidebar"] .stButton>button .icon { } */
 
 
     /* Specific style for NEW CHAT button - BLACK */
@@ -349,20 +344,16 @@ st.markdown("""
         box-shadow: 0 0 0 0.2rem rgba(255, 0, 0, 0.25) !important;
     }
 
-    /* Active chat button highlight (applied directly when chat_id matches) */
-    .stButton.active-chat-button > button { /* Specific targeting for active chat */
-        background-color: #333333 !important; /* Dark grey for active chat */
+    /* Active button highlight (applied directly when chat_id matches or section is active) */
+    .stButton.active-chat-button > button { /* Specific targeting for active chat/section */
+        background-color: #333333 !important; /* Dark grey for active */
         border-left: 3px solid #ff0000 !important; /* Red highlight on left */
         padding-left: 12px !important; /* Adjust padding for border */
-        color: #ff0000 !important; /* Red text for active chat */
-        font-weight: bold !important; /* Make active chat text bold */
+        color: #ff0000 !important; /* Red text for active */
+        font-weight: bold !important; /* Make active text bold */
     }
-    .stButton.active-chat-button > button span {
-        color: #ff0000 !important;
-    }
-    .stButton.active-chat-button > button .icon { /* Active icon color */
-        color: #ff0000 !important;
-    }
+    /* No specific span styling for active icon since labels are now simple strings */
+    /* .stButton.active-chat-button > button span { color: #ff0000 !important; } */
 
 
     /* Kebab Menu Popover Button */
@@ -1087,57 +1078,62 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
     # Core Navigation Buttons - No spacing, fixed at top
-    # Use st.container() without padding to achieve no spacing
-    with st.container(): # Group these buttons to remove extra Streamlit vertical padding
-        # Define the buttons and their icons
-        nav_buttons = [
-            ("💬 Chats", "sidebar_chats_btn", "show_chats_list"),
-            ("📁 Projects", "sidebar_projects_btn", "show_projects"),
-            ("💻 Codes", "sidebar_codes_btn", "show_codes"),
-            ("🤝 Shared with me", "sidebar_shared_btn", "show_shared_with_me"),
-            ("⚙️ API", "sidebar_api_btn", "show_api_section"),
-        ]
+    st.markdown('<div class="core-nav-button-group">', unsafe_allow_html=True) # Group these buttons with a div
+    # Define the buttons and their icons
+    nav_buttons = [
+        ("💬 Chats", "sidebar_chats_btn", "show_chats_list"),
+        ("📁 Projects", "sidebar_projects_btn", "show_projects"),
+        ("💻 Codes", "sidebar_codes_btn", "show_codes"),
+        ("🤝 Shared with me", "sidebar_shared_btn", "show_shared_with_me"),
+        ("⚙️ API", "sidebar_api_btn", "show_api_section"),
+    ]
 
-        for text, key, state_flag in nav_buttons:
-            # Determine if this button should be active
-            is_active = st.session_state[state_flag]
+    for text, key, state_flag in nav_buttons:
+        # Determine if this button should be active
+        is_active = st.session_state[state_flag]
 
-            # Special logic for 'Chats' button: it's active if its flag is true AND either a chat is selected OR no other main section is active
+        # Special logic for 'Chats' button: it's active if its flag is true AND either a chat is selected OR no other main section is active
+        if state_flag == "show_chats_list":
+            if st.session_state.current_chat_id is not None: # If a specific chat is open, 'Chats' is active
+                is_active = True
+            elif not (st.session_state.show_projects or st.session_state.show_codes or st.session_state.show_shared_with_me or st.session_state.show_api_section or st.session_state.show_settings or st.session_state.show_upgrade):
+                # If no specific chat and no other major section, 'Chats' is active by default
+                is_active = True
+            else:
+                is_active = False # If another main section is open, 'Chats' is not active (unless a chat is loaded)
+        else: # For other sections, it's active if its flag is true and no chat is selected
+            if st.session_state.current_chat_id is not None:
+                is_active = False
+
+
+        button_class = "active-chat-button" if is_active else ""
+
+        st.markdown(f"<div class='stButton {button_class}'>", unsafe_allow_html=True)
+        # Simplified label: just the text directly
+        if st.button(text, key=key): # unsafe_allow_html=True is not needed for simple text/emoji
+            reset_view_flags_for_features()
+            st.session_state[state_flag] = True
             if state_flag == "show_chats_list":
-                if st.session_state.current_chat_id is not None: # If a specific chat is open, 'Chats' is active
-                    is_active = True
-                elif not (st.session_state.show_projects or st.session_state.show_codes or st.session_state.show_shared_with_me or st.session_state.show_api_section):
-                    # If no specific chat and no other major section, 'Chats' is active by default
-                    is_active = True
-                else:
-                    is_active = False # If another main section is open, 'Chats' is not active (unless a chat is loaded)
-
-            button_class = "active-chat-button" if is_active else ""
-
-            st.markdown(f"<div class='stButton {button_class}'>", unsafe_allow_html=True)
-            if st.button(f"<span class='icon'>{text.split(' ')[0]}</span><span>{text.split(' ', 1)[1]}</span>", key=key, unsafe_allow_html=True):
-                reset_view_flags_for_features()
-                st.session_state[state_flag] = True
-                if state_flag == "show_chats_list":
-                    # If navigating to chats, try to load the latest chat or create a new one
-                    if st.session_state.user_chats:
-                        try:
-                            sorted_chat_ids = sorted(
-                                st.session_state.user_chats.keys(),
-                                key=lambda x: datetime.strptime(x.split('-')[-1], "%Y%m%d%H%M%S") if len(x.split('-')[-1]) == 14 else datetime.min,
-                                reverse=True
-                            )
-                            st.session_state.current_chat_id = sorted_chat_ids[0] if sorted_chat_ids else None
-                        except Exception as e:
-                            print(f"WORM-GPT Warning (Console): Could not auto-load most recent chat on 'Chats' click. Error: {e}")
-                            st.session_state.current_chat_id = next(iter(st.session_state.user_chats.keys()), None) # Fallback
-                    if st.session_state.current_chat_id is None:
-                        new_mission_id = f"New_Mission-{datetime.now().strftime('%Y%m%d%H%M%S')}"
-                        st.session_state.user_chats[new_mission_id] = {"title": "New Mission", "messages": [{"role": "assistant", "content": "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"}]}
-                        st.session_state.current_chat_id = new_mission_id
-                        sync_to_vault()
-                st.rerun()
-            st.markdown("</div>", unsafe_allow_html=True)
+                # If navigating to chats, try to load the latest chat or create a new one
+                if st.session_state.user_chats:
+                    try:
+                        sorted_chat_ids = sorted(
+                            st.session_state.user_chats.keys(),
+                            key=lambda x: datetime.strptime(x.split('-')[-1], "%Y%m%d%H%M%S") if len(x.split('-')[-1]) == 14 else datetime.min,
+                            reverse=True
+                        )
+                        st.session_state.current_chat_id = sorted_chat_ids[0] if sorted_chat_ids else None
+                    except Exception as e:
+                        print(f"WORM-GPT Warning (Console): Could not auto-load most recent chat on 'Chats' click. Error: {e}")
+                        st.session_state.current_chat_id = next(iter(st.session_state.user_chats.keys()), None) # Fallback
+                if st.session_state.current_chat_id is None:
+                    new_mission_id = f"New_Mission-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+                    st.session_state.user_chats[new_mission_id] = {"title": "New Mission", "messages": [{"role": "assistant", "content": "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"}]}
+                    st.session_state.current_chat_id = new_mission_id
+                    sync_to_vault()
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True) # Close core-nav-button-group div
 
 
     st.markdown("---") # Separator between Core Functions and NEW CHAT/Missions List
@@ -1212,10 +1208,7 @@ with st.sidebar:
                 if st.session_state.chat_selection_mode:
                     col_chk, col_chat_btn = st.columns([0.2, 0.8])
                     with col_chk:
-                        # Streamlit doesn't directly support CSS classes on checkbox, use a container
                         st.markdown('<div class="chat-select-checkbox">', unsafe_allow_html=True)
-                        # The on_change callback must be a function, not a lambda with direct modification for `st.rerun` reasons
-                        # The `value` for checkbox needs to be correctly set based on `selected_chats`
                         checkbox_value = (chat_id in st.session_state.selected_chats)
                         if st.checkbox("", key=f"chk_{chat_id}", value=checkbox_value):
                             if chat_id not in st.session_state.selected_chats:
@@ -1228,7 +1221,7 @@ with st.sidebar:
                     with col_chat_btn:
                         display_chat_name = st.session_state.user_chats[chat_id].get("title", chat_id.split('-')[0].replace('_', ' '))
                         st.markdown(f"<div class='stButton {button_container_class}'>", unsafe_allow_html=True)
-                        if st.button(f"W <span>{display_chat_name}</span>", key=f"btn_selectable_{chat_id}",
+                        if st.button(f"W {display_chat_name}", key=f"btn_selectable_{chat_id}", # Simplified label
                             help=f"Select chat: {chat_id}"
                             # No on_click for button itself in selection mode, rely on checkbox
                         ):
@@ -1240,7 +1233,7 @@ with st.sidebar:
                     with col1:
                         display_chat_name = st.session_state.user_chats[chat_id].get("title", chat_id.split('-')[0].replace('_', ' '))
                         st.markdown(f"<div class='stButton {button_container_class}'>", unsafe_allow_html=True)
-                        if st.button(f"W <span>{display_chat_name}</span>", key=f"btn_{chat_id}",
+                        if st.button(f"W {display_chat_name}", key=f"btn_{chat_id}", # Simplified label
                             help=f"Load chat: {chat_id}",
                             on_click=lambda c=chat_id: (
                                 setattr(st.session_state, 'current_chat_id', c),
