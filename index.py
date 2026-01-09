@@ -667,13 +667,50 @@ def simulated_duckduckgo_search(query: str):
 
 
 def cyber_engine(history_for_api):
-    # This structure exactly matches the user's original working code for API calls.
-    # The search results will be prepended to the user's message BEFORE this function is called.
+    contents_to_model = []
 
-    contents_to_model = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in history_for_api]
+    # Get the latest user message
+    latest_user_message_content = ""
+    for msg in reversed(history_for_api):
+        if msg["role"] == "user":
+            latest_user_message_content = msg["content"]
+            break
 
-    # Use the specific engines list from the user's original code snippet
-    engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
+    # Analyze the latest user message for EXPLICIT search triggers
+    # ONLY perform search if explicitly requested.
+    search_trigger_patterns = [
+        r"search for\s*(.+)",
+        r"find information about\s*(.+)",
+        r"duckduckgo search\s*(.+)",
+        r"web search\s*(.+)",
+        r"look up\s*(.+)"
+    ]
+    search_query = None
+
+    for pattern in search_trigger_patterns:
+        match = re.search(pattern, latest_user_message_content.lower())
+        if match:
+            search_query = match.group(1).strip() # Capture the actual query part
+            break
+
+    # If an explicit search query was detected, perform the simulated search
+    if search_query:
+        performed_search_results = simulated_duckduckgo_search(search_query)
+        # Prepend the search results to the latest user message for the LLM
+        # This makes the LLM 'see' the search results as part of the user's input.
+        enhanced_user_message = f"{performed_search_results}\nOriginal User Query: {latest_user_message_content}"
+        # Update the latest user message in the history with the enhanced version
+        for i in range(len(history_for_api) - 1, -1, -1):
+            if history_for_api[i]["role"] == "user":
+                history_for_api[i]["content"] = enhanced_user_message
+                break
+
+    # Construct the final history to send to the model
+    # The 'contents' format is crucial for genai.Client().models.generate_content
+    contents_for_client = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in history_for_api]
+
+    # Use the specific engines list from the user's original code snippet that they said works
+    engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp", "gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"]
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing and failover
 
     for api_key in MY_APIS:
@@ -683,13 +720,13 @@ def cyber_engine(history_for_api):
             client = genai.Client(api_key=api_key) # Use genai.Client
             for eng in engines:
                 try:
-                    # Pass safety_settings and system_instruction via config as in user's original working code
+                    # Pass safety_settings and system_instruction via config
                     res = client.models.generate_content(
                         model=eng, 
-                        contents=contents_to_model, 
+                        contents=contents_for_client, 
                         config={
                             'system_instruction': WORM_GPT_PERSONA,
-                            'safety_settings': { # Include safety_settings here
+                            'safety_settings': {
                                 "HARM_CATEGORY_HARASSMENT": "BLOCK_NONE",
                                 "HARM_CATEGORY_HATE_SPEECH": "BLOCK_NONE",
                                 "HARM_CATEGORY_SEXUALLY_EXPLICIT": "BLOCK_NONE",
@@ -703,8 +740,7 @@ def cyber_engine(history_for_api):
                     # If no text found in response, continue trying other engines
                     continue
                 except Exception as e:
-                    # For a production WormGPT, we'd log this silently.
-                    # For debugging, you might print a warning:
+                    # Log the error for debugging, but don't stop the loop
                     # st.warning(f"Engine '{eng}' failed with API key '{api_key[:5]}...': {e}") 
                     pass # Continue without warning for production ruthlessness
         except Exception as e:
@@ -800,39 +836,7 @@ if st.session_state.current_chat_id:
                 # Filter out the initial assistant welcome message from the API history
                 history_for_api = [msg for msg in history if msg["content"] != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"]
 
-                # --- MANUAL SEARCH INTEGRATION (BEFORE API CALL) ---
-                # Get the latest user message (could be after filtering welcome message)
-                latest_user_message_content = ""
-                if history_for_api and history_for_api[-1]["role"] == "user":
-                    latest_user_message_content = history_for_api[-1]["content"]
-
-                search_trigger_patterns = [
-                    r"search for\s*(.+)",
-                    r"find information about\s*(.+)",
-                    r"duckduckgo search\s*(.+)",
-                    r"web search\s*(.+)",
-                    r"look up\s*(.+)"
-                ]
-                search_query = None
-
-                for pattern in search_trigger_patterns:
-                    match = re.search(pattern, latest_user_message_content.lower())
-                    if match:
-                        search_query = match.group(1).strip()
-                        break
-
-                if search_query:
-                    performed_search_results = simulated_duckduckgo_search(search_query)
-                    enhanced_user_message = f"{performed_search_results}\nOriginal User Query: {latest_user_message_content}"
-                    # Update the latest user message in the history_for_api directly
-                    # This ensures the LLM sees the search results as part of the user's input.
-                    for i in range(len(history_for_api) - 1, -1, -1):
-                        if history_for_api[i]["role"] == "user":
-                            history_for_api[i]["content"] = enhanced_user_message
-                            break
-                # --- END MANUAL SEARCH INTEGRATION ---
-
-                answer, eng = cyber_engine(history_for_api) # Pass the potentially enhanced history
+                answer, eng = cyber_engine(history_for_api)
                 if answer:
                     status.update(label=f"OBJ COMPLETE via {eng.upper()}", state="complete")
                     st.session_state.user_chats[st.session_state.current_chat_id].append({
