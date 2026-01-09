@@ -9,40 +9,6 @@ import re # For regex-based search trigger
 # --- 1. تصميم الواجهة (WormGPT Style) - العودة للخلفية البيضاء (ChatGPT-like) ---
 st.set_page_config(page_title="WORM-GPT v2.0", page_icon="💀", layout="wide")
 
-# --- WORM-GPT API Configuration (ROBUSTIFIED FOR MULTIPLE SECRET TYPES) ---
-# This block is critical and placed early to ensure API access before any functionality.
-MY_APIS = [] # Initialize as an empty list to prevent downstream errors
-
-if hasattr(st, 'secrets') and callable(getattr(st.secrets, 'get', None)):
-    # Attempt to retrieve the raw value of "GENAI_KEYS".
-    # Default to None if the key is not found, to differentiate from an empty string.
-    raw_genai_keys = st.secrets.get("GENAI_KEYS", None) 
-
-    if raw_genai_keys is None:
-        # Secret not found at all
-        st.error("CRITICAL ERROR: 'GENAI_KEYS' secret is not configured. WormGPT cannot function without its connection to the matrix. Please ensure 'GENAI_KEYS' is set in your Streamlit Cloud secrets or `.streamlit/secrets.toml`.")
-        st.stop()
-    elif isinstance(raw_genai_keys, str):
-        # Scenario 1: The secret is configured as a single comma-separated string (e.g., "key1,key2,key3")
-        MY_APIS = [key.strip() for key in raw_genai_keys.split(',') if key.strip()]
-    elif isinstance(raw_genai_keys, list):
-        # Scenario 2: The secret is configured directly as a list of strings (e.g., `GENAI_KEYS=["key1", "key2"]` in secrets.toml)
-        # Iterate through the list, ensure each item is a string, and strip whitespace.
-        MY_APIS = [key.strip() for key in raw_genai_keys if isinstance(key, str) and key.strip()]
-    else:
-        # Critical failure: The secret is of an entirely unexpected type.
-        st.error(f"CRITICAL ERROR: 'GENAI_KEYS' from st.secrets returned an unexpected type: '{type(raw_genai_keys).__name__}'. Expected a string or a list of strings for API keys. Cannot parse operational keys.")
-        st.stop() # Halt execution due to critical configuration failure
-else:
-    # Critical failure: st.secrets itself is not accessible.
-    st.error("CRITICAL ERROR: Streamlit secrets mechanism failed to initialize or is inaccessible. Cannot retrieve API keys. Ensure you are running in a compatible Streamlit environment (e.g., Streamlit Cloud or local with `secrets.toml`).")
-    st.stop() # Halt execution due to critical configuration failure
-
-# Final Critical check: If MY_APIS list is still empty after all attempts to load and parse, halt.
-if not MY_APIS:
-    st.error("CRITICAL ERROR: No valid GENAI_KEYS were loaded or parsed successfully. Ensure 'GENAI_KEYS' is correctly configured in your Streamlit secrets as either a comma-separated string or a list of strings. WormGPT cannot function without API access.")
-    st.stop() # Halt execution.
-# --- End API Configuration ---
 
 st.markdown("""
 <style>
