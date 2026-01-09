@@ -2,14 +2,6 @@ streamlit
 google-generativeai
 Pillow
 pandas
-plotly
 requests
-beautifulsoup4
-gTTS
-googletrans==4.0.0-rc1
-fpdf2
-cryptography
-psutil
-networkx
 streamlit-agraph
-qrcode
+google
