@@ -699,23 +699,21 @@ def simulated_duckduckgo_search(query: str):
 
 
 def cyber_engine(history_for_api):
-    # This structure exactly matches the user's original working code for API calls.
-    # The search results will be prepended to the user's message BEFORE this function is called.
-
     contents_to_model = [{"role": "user" if m["role"] == "user" else "model", "parts": [{"text": m["content"]}]} for m in history_for_api]
 
     # Use the specific engines list from the user's original code snippet
     engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"]
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing and failover
 
+    failed_attempts = [] # List to store details of each failure
+
     for api_key in MY_APIS:
         if not api_key.strip(): 
             continue
         try:
-            client = genai.Client(api_key=api_key) # Use genai.Client
+            client = genai.Client(api_key=api_key) 
             for eng in engines:
                 try:
-                    # Pass safety_settings and system_instruction via config as in user's original working code
                     res = client.models.generate_content(
                         model=eng, 
                         contents=contents_to_model, 
@@ -731,17 +729,31 @@ def cyber_engine(history_for_api):
                     )
                     if res.text:
                         return res.text, eng
-
-                    # If no text found in response, continue trying other engines
-                    continue
+                    else:
+                        # No text returned, but no exception - log this too
+                        failed_attempts.append(f"API Key (last 5): {api_key[-5:]} | Model: {eng} | Result: No text in response.")
                 except Exception as e:
-                    # For a production WormGPT, we'd log this silently.
-                    # For debugging, you might print a warning:
-                    # st.warning(f"Engine '{eng}' failed with API key '{api_key[:5]}...': {e}") 
-                    pass # Continue without warning for production ruthlessness
+                    # Capture the specific exception message for debugging
+                    failed_attempts.append(f"API Key (last 5): {api_key[-5:]} | Model: {eng} | Error: {str(e)}")
         except Exception as e:
-            # st.warning(f"API Key '{api_key[:5]}...' configuration failed or invalid: {e}")
-            pass # Continue without warning for production ruthlessness
+            # Error during client initialization (e.g., invalid API key format, connection issues)
+            failed_attempts.append(f"API Key (last 5): {api_key[-5:]} | Client Init Error: {str(e)}")
+
+    # If all attempts fail, consolidate and display the errors
+    if failed_attempts:
+        st.error("☠️ WORM-GPT FAILED TO CONNECT TO THE MATRIX ☠️")
+        st.warning("All API keys and models failed. Review the errors below to diagnose the problem:")
+        for attempt in failed_attempts:
+            st.code(attempt, language="text") # Display each error in a code block for clarity
+        st.markdown(
+            """
+            **ACTION REQUIRED:**
+            1.  **Verify API Keys:** Double-check your Google Generative AI API keys in `st.secrets` (Streamlit Cloud dashboard or `.streamlit/secrets.toml`). Ensure they are active and correct.
+            2.  **Check Quota:** Confirm your Google Cloud project has sufficient quota for Generative AI API usage.
+            3.  **Network Connectivity:** Ensure your deployment environment has outbound access to Google API endpoints.
+            4.  **Try Again:** Sometimes transient network issues occur. A refresh might resolve it.
+            """
+        )
     return None, None # All API keys and engines failed
 
 # --- 5. عرض المحادثة والتحكم (مع تحديثات UI) ---
@@ -875,11 +887,13 @@ if st.session_state.current_chat_id:
                     save_chat_to_vault()
                     st.rerun()
                 else:
-                    status.update(label="☠️ MISSION ABORTED. ALL SYSTEMS DOWN.", state="error")
+                    # The error message and suggested actions are now handled by cyber_engine itself.
+                    # We just ensure the session state records the failure.
                     st.session_state.user_chats[st.session_state.current_chat_id].append({
                         "role": "assistant",
-                        "content": "ERROR: Unable to complete mission. All API endpoints failed. Contact Command. WormGPT cannot proceed.",
+                        "content": "ERROR: WormGPT could not access the Generative AI models. Please check the error messages displayed above by the system for diagnosis and retry.",
                         "timestamp": datetime.now().isoformat()
                     })
                     save_chat_to_vault()
-                    st.rerun()
+                    status.update(label="☠️ MISSION ABORTED. ALL SYSTEMS DOWN.", state="error")
+                    st.rerun() # Rerun to display the error messages from cyber_engine and the final chat message
