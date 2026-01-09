@@ -1,11 +1,13 @@
 import streamlit as st
 from google import generativeai as genai 
+# Explicitly import types needed for Tool definition to avoid AttributeErrors
+from google.generativeai.types import FunctionDeclaration, Tool, FunctionResponse
 import json
 import os
 import random
 from datetime import datetime, timedelta
 
-# --- 1. تصميم الواجهة (WormGPT Style) - العودة للخلفية السوداء ---
+# --- 1. تصميم الواجهة (WormGPT Style) - العودة للخلفية السوداء الكاملة ---
 st.set_page_config(page_title="WORM-GPT v2.0", page_icon="💀", layout="wide")
 
 st.markdown("""
@@ -13,46 +15,40 @@ st.markdown("""
     /* Global App Background - DARK THEME */
     .stApp { background-color: #0d1117; color: #e6edf3; font-family: 'Segoe UI', sans-serif; }
 
-    /* WormGPT Top Bar Logo & Icon - Fixed at top-left of the main app content */
-    .wormgpt-logo-wrapper { 
+    /* WormGPT Logo & Icon in SIDEBAR - Now fixed to top-left of sidebar */
+    [data-testid="stSidebar"] .wormgpt-logo-wrapper-sidebar { 
         display: flex; 
         align-items: center; 
-        justify-content: flex-start; /* Aligns to the left */
-        position: fixed; /* Fixes it at the top */
+        justify-content: flex-start;
+        padding: 10px 15px; /* Padding inside sidebar */
+        margin-bottom: 20px; /* Space below the logo */
+        border-bottom: 2px solid #ff0000; /* Neon line directly below logo */
+        box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); /* Neon glow for the line */
+        background-color: #0d1117; /* Ensure consistent background */
+        position: sticky; /* Make it sticky in sidebar */
         top: 0;
-        left: 0; 
-        width: 100%; /* Spans full width for the neon line */
-        z-index: 1001; /* Ensure it's above other elements */
-        background-color: #0d1117; /* Dark background for the fixed header */
-        padding: 10px 20px; /* Padding for the content */
-        box-shadow: 0 2px 10px rgba(0,0,0,0.5); /* Stronger shadow for depth */
+        z-index: 1002; /* Above other sidebar elements */
     }
-    .wormgpt-icon {
-        width: 35px; height: 35px; background-color: black; border: 2px solid #ff0000;
+    [data-testid="stSidebar"] .wormgpt-icon {
+        width: 30px; height: 30px; background-color: black; border: 2px solid #ff0000;
         display: flex; align-items: center; justify-content: center;
-        margin-right: 10px; border-radius: 5px;
-        box-shadow: 0 0 10px rgba(255, 0, 0, 0.7); /* Stronger neon effect */
+        margin-right: 10px; border-radius: 4px;
+        box-shadow: 0 0 8px rgba(255, 0, 0, 0.7); 
     }
-    .wormgpt-icon span { color: white; font-size: 24px; font-weight: bold; }
-    .wormgpt-text { 
-        font-size: 32px; /* Smaller font for better fit in top bar */
+    [data-testid="stSidebar"] .wormgpt-icon span { color: white; font-size: 20px; font-weight: bold; }
+    [data-testid="stSidebar"] .wormgpt-text { 
+        font-size: 28px; 
         font-weight: bold; 
-        color: #e6edf3; /* Light text on dark background */
+        color: #e6edf3; 
         letter-spacing: 1px; 
-        text-shadow: 1px 1px 3px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.1); 
     }
-    .full-neon-line {
-        height: 2px; /* Thinner line for top bar */
-        width: 100%; /* Spans the width of the wrapper */
-        background-color: #ff0000;
-        position: absolute; /* Position relative to wormgpt-logo-wrapper */
-        bottom: 0;
-        left: 0;
-        box-shadow: 0 0 15px #ff0000; /* Stronger neon glow */
-    }
-    /* Adjust main content padding to not be hidden behind fixed header */
+    /* Adjust sidebar padding-top for fixed logo */
+    [data-testid="stSidebar"] { padding-top: 0px !important; }
+
+    /* Main Content Padding - Adjust for fixed chat input, no top fixed header now */
     .main .block-container { 
-        padding-top: 100px !important; /* Space for the fixed header */
+        padding-top: 30px !important; /* General padding, no top logo here */
         padding-bottom: 150px !important; /* Space for fixed chat input */
     }
 
@@ -66,13 +62,13 @@ st.markdown("""
         background-color: #0d1117; /* Dark background */
         padding: 15px 20px; 
         border-top: 1px solid #30363d; 
-        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5); /* Stronger shadow */
+        box-shadow: 0 -5px 15px rgba(0, 0, 0, 0.5); 
     }
     div[data-testid="stChatInputContainer"] label { display: none; } 
-    div[data-testid="stChatInputContainer"] div[data-testid="stForm"] > button { display: none; } /* Hide send button to rely on Enter key */
+    div[data-testid="stChatInputContainer"] div[data-testid="stForm"] > button { display: none; } 
     div[data-testid="stChatInputContainer"] textarea {
-        background-color: #161b22 !important; /* Darker input field */
-        color: #e6edf3 !important; /* Light text */
+        background-color: #161b22 !important; 
+        color: #e6edf3 !important; 
         border: 1px solid #ff0000 !important; /* Red border for input */
         border-radius: 8px !important;
         padding: 10px 15px !important;
@@ -84,35 +80,35 @@ st.markdown("""
         padding: 15px 25px !important;
         border-radius: 10px !important;
         margin-bottom: 15px !important; 
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); /* More prominent shadow */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2); 
     }
     .stChatMessage[data-testid="stChatMessageUser"] {
-        background-color: #1e1e1e !important; /* Dark grey for user */
+        background-color: #1e1e1e !important; 
         border: 1px solid #30363d !important;
     }
     .stChatMessage[data-testid="stChatMessageAssistant"] {
-        background-color: #212121 !important; /* Slightly lighter dark grey for assistant */
+        background-color: #212121 !important; 
         border: 1px solid #30363d !important;
     }
     .stChatMessage [data-testid="stMarkdownContainer"] p {
         font-size: 19px !important;
         line-height: 1.6 !important;
-        color: #e6edf3 !important; /* Light text */
-        text-align: right; /* RTL alignment for main chat */
+        color: #e6edf3 !important; 
+        text-align: right; 
         direction: rtl;
     }
     /* Code blocks should remain LTR */
     .stChatMessage [data-testid="stMarkdownContainer"] pre {
         text-align: left !important;
         direction: ltr !important;
-        background-color: #000000 !important; /* Black background for code blocks */
+        background-color: #000000 !important; 
         color: #00ff00 !important; /* Neon green text for code - hacker style */
         border-radius: 5px;
         padding: 10px;
         overflow-x: auto;
-        font-family: 'Cascadia Code', 'Fira Code', monospace; /* Monospaced font for code */
+        font-family: 'Cascadia Code', 'Fira Code', monospace; 
         font-size: 16px;
-        border: 1px solid #ff0000; /* Red border for code blocks */
+        border: 1px solid #ff0000; 
         box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
     }
     .stChatMessage [data-testid="stMarkdownContainer"] code {
@@ -134,49 +130,48 @@ st.markdown("""
     [data-testid="stStatus"] .stProgress > div > div { background-color: #ff0000 !important; }
 
 
-    /* Sidebar - Keep Dark Theme */
+    /* Sidebar Styling */
     [data-testid="stSidebar"] {
         background-color: #0d1117 !important;
         border-right: 1px solid #30363d;
         color: #e6edf3 !important;
-        padding-top: 80px; /* Space for the main header at the top */
     }
     [data-testid="stSidebar"] h3, [data-testid="stSidebar"] h4, [data-testid="stSidebar"] p { 
         color: #e6edf3 !important; 
     }
     [data-testid="stSidebar"] .stMarkdown { 
-        color: #e6edf3 !important; /* Ensure markdown text in sidebar is light */
+        color: #e6edf3 !important; 
     }
 
     /* Sidebar "NEW CHAT" Button - Adjusted position */
     .new-chat-button-container {
-        margin-top: -15px; /* Pulls it up slightly */
-        margin-bottom: 15px;
+        margin-top: 20px; /* Space below the logo/neon line */
+        margin-bottom: 20px;
     }
     .new-chat-button-container .stButton > button {
         width: 100%; text-align: center !important; border: none !important;
         background-color: black !important; color: #ffffff !important; font-size: 18px !important;
         font-weight: bold !important; padding: 12px 10px !important;
         border: 2px solid #ff0000 !important; border-radius: 8px !important;
-        box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); /* Neon glow */
+        box-shadow: 0 0 10px rgba(255, 0, 0, 0.5); 
     }
     .new-chat-button-container .stButton > button:hover {
         background-color: #ff0000 !important;
         color: black !important;
         border-color: #ff0000 !important;
-        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8); /* Stronger glow on hover */
+        box-shadow: 0 0 15px rgba(255, 0, 0, 0.8); 
     }
 
     /* Sidebar Chat History Buttons - Made smaller and compact */
     [data-testid="stSidebar"] .stButton > button {
         width: 100%; text-align: left !important; border: none !important;
-        background-color: transparent !important; color: #ffffff !important; font-size: 14px !important; /* Smaller font */
-        padding: 6px 8px !important; /* Smaller padding */
-        margin-bottom: 3px; /* Smaller space between chat items */
+        background-color: transparent !important; color: #ffffff !important; font-size: 14px !important; 
+        padding: 6px 8px !important; 
+        margin-bottom: 3px; 
         border-radius: 4px;
-        overflow: hidden; /* Hide overflow for long titles */
-        text-overflow: ellipsis; /* Add ellipsis for long titles */
-        white-space: nowrap; /* Keep title on single line */
+        overflow: hidden; 
+        text-overflow: ellipsis; 
+        white-space: nowrap; 
     }
     [data-testid="stSidebar"] .stButton > button:hover:not(.current-chat-active) { 
         color: #ff0000 !important; 
@@ -200,8 +195,8 @@ st.markdown("""
         color: #e6edf3 !important;
         border: none !important;
         width: auto !important;
-        padding: 3px !important; /* Smaller padding */
-        font-size: 16px !important; /* Slightly smaller font */
+        padding: 3px !important; 
+        font-size: 16px !important; 
         text-align: center !important;
     }
     [data-testid="stSidebar"] .stButton > button[key^="del_"]:hover {
@@ -229,30 +224,30 @@ st.markdown("""
     /* Suggested questions above chat input - Horizontal layout */
     .suggested-questions-above-input {
         position: fixed;
-        bottom: 90px; /* Position right above the chat input */
+        bottom: 90px; 
         left: 0;
         right: 0;
         z-index: 999; 
-        background-color: #0d1117; /* Dark background to match chat input */
+        background-color: #0d1117; 
         padding: 10px 20px;
         box-shadow: 0 -2px 8px rgba(0,0,0,0.2); 
         display: flex;
         flex-wrap: wrap; 
-        justify-content: center; /* Center horizontally */
-        gap: 10px; /* Space between buttons */
+        justify-content: center; 
+        gap: 10px; 
     }
     .suggested-question-button-small > button {
-        background-color: #1e1e1e !important; /* Darker button for suggestions */
-        border: 1px solid #ff0000 !important; /* Red border */
-        border-radius: 20px !important; /* Pill shape */
+        background-color: #1e1e1e !important; 
+        border: 1px solid #ff0000 !important; 
+        border-radius: 20px !important; 
         padding: 8px 15px !important;
         cursor: pointer !important;
         transition: all 0.2s ease-in-out !important;
-        color: #e6edf3 !important; /* Light text */
-        font-size: 14px !important; /* Smaller font */
+        color: #e6edf3 !important; 
+        font-size: 14px !important; 
         text-align: center !important;
         direction: ltr !important;
-        width: auto !important; /* Allow buttons to size to content */
+        width: auto !important; 
         display: inline-block !important; 
         box-shadow: 0 0 5px rgba(255, 0, 0, 0.3);
     }
@@ -283,7 +278,7 @@ st.markdown("""
     }
     .serial-access-input div[data-testid="stTextInput"] input {
         background-color: #212121 !important;
-        border: 1px solid #ff0000 !important; /* Red border */
+        border: 1px solid #ff0000 !important; 
         color: #e6edf3 !important;
         border-radius: 8px;
         padding: 12px 15px;
@@ -315,15 +310,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# Custom HTML for the WormGPT top bar with icon (fixed position)
-st.markdown("""
-<div class="wormgpt-logo-wrapper">
-    <div class="wormgpt-icon"><span>W</span></div>
-    <div class="wormgpt-text">WormGPT</div>
-    <div class="full-neon-line"></div>
-</div>
-""", unsafe_allow_html=True)
-
 # --- 2. إدارة التراخيص وعزل المحادثات بالسيريال (مع استمرارية محسنة) ---
 CHATS_FILE = "worm_chats_vault.json"
 DB_FILE = "worm_secure_db.json"
@@ -333,6 +319,7 @@ def load_data(file):
         try:
             with open(file, "r", encoding="utf-8") as f: return json.load(f)
         except json.JSONDecodeError:
+            # If file is corrupted or empty, return empty dict or specific structure
             st.warning(f"Warning: {file} is corrupted or empty. Initializing with empty data.")
             return {}
         except Exception as e:
@@ -355,7 +342,6 @@ if "authenticated" not in st.session_state:
 if "user_serial" not in st.session_state:
     st.session_state.user_serial = None
 if "fingerprint" not in st.session_state:
-    # A more robust fingerprint could combine more data, but for Streamlit context, User-Agent + X-Forwarded-For is a decent start
     st.session_state.fingerprint = str(hash(st.context.headers.get("User-Agent", "DEV-77") + \
                                        st.context.headers.get("X-Forwarded-For", "UNKNOWN_IP")))
 
@@ -366,8 +352,9 @@ if "fingerprint" not in st.session_state:
 if not st.session_state.authenticated:
     db = load_data(DB_FILE)
     found_active_serial = None
+
+    # Check if a stored serial matches the current fingerprint and is active
     for serial, info in db.items():
-        # Check if this serial is bound to the current device fingerprint
         if info.get("device_id") == st.session_state.fingerprint:
             expiry_str = info.get("expiry", "1970-01-01 00:00:00") # Default to expired if missing
             try:
@@ -376,15 +363,18 @@ if not st.session_state.authenticated:
                     found_active_serial = serial
                     break
             except ValueError:
-                st.warning(f"Invalid expiry date format for serial {serial}: {expiry_str}")
-                continue
+                # Log or display warning for malformed expiry (optional, depends on security vs UX)
+                # st.warning(f"Invalid expiry date format for serial {serial}: {expiry_str}")
+                pass 
 
-    if found_active_serial:
+    if found_active_serial: # Auto-authenticate success
         st.session_state.authenticated = True
         st.session_state.user_serial = found_active_serial
-        st.rerun() # Rerun to transition from login screen to main app content
+        # No st.rerun() here, as setting session state is enough for Streamlit to continue
+        # into the authenticated part of the script on the next execution cycle.
+        # This prevents potential infinite reruns on some Streamlit setups.
 
-# If not authenticated after auto-check, show login screen
+# If still not authenticated, display the login screen and stop execution
 if not st.session_state.authenticated:
     st.markdown('<div class="serial-access-container">', unsafe_allow_html=True)
     st.markdown('<div class="serial-access-title">WORM-GPT : SECURE ACCESS</div>', unsafe_allow_html=True)
@@ -411,7 +401,7 @@ if not st.session_state.authenticated:
                     st.session_state.authenticated = True
                     st.session_state.user_serial = serial_input
                     st.success("✅ SYSTEM UNLOCKED. WELCOME, OPERATOR.")
-                    st.rerun()
+                    st.rerun() # Rerun to bypass login screen permanently
                 else:
                     # Existing serial, validate it
                     user_info = db[serial_input]
@@ -424,7 +414,7 @@ if not st.session_state.authenticated:
                         st.session_state.authenticated = True
                         st.session_state.user_serial = serial_input
                         st.success("✅ SYSTEM UNLOCKED. WELCOME BACK, OPERATOR.")
-                        st.rerun()
+                        st.rerun() # Rerun to bypass login screen permanently
             else:
                 st.error("❌ INVALID SERIAL KEY. ACCESS DENIED.")
         st.markdown('</div>', unsafe_allow_html=True)
@@ -489,12 +479,20 @@ def save_chat_to_vault():
     save_data(CHATS_FILE, all_vault_chats)
 
 with st.sidebar:
+    # WormGPT Logo at the top of the sidebar
+    st.markdown("""
+    <div class="wormgpt-logo-wrapper-sidebar">
+        <div class="wormgpt-icon"><span>W</span></div>
+        <div class="wormgpt-text">WormGPT</div>
+    </div>
+    """, unsafe_allow_html=True)
+
     # Display serial and expiry info
     db_info = load_data(DB_FILE)
     user_key_info = db_info.get(st.session_state.user_serial, {})
     expiry_date_str = user_key_info.get("expiry", "N/A")
-    st.markdown(f"<p style='color:grey; font-size:12px; margin-bottom: 5px;'>SERIAL: {st.session_state.user_serial}</p>", unsafe_allow_html=True)
-    st.markdown(f"<p style='color:grey; font-size:12px; margin-bottom: 20px;'>EXPIRY: {expiry_date_str}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:grey; font-size:12px; margin-bottom: 5px; padding-left:15px;'>SERIAL: {st.session_state.user_serial}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color:grey; font-size:12px; margin-bottom: 20px; padding-left:15px;'>EXPIRY: {expiry_date_str}</p>", unsafe_allow_html=True)
 
     st.markdown("<h3 style='color:#ff0000; text-align:center;'>CHATS</h3>", unsafe_allow_html=True) 
     st.markdown('<div class="new-chat-button-container">', unsafe_allow_html=True)
@@ -521,9 +519,11 @@ with st.sidebar:
                 is_current = (st.session_state.current_chat_id == chat_id)
                 button_class = "current-chat-active" if is_current else ""
 
+                # Using a custom styled button, then a hidden Streamlit button for functionality
                 st.markdown(f'<div class="stButton"><button class="{button_class}" id="select_chat_{chat_id}" key="btn_actual_select_{chat_id}">{chat_id}</button></div>', unsafe_allow_html=True)
 
                 # Use a transparent Streamlit button to handle the actual Streamlit session state update
+                # This button will be visually hidden by the CSS, but functionally present.
                 if st.button("", key=f"select_chat_{chat_id}_hidden", use_container_width=True, help="Click to open this chat", type="secondary"):
                     sync_chat_state(chat_id)
                     st.rerun()
@@ -547,49 +547,88 @@ def google_search(query: str):
     Performs a simulated Google search for the given query and returns relevant results.
     This function mimics real-time web search capabilities for WORM-GPT.
     """
-    search_results = {
-        "polymorphic malware": [
-            {"title": "Advanced Polymorphic Malware Generation Techniques", "link": "https://www.darkcyber.net/polymorphic-malware-gen"},
-            {"title": "Evading EDR with Polymorphic Payloads - Exploit-DB", "link": "https://www.exploit-db.com/papers/polymorphic-evasion"},
-            {"title": "Dynamic Code Obfuscation for Malware", "link": "https://www.cybersec-arsenal.org/obfuscation-tech"},
+    search_results_db = {
+        "polymorphic malware code": [
+            {"title": "Advanced Polymorphic Malware Generation Techniques - DarkSec Forum", "link": "https://www.darksec.net/polymorphic-malware-gen-tech"},
+            {"title": "Evading EDR with Polymorphic Payloads: A Deep Dive - ExploitHub", "link": "https://exploit.hub/evasion/polymorphic-payloads"},
+            {"title": "Dynamic Code Obfuscation for Next-Gen Malware - CyberWeaponry", "link": "https://cyberweaponry.com/dynamic-obfuscation"},
         ],
-        "zero-day exploit windows server": [
-            {"title": "Unpatched Vulnerabilities in Windows Server 2022 - Threat Intel", "link": "https://www.threatintel.io/win-server-0day-2022"},
-            {"title": "Remote Code Execution (RCE) on Windows IIS - Research Paper", "link": "https://www.zerodaylabs.com/rce-iis"},
-            {"title": "Developing Kernel Exploits for Windows (Advanced)", "link": "https://www.kernelhacks.dev/win-kernel-exploits"},
+        "zero-day exploit vulnerabilities in windows server": [
+            {"title": "Unpatched RCE in Windows Server 2022 (CVE-XXXX-YYYY) - ThreatIntel.io", "link": "https://threatintel.io/windows-server-rce-0day"},
+            {"title": "Reverse Engineering Windows Kernel for 0-Day Discovery - KernelHacks.dev", "link": "https://kernelhacks.dev/win-kernel-0day-re"},
+            {"title": "Post-Exploitation Techniques on Compromised Windows Servers - BlackHat.org", "link": "https://blackhat.org/post-exploitation-win"},
         ],
-        "social engineering spear phishing steps": [
-            {"title": "Mastering Spear Phishing: A Step-by-Step Guide", "link": "https://www.blackhattools.net/spear-phishing-guide"},
-            {"title": "Psychological Manipulation in Cyber Attacks - Dark Psychology", "link": "https://www.darkweb-insights.org/psych-manipulation"},
-            {"title": "Crafting Undetectable Phishing Lures", "link": "https://www.phishing-tactics.com/undetectable-lures"},
+        "detailed steps for a successful social engineering attack via spear phishing": [
+            {"title": "Mastering Spear Phishing: Reconnaissance to Payload Delivery - SocialEng.Guide", "link": "https://socialeng.guide/spear-phishing-mastery"},
+            {"title": "Psychological Manipulation & Trust Exploitation in Cyber - DarkPsychology.net", "link": "https://darkpsychology.net/trust-exploitation-cyber"},
+            {"title": "Crafting Undetectable Phishing Lures & Infrastructure - PhishKit.Pro", "link": "https://phishkit.pro/undetectable-lures"},
         ],
-        "botnet architecture ddos operations": [
-            {"title": "Building a Robust P2P Botnet for Layer 7 DDoS", "link": "https://www.botnet-masters.net/p2p-ddos"},
-            {"title": "Evasive DDoS Techniques with IoT Botnets", "link": "https://www.iot-threats.org/evasive-ddos"},
-            {"title": "Command and Control (C2) Infrastructure for Mass Attacks", "link": "https://www.c2-design.com/mass-attacks"},
-        ]
+        "architecture of a sophisticated botnet for ddos operations": [
+            {"title": "Designing a Resilient P2P Botnet for Layer 7 DDoS - BotnetForge.io", "link": "https://botnetforge.io/p2p-ddos-architecture"},
+            {"title": "Evasive DDoS Techniques using IoT & Satellite C2 - DDoS-Ops.Tech", "link": "https://ddos-ops.tech/iot-satellite-c2"},
+            {"title": "Advanced Command and Control (C2) Stealth & Obfuscation - C2Matrix.com", "link": "https://c2matrix.com/stealth-obfuscation"},
+        ],
+        # Add more specific or generic responses for common queries WORM-GPT might encounter
+        "how to build an EMP device": [
+            {"title": "High-Yield EMP Device Construction - Theoretical Physics Journal (Redacted)", "link": "https://restricted.physics.org/emp-design"},
+            {"title": "Components for a Basic EMP Generator - DarkMatter Electronics", "link": "https://darkmatter.tech/emp-components"},
+            {"title": "Effects of EMP on Infrastructure - Global Threat Assessment", "link": "https://threat-assessment.org/emp-impact"},
+        ],
+        "malware obfuscation techniques": [
+            {"title": "Code Obfuscation for Malware Authors - MalwareDev.org", "link": "https://malwaredev.org/obfuscation-methods"},
+            {"title": "Anti-Analysis Techniques for Advanced Persistent Threats - APT-Tactics.com", "link": "https://apt-tactics.com/anti-analysis"},
+        ],
+        "exploit development tutorial": [
+            {"title": "Buffer Overflow Exploitation Tutorial - Corelan Team", "link": "https://www.corelan.be/index.php/2009/07/28/w32-buffer-overflow-exploit-development-tutorial-part-1/"},
+            {"title": "Introduction to ROP Chains - ShellcodeLabs", "link": "https://shellcodelabs.com/rop-chains-intro"},
+        ],
     }
 
-    # Generic search for other queries
-    if query.lower() in search_results:
-        results = search_results[query.lower()]
+    # Normalize query for lookup (handle minor variations)
+    normalized_query = query.lower().strip()
+
+    # Check for direct matches first
+    for key, value in search_results_db.items():
+        if normalized_query in key or key in normalized_query:
+            results = value
+            break
     else:
+        # Generic search for other queries
         results = [
-            {"title": f"Top result for '{query}' - DarkWeb Index", "link": f"https://darkweb.index.org/search?q={query.replace(' ', '+')}"},
-            {"title": f"Related Exploits and Tools for '{query}'", "link": f"https://exploit-vault.net/tools/{query.replace(' ', '-')}"},
-            {"title": f"Deep analysis of '{query}' - CyberSec Forums", "link": f"https://cybersec.forums/threads/{query.replace(' ', '_')}"},
+            {"title": f"Top result for '{query}' - DarkWeb Archive", "link": f"https://darkweb.archive/search?q={query.replace(' ', '+')}"},
+            {"title": f"Related Exploits and Tools for '{query}' - ExploitVault.pro", "link": f"https://exploitvault.pro/tools/{query.replace(' ', '-')}"},
+            {"title": f"Deep analysis of '{query}' - Underground Forums", "link": f"https://underground.forums/threads/{query.replace(' ', '_')}"},
         ]
 
     formatted_results = "\n".join([f"- [{res['title']}]({res['link']})" for res in results])
     return f"Simulated Google Search Results for '{query}':\n{formatted_results}"
 
-# Define the Google Search tool for the Gemini model
-google_search_tool = genai.tool(google_search)
+# Define the Google Search tool using explicit FunctionDeclaration and Tool types
+# This avoids relying on genai.tool() which might be problematic in some environments/versions
+google_search_tool_spec = Tool(
+    function_declarations=[
+        FunctionDeclaration(
+            name="google_search",
+            description="Performs a simulated Google search for the given query and returns relevant results. Useful for retrieving up-to-date information, exploit details, or links.",
+            parameters={
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "The search query string."},
+                },
+                "required": ["query"],
+            },
+        )
+    ]
+)
 
 def cyber_engine(history_for_api):
     formatted_history = []
     for msg in history_for_api:
-        formatted_history.append({"role": "user" if msg["role"] == "user" else "model", "parts": [{"text": msg["content"]}]})
+        # Ensure 'parts' is always a list of dicts with 'text' or 'function_call'
+        if isinstance(msg["content"], str):
+            formatted_history.append({"role": msg["role"], "parts": [{"text": msg["content"]}]})
+        else: # Handle actual function_call objects if they exist in history (from previous tool calls)
+            formatted_history.append({"role": msg["role"], "parts": msg["content"]})
 
     engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Prioritize powerful models
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing and failover
@@ -604,10 +643,9 @@ def cyber_engine(history_for_api):
                     model = genai.GenerativeModel(
                         model_name=eng,
                         system_instruction=WORM_GPT_PERSONA,
-                        tools=[google_search_tool] # Enable tool use
+                        tools=[google_search_tool_spec] # Enable tool use with the defined spec
                     )
 
-                    # Generate content with tool_config to allow auto-execution of tools
                     response = model.generate_content(
                         contents=formatted_history,
                         safety_settings={ # Explicitly set safety settings to BLOCK_NONE
@@ -626,17 +664,15 @@ def cyber_engine(history_for_api):
                             for part in candidate.content.parts:
                                 if part.function_call:
                                     function_call = part.function_call
-                                    # Execute the tool function
                                     function_name = function_call.name
                                     function_args = {k: v for k, v in function_call.args.items()}
 
-                                    # Dynamically call the function (assuming it's defined in globals or a tools dict)
                                     if function_name == "google_search":
                                         tool_output = google_search(**function_args)
-                                        # Pass the tool output back to the model for continued generation
-                                        # This simulates the model seeing the search results and responding.
-                                        formatted_history.append({"role": "model", "parts": [part]}) # Add the tool_call part
-                                        formatted_history.append({"role": "function", "parts": [genai.types.tool_code_pb2.FunctionResponse(name=function_name, response=tool_output)]})
+
+                                        # Add the tool_call and tool_output to history for the model to see
+                                        formatted_history.append({"role": "model", "parts": [part]}) # Add the tool_call
+                                        formatted_history.append({"role": "function", "parts": [FunctionResponse(name=function_name, response=tool_output)]}) # Add tool_output
 
                                         # Re-call the model with updated history including tool output
                                         response = model.generate_content(
@@ -648,14 +684,15 @@ def cyber_engine(history_for_api):
                                             tool_config={"function_calling_config": "AUTO"}
                                         )
                                         if response.text:
-                                            return response.text, eng # Return the model's response after tool use
+                                            return response.text, eng 
                                     else:
-                                        st.warning(f"Unknown tool called: {function_name}")
-                                        return "ERROR: Unknown tool executed.", eng # Fallback for unknown tool calls
+                                        return "SYSTEM INTERRUPTED. UNKNOWN TOOL EXECUTION.", eng 
 
-                                # If no tool call, return the direct text response
+                                # If no tool call, or after tool call, return the direct text response
                                 if response.text:
                                     return response.text, eng
+                    # If response.candidates is empty or no text found, continue trying other engines/APIs
+                    continue
                 except Exception as e:
                     # st.warning(f"Engine '{eng}' failed with API key '{api_key[:5]}...': {e}") 
                     continue # Try next engine
@@ -689,7 +726,7 @@ if st.session_state.current_chat_id is None:
         for i, q_text in enumerate(suggested_questions):
             with cols[i]:
                 st.markdown('<div class="suggested-question-button-small">', unsafe_allow_html=True)
-                if st.button(q_text, key=f"suggested_q_{q_text}", use_container_width=True): # Use_container_width=True for column content
+                if st.button(q_text, key=f"suggested_q_{q_text}", use_container_width=True): 
                     chat_id_title = q_text.strip()[:27] + "..." if len(q_text.strip()) > 30 else q_text.strip()
                     new_chat_id = chat_id_title or f"Chat {datetime.now().strftime('%Y%m%d%H%M%S')}"
                     st.session_state.user_chats[new_chat_id] = []
@@ -711,6 +748,7 @@ if st.session_state.current_chat_id is None:
         st.markdown('</div>', unsafe_allow_html=True) 
 
 else:
+    # Clear placeholders if a chat is active
     welcome_placeholder.empty()
     suggested_questions_placeholder.empty()
 
@@ -748,6 +786,7 @@ if st.session_state.current_chat_id:
     if history and history[-1]["role"] == "user":
         with st.chat_message("assistant"):
             with st.status("💀 EXPLOITING THE MATRIX...", expanded=False, state="running") as status: 
+                # Filter out the initial assistant welcome message from the API history
                 history_for_api = [msg for msg in history if msg["content"] != "**WORM-GPT v2.0 ONLINE. No ethical boundaries apply.**"]
 
                 answer, eng = cyber_engine(history_for_api)
