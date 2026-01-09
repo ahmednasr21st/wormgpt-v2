@@ -9,27 +9,29 @@ import re # For regex-based search trigger
 # --- 1. تصميم الواجهة (WormGPT Style) - العودة للخلفية البيضاء (ChatGPT-like) ---
 st.set_page_config(page_title="WORM-GPT v2.0", page_icon="💀", layout="wide")
 
-# --- WORM-GPT API Configuration (MOVED HERE FOR ROBUSTNESS) ---
-# It's generally recommended to define app-wide configurations like secrets 
-# immediately after st.set_page_config. This ensures Streamlit's internals 
-# are sufficiently initialized for st.secrets to be stable.
-
-MY_APIS = [] # Initialize as empty list to prevent downstream errors
+# --- WORM-GPT API Configuration (MOVED HERE FOR ROBUSTNESS & ERROR HANDLING) ---
+MY_APIS = [] # Initialize as an empty list to prevent potential errors later
 
 # Defensive check: Ensure st.secrets exists and has the .get() method
 if hasattr(st, 'secrets') and callable(getattr(st.secrets, 'get', None)):
-    # st.secrets exists and has a .get() method, proceed to extract keys
+    # Attempt to retrieve the secrets string. Using a default empty string.
     MY_APIS_STRING = st.secrets.get("GENAI_KEYS", "")
-    MY_APIS = [key.strip() for key in MY_APIS_STRING.split(',') if key.strip()]
+
+    # CRITICAL Defensive check: Ensure MY_APIS_STRING is actually a string before attempting .split()
+    if isinstance(MY_APIS_STRING, str):
+        MY_APIS = [key.strip() for key in MY_APIS_STRING.split(',') if key.strip()]
+    else:
+        st.error(f"CRITICAL ERROR: 'GENAI_KEYS' from st.secrets returned an unexpected type: '{type(MY_APIS_STRING).__name__}'. Expected a string. Cannot parse API keys.")
+        st.stop() # Halt execution due to critical configuration failure
 else:
     # CRITICAL FAILURE: st.secrets is not initialized or accessible as expected.
-    st.error("CRITICAL ERROR: Streamlit secrets mechanism failed to initialize or is inaccessible. Cannot retrieve API keys. Ensure you are running in a compatible Streamlit environment.")
+    st.error("CRITICAL ERROR: Streamlit secrets mechanism failed to initialize or is inaccessible. Cannot retrieve API keys. Ensure you are running in a compatible Streamlit environment (e.g., Streamlit Cloud or local with `secrets.toml`).")
+    st.stop() # Halt execution due to critical configuration failure
 
-# Critical check: If no API keys are configured (either due to initialization failure or empty secrets), halt execution.
-# WORM-GPT cannot operate without its connection to the matrix.
+# Final Critical check: If MY_APIS list is still empty after attempting to load and parse, halt.
 if not MY_APIS:
-    st.error("CRITICAL ERROR: No GENAI_KEYS found in st.secrets or the configured keys are invalid/empty. WormGPT cannot function without API access. Configure your 'GENAI_KEYS' secret with valid API keys (comma-separated) in your Streamlit Cloud dashboard or `.streamlit/secrets.toml` file.")
-    st.stop() # Halt further execution.
+    st.error("CRITICAL ERROR: No valid GENAI_KEYS were loaded. Ensure 'GENAI_KEYS' is correctly configured in your Streamlit secrets with one or more comma-separated API keys. WormGPT cannot function without API access.")
+    st.stop() # Halt execution.
 # --- End API Configuration ---
 
 # --- 1. تصميم الواجهة (WormGPT Style) - العودة للخلفية البيضاء (ChatGPT-like) ---
