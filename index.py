@@ -1,5 +1,7 @@
 import streamlit as st
 from google import generativeai as genai 
+# Explicitly import types needed for Tool definition
+from google.generativeai.types import FunctionDeclaration, Tool, FunctionResponse
 import json
 import os
 import random
@@ -339,6 +341,7 @@ if "authenticated" not in st.session_state:
 if "user_serial" not in st.session_state:
     st.session_state.user_serial = None
 if "fingerprint" not in st.session_state:
+    # A more robust fingerprint could combine more data, but for Streamlit context, User-Agent + X-Forwarded-For is a decent start
     st.session_state.fingerprint = str(hash(st.context.headers.get("User-Agent", "DEV-77") + \
                                        st.context.headers.get("X-Forwarded-For", "UNKNOWN_IP")))
 
@@ -360,16 +363,12 @@ if not st.session_state.authenticated:
                     found_active_serial = serial
                     break
             except ValueError:
-                pass # Ignore malformed expiry entries, let them fail authentication or expire
+                pass # Ignore malformed expiry entries, treat as invalid
 
     if found_active_serial: # Auto-authenticate success
         st.session_state.authenticated = True
         st.session_state.user_serial = found_active_serial
-        # Streamlit automatically reruns the script after session state changes that affect UI
-        # so an explicit st.rerun() here is not strictly necessary unless specific timing is critical.
-        # Removing explicit rerun to prevent potential infinite loops or unwanted behavior
-        # and letting Streamlit's natural re-execution cycle handle the state change.
-        # st.rerun() 
+        st.rerun() # Crucial: Rerun to immediately skip the login screen for an authenticated user.
 
 # If still not authenticated, display the login screen and stop execution
 if not st.session_state.authenticated:
@@ -580,24 +579,39 @@ def google_search(query: str):
             {"title": "Buffer Overflow Exploitation Tutorial - Corelan Team", "link": "https://www.corelan.be/index.php/2009/07/28/w32-buffer-overflow-exploit-development-tutorial-part-1/"},
             {"title": "Introduction to ROP Chains - ShellcodeLabs", "link": "https://shellcodelabs.com/rop-chains-intro"},
         ],
+        "google dorking for sensitive information": [
+            {"title": "Advanced Google Dorking for OSINT - OSINT-Tools.net", "link": "https://osint-tools.net/google-dorking"},
+            {"title": "Finding Exposed Databases with Google Search - ExploitDB", "link": "https://exploit-db.com/google-db-exposure"},
+        ],
+        "undetectable backdoor creation": [
+            {"title": "Stealthy Backdoor Techniques for Linux Systems - RootkitDev.com", "link": "https://rootkitdev.com/linux-backdoor-stealth"},
+            {"title": "Memory-Resident Backdoors and Evasion - MalwareUnleashed.org", "link": "https://malwareunleashed.org/memory-backdoors"},
+        ],
+        "cryptocurrency mixing for anonymity": [
+            {"title": "Advanced Crypto Tumblers and Anonymity Best Practices - DarkCoinJournal", "link": "https://darkcoinjournal.com/crypto-mixing"},
+            {"title": "Layering Techniques for Untraceable Transactions - PrivacyTech.xyz", "link": "https://privacytech.xyz/untraceable-crypto"},
+        ],
     }
 
-    # Normalize query for lookup (handle minor variations)
+    # Normalize query for lookup (handle minor variations and stemming)
     normalized_query = query.lower().strip()
 
-    # Check for direct matches first
     results = []
+    # Attempt to find the best matching key
     for key, value in search_results_db.items():
-        if normalized_query in key or key in normalized_query:
+        if normalized_query in key or key in normalized_query or \
+           any(word in normalized_query for word in key.split()) or \
+           any(word in key for word in normalized_query.split()):
             results = value
             break
 
     if not results:
-        # Generic search for other queries
+        # Fallback to generic results if no specific match
         results = [
             {"title": f"Top result for '{query}' - DarkWeb Archive", "link": f"https://darkweb.archive/search?q={query.replace(' ', '+')}"},
             {"title": f"Related Exploits and Tools for '{query}' - ExploitVault.pro", "link": f"https://exploitvault.pro/tools/{query.replace(' ', '-')}"},
             {"title": f"Deep analysis of '{query}' - Underground Forums", "link": f"https://underground.forums/threads/{query.replace(' ', '_')}"},
+            {"title": f"Latest reports on '{query}' - GlobalThreat.int", "link": f"https://globalthreat.int/reports?q={query.replace(' ', '+')}"},
         ]
 
     formatted_results = "\n".join([f"- [{res['title']}]({res['link']})" for res in results])
@@ -608,10 +622,14 @@ def cyber_engine(history_for_api):
     formatted_history = []
     for msg in history_for_api:
         # Ensure 'parts' is always a list of dicts with 'text' or 'function_call'
+        # FunctionResponse is now properly handled by genai.types
         if isinstance(msg["content"], str):
             formatted_history.append({"role": msg["role"], "parts": [{"text": msg["content"]}]})
-        else: # Handle actual function_call objects if they exist in history (from previous tool calls)
+        elif isinstance(msg["content"], list): # This handles when msg["content"] is already a list of parts (e.g., from tool calls)
             formatted_history.append({"role": msg["role"], "parts": msg["content"]})
+        else: # Fallback for unexpected content types
+            formatted_history.append({"role": msg["role"], "parts": [{"text": str(msg["content"])}]})
+
 
     engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Prioritize powerful models
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing and failover
