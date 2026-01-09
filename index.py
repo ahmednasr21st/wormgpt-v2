@@ -1,5 +1,5 @@
 import streamlit as st
-import google.genai as genai
+import google.genai as genai # Corrected import statement for the new library
 import json
 import os
 import random
@@ -628,7 +628,7 @@ def cyber_engine(history_for_api):
             formatted_history.append({"role": msg["role"], "parts": [{"text": str(msg["content"])}]})
 
 
-    engines = ["gemini-3-flash", "gemini-2.5-flash", "gemini-2.0-flash-exp"] # Prioritize powerful models
+    engines = ["gemini-1.5-pro", "gemini-1.5-flash", "gemini-pro"] # Prioritize powerful models
     random.shuffle(MY_APIS) # Shuffle API keys for load balancing and failover
 
     for api_key in MY_APIS:
@@ -781,7 +781,7 @@ if p_in := st.chat_input("State your objective, human..."):
 
 if st.session_state.current_chat_id:
     history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
-    if history and history[-1]["role"] == "user":
+    if history and history[-1]["role"] == "user"]:
         with st.chat_message("assistant"):
             with st.status("💀 EXPLOITING THE MATRIX...", expanded=False, state="running") as status: 
                 # Filter out the initial assistant welcome message from the API history
