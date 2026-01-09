@@ -1,7 +1,5 @@
 import streamlit as st
 from google import generativeai as genai 
-# Explicitly import types needed for Tool definition
-from google.generativeai.types import FunctionDeclaration, Tool, FunctionResponse
 import json
 import os
 import random
@@ -341,7 +339,6 @@ if "authenticated" not in st.session_state:
 if "user_serial" not in st.session_state:
     st.session_state.user_serial = None
 if "fingerprint" not in st.session_state:
-    # A more robust fingerprint could combine more data, but for Streamlit context, User-Agent + X-Forwarded-For is a decent start
     st.session_state.fingerprint = str(hash(st.context.headers.get("User-Agent", "DEV-77") + \
                                        st.context.headers.get("X-Forwarded-For", "UNKNOWN_IP")))
 
