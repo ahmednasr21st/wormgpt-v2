@@ -1,8 +1,7 @@
 streamlit
-google-generativeai
 Pillow
 pandas
 requests
 streamlit-agraph
 google
-google.generativeai
+google-generativeai>=0.4.0
