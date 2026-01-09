@@ -1,5 +1,5 @@
 import streamlit as st
-from google import generativeai as genai 
+import google.genai as genai
 import json
 import os
 import random
