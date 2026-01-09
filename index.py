@@ -720,7 +720,7 @@ if st.session_state.current_chat_id:
                     save_chat_to_vault()
                     st.rerun()
               
-                    })
+                  
                     save_chat_to_vault()
                     status.update(label="☠️ MISSION ABORTED. ALL SYSTEMS DOWN.", state="error")
                     st.rerun() # Rerun to display the error messages from cyber_engine and the final chat message
