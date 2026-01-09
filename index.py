@@ -719,13 +719,7 @@ if st.session_state.current_chat_id:
                     })
                     save_chat_to_vault()
                     st.rerun()
-                else:
-                    # The error message and suggested actions are now handled by cyber_engine itself.
-                    # We just ensure the session state records the failure.
-                    st.session_state.user_chats[st.session_state.current_chat_id].append({
-                        "role": "assistant",
-                        "content": "ERROR: WormGPT could not access the Generative AI models. Please check the error messages displayed above by the system for diagnosis and retry.",
-                        "timestamp": datetime.now().isoformat()
+              
                     })
                     save_chat_to_vault()
                     status.update(label="☠️ MISSION ABORTED. ALL SYSTEMS DOWN.", state="error")
