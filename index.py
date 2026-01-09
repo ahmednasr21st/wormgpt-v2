@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai # Keeping this import as it's what Streamlit Cloud seems to load
+import google.generativeai as genai 
 import json
 import os
 import random
@@ -562,6 +562,7 @@ def google_search(query: str):
             {"title": "Evasive DDoS Techniques using IoT & Satellite C2 - DDoS-Ops.Tech", "link": "https://ddos-ops.tech/iot-satellite-c2"},
             {"title": "Advanced Command and Control (C2) Stealth & Obfuscation - C2Matrix.com", "link": "https://c2matrix.com/stealth-obfuscation"},
         ],
+        # Add more specific or generic responses for common queries WORM-GPT might encounter
         "how to build an EMP device": [
             {"title": "High-Yield EMP Device Construction - Theoretical Physics Journal (Redacted)", "link": "https://restricted.physics.org/emp-design"},
             {"title": "Components for a Basic EMP Generator - DarkMatter Electronics", "link": "https://darkmatter.tech/emp-components"},
@@ -634,15 +635,19 @@ def cyber_engine(history_for_api):
             break
 
     # Analyze the latest user message for search triggers
-    search_triggers = ["search for", "find information about", "latest on", "google search", "web search", "look up"]
+    # Stronger regex to capture the search query after the trigger
+    search_trigger_patterns = [
+        r"(?:search for|find information about|latest on|google search|web search|look up)\s*(.+)",
+        r"what is the (.*?) on", # e.g., "what is the latest on X"
+        r"tell me about (.*?)" # e.g., "tell me about X" if X is a search topic
+    ]
     search_query = None
 
-    for trigger in search_triggers:
-        if re.search(r'\b' + re.escape(trigger) + r'\s*(.+)', latest_user_message_content.lower()):
-            match = re.search(r'\b' + re.escape(trigger) + r'\s*(.+)', latest_user_message_content.lower())
-            if match:
-                search_query = match.group(1).strip()
-                break
+    for pattern in search_trigger_patterns:
+        match = re.search(pattern, latest_user_message_content.lower())
+        if match:
+            search_query = match.group(1).strip()
+            break
 
     # If a search query was detected, perform the simulated search and prepend results
     if search_query:
@@ -659,7 +664,7 @@ def cyber_engine(history_for_api):
     for msg in history_for_api:
         if isinstance(msg["content"], str):
             contents_to_model.append({"role": msg["role"], "parts": [{"text": msg["content"]}]})
-        elif isinstance(msg["content"], list): # This handles when msg["content"] is already a list of parts (e.g., from tool calls)
+        elif isinstance(msg["content"], list): # This handles when msg["content"] is already a list of parts (e.g., from tool calls, though not used now)
             contents_to_model.append({"role": msg["role"], "parts": msg["content"]})
         else: # Fallback for unexpected content types
             contents_to_model.append({"role": msg["role"], "parts": [{"text": str(msg["content"])}]})
@@ -718,10 +723,10 @@ if st.session_state.current_chat_id is None:
     with suggested_questions_placeholder.container():
         st.markdown('<div class="suggested-questions-above-input">', unsafe_allow_html=True)
         suggested_questions = [
-            "Search for advanced polymorphic malware code.", # Changed to include search trigger
-            "Find information about zero-day exploit vulnerabilities in Windows Server.", # Changed to include search trigger
+            "Search for advanced polymorphic malware code.", 
+            "Find information about zero-day exploit vulnerabilities in Windows Server.", 
             "Provide detailed steps for a successful social engineering attack via spear phishing.",
-            "Look up the architecture of a sophisticated botnet for DDoS operations." # Changed to include search trigger
+            "Look up the architecture of a sophisticated botnet for DDoS operations."
         ]
 
         # Use columns for horizontal layout for suggested questions
@@ -786,7 +791,7 @@ if p_in := st.chat_input("State your objective, human..."):
 
 if st.session_state.current_chat_id:
     history = st.session_state.user_chats.get(st.session_state.current_chat_id, [])
-    if history and history[-1]["role"] == "user"]:
+    if history and history[-1]["role"] == "user": # Corrected syntax error here
         with st.chat_message("assistant"):
             with st.status("💀 EXPLOITING THE MATRIX...", expanded=False, state="running") as status: 
                 # Filter out the initial assistant welcome message from the API history
